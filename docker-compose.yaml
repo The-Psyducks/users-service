@@ -1,0 +1,28 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    env_file:
+      - ./server/.env
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres:16.4-alpine3.20
+    ports:
+      - 5432:5432
+    env_file:
+      - ./database/.env
+    volumes:
+      - ./database/postgres:/var/lib/postgresql/data
+  
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: twitsnap-test-stage
+    depends_on:
+      - postgres

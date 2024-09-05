@@ -1,7 +1,6 @@
 package service
 
 import (
-	// "github.com/google/uuid"
 	"users-service/src/database"
 	"users-service/src/model"
 )
