@@ -2,10 +2,11 @@ package router
 
 import (
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"users-service/src/controller"
-	"users-service/src/service"
 	"users-service/src/database"
+	"users-service/src/service"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
@@ -27,11 +28,11 @@ func CreateRouter() (*Router, error) {
 		return nil, err
 	}
 
-	userService := service.NewUser(db)
+	userService := service.CreateUserService(db)
 	userController := controller.CreateUserController(userService)
 
 	r.Engine.POST("/users", userController.CreateUser)
-	// r.Engine.GET("/users/:id", userController.GetUserById)
+	r.Engine.GET("/users/:id", userController.GetUserById)
 
 	return &r, nil
 }

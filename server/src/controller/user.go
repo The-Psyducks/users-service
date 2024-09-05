@@ -33,3 +33,16 @@ func (u *User) CreateUser(c *gin.Context) {
 
 	c.JSON(http.StatusCreated, user)
 }
+
+func (u *User) GetUserById(c *gin.Context) {
+	id := c.Param("id")
+
+	user, err := u.service.GetUserById(id)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}

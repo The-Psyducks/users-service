@@ -9,19 +9,23 @@ type User struct {
 	db database.Database
 }
 
+func CreateUserService(db database.Database) *User {
+	return &User{db: db}
+}
+
 func UserRecordToUserResponse(record model.UserRecord) model.UserResponse {
 	return model.UserResponse{
-		Id: record.Id,
+		Id:       record.Id,
 		UserName: record.UserName,
-		Name: record.Name,
-		Mail: record.Mail,
+		Name:     record.Name,
+		Mail:     record.Mail,
 		Location: record.Location,
 	}
 }
 
 func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	userRecord, err := u.db.CreateUser(data)
-	
+
 	//validate data
 
 	if err != nil {
@@ -31,6 +35,12 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	return UserRecordToUserResponse(userRecord), nil
 }
 
-func NewUser(db database.Database) *User {
-	return &User{db: db}
+func (u *User) GetUserById(id string) (model.UserResponse, error) {
+	userRecord, err := u.db.GetUserById(id)
+
+	if err != nil {
+		return model.UserResponse{}, err
+	}
+
+	return UserRecordToUserResponse(userRecord), nil
 }
