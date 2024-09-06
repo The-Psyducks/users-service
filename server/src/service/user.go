@@ -14,12 +14,14 @@ func CreateUserService(db database.Database) *User {
 }
 
 func UserRecordToUserResponse(record model.UserRecord) model.UserResponse {
+	//TODO agarrar intereses
 	return model.UserResponse{
-		Id:       record.Id,
-		UserName: record.UserName,
-		Name:     record.Name,
-		Mail:     record.Mail,
-		Location: record.Location,
+		Id:			record.Id,
+		UserName:	record.UserName,
+		FirstName:	record.FirstName,
+		LastName:	record.LastName,
+		Mail:		record.Mail,
+		Location: 	record.Location,
 	}
 }
 
@@ -33,6 +35,13 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	}
 
 	return UserRecordToUserResponse(userRecord), nil
+}
+
+func (u *User) GetRegisterOptions() map[string]interface{} {
+    return map[string]interface{}{
+        "locations": GetAllLocations(),
+        "interests": GetAllInterests(),
+    }
 }
 
 func (u *User) GetUserById(id string) (model.UserResponse, error) {

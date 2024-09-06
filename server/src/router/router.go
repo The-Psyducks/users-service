@@ -31,8 +31,9 @@ func CreateRouter() (*Router, error) {
 	userService := service.CreateUserService(db)
 	userController := controller.CreateUserController(userService)
 
-	r.Engine.POST("/users", userController.CreateUser)
+	r.Engine.POST("/users/register", userController.CreateUser)
 	r.Engine.GET("/users/:id", userController.GetUserById)
+	r.Engine.GET("/users/register", userController.GetRegisterOptions)
 
 	return &r, nil
 }

@@ -16,7 +16,8 @@ func (m *MemoryDB) CreateUser(data model.UserRequest) (model.UserRecord, error) 
 	newUser := model.UserRecord{
 		Id:   uuid.New(),
 		UserName: data.UserName,
-		Name: data.Name,
+		FirstName: data.FirstName,
+		LastName: data.LastName,
 		Mail: data.Mail,
 		Location: data.Location,
 		CreatedAt: time.Now().UTC(),

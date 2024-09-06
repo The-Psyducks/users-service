@@ -34,6 +34,12 @@ func (u *User) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, user)
 }
 
+func (u *User) GetRegisterOptions(c *gin.Context) {
+	data := u.service.GetRegisterOptions()
+
+	c.JSON(http.StatusOK, data)
+}
+
 func (u *User) GetUserById(c *gin.Context) {
 	id := c.Param("id")
 
