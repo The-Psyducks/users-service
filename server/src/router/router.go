@@ -22,13 +22,16 @@ func CreateRouter() (*Router, error) {
 		Address: "0.0.0.0:8080",
 	}
 
-	db, err := database.NewMemoryDB()
-
+	user_db, err := database.NewUserMemoryDB()
+	if err != nil {
+		return nil, err
+	}
+	interests_db, err := database.NewInterestsMemoryDB()
 	if err != nil {
 		return nil, err
 	}
 
-	userService := service.CreateUserService(db)
+	userService := service.CreateUserService(user_db, interests_db)
 	userController := controller.CreateUserController(userService)
 
 	r.Engine.POST("/users/register", userController.CreateUser)

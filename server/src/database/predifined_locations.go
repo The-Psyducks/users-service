@@ -1,4 +1,4 @@
-package service
+package database
 
 // predefined Locations
 var predefinedLocations = map[int32]string{

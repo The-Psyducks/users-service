@@ -1,8 +1,9 @@
 package database
 
 import (
-	"users-service/src/model"
 	"time"
+	"users-service/src/model"
+
 	"github.com/google/uuid"
 )
 
@@ -12,14 +13,15 @@ type MemoryDB struct {
 }
 
 // CreateUser creates a new user in the database
-func (m *MemoryDB) CreateUser(data model.UserRequest) (model.UserRecord, error) {
+func (m *MemoryDB) CreateUser(data model.UserRecord) (model.UserRecord, error) {
 	newUser := model.UserRecord{
-		Id:   uuid.New(),
-		UserName: data.UserName,
+		Id:        uuid.New(),
+		UserName:  data.UserName,
 		FirstName: data.FirstName,
-		LastName: data.LastName,
-		Mail: data.Mail,
-		Location: data.Location,
+		LastName:  data.LastName,
+		Mail:      data.Mail,
+		Password:  data.Password,
+		Location:  data.Location,
 		CreatedAt: time.Now().UTC(),
 	}
 
@@ -31,8 +33,8 @@ func (m *MemoryDB) GetUserById(id string) (model.UserRecord, error) {
 	return m.db.Get(id)
 }
 
-// NewMemoryDB creates a new MemoryDB
-func NewMemoryDB() (*MemoryDB, error) {
+// NewUserMemoryDB creates a new MemoryDB
+func NewUserMemoryDB() (*MemoryDB, error) {
 	return &MemoryDB{
 		db: CreateDB[model.UserRecord](),
 	}, nil
