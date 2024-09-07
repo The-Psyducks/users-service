@@ -68,9 +68,9 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	slog.Info("validating new user")
 
 	userValidator := NewUserCreationValidator()
-    if errs := userValidator.Validate(data); len(errs) > 0 {
+	if errs := userValidator.Validate(data); len(errs) > 0 {
 		return model.UserResponse{}, app_errors.NewAppValidationError(errs)
-    }
+	}
 
 	if err := u.checkExistingUserData(data.UserName, data.Mail); err != nil {
 		return model.UserResponse{}, err
@@ -105,8 +105,8 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 	}
 }
 
-func (u *User) GetUserById(id string) (model.UserResponse, error) {
-	userRecord, err := u.user_db.GetUserById(id)
+func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
+	userRecord, err := u.user_db.GetUserByUsername(username)
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {

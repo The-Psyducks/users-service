@@ -28,9 +28,9 @@ func (u *User) CreateUser(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	
+
 	user, err := u.service.CreateUser(data)
-	
+
 	if err != nil {
 		c.Error(err)
 		return
@@ -45,10 +45,10 @@ func (u *User) GetRegisterOptions(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-func (u *User) GetUserById(c *gin.Context) {
-	id := c.Param("id")
+func (u *User) GetUserByUsername(c *gin.Context) {
+	username := c.Param("username")
 
-	user, err := u.service.GetUserById(id)
+	user, err := u.service.GetUserByUsername(username)
 
 	if err != nil {
 		c.Error(err)

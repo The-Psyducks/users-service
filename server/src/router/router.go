@@ -3,13 +3,13 @@ package router
 import (
 	"fmt"
 	"io"
-	"os"
 	"log/slog"
+	"os"
+	"users-service/src/config"
 	"users-service/src/controller"
 	"users-service/src/database"
-	"users-service/src/service"
-	"users-service/src/config"
 	"users-service/src/middleware"
+	"users-service/src/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -61,9 +61,10 @@ func CreateRouter() (*Router, error) {
 	userService := service.CreateUserService(user_db, interests_db)
 	userController := controller.CreateUserController(userService)
 
-	r.Engine.POST("/users/register", userController.CreateUser)
-	r.Engine.GET("/users/:id", userController.GetUserById)
 	r.Engine.GET("/users/register", userController.GetRegisterOptions)
+	r.Engine.POST("/users/register", userController.CreateUser)
+	
+	r.Engine.GET("/users/:username", userController.GetUserByUsername)
 
 	return r, nil
 }
