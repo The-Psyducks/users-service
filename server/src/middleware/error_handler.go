@@ -19,6 +19,9 @@ func ErrorHandler() gin.HandlerFunc {
             if appErr, ok := err.(*app_errors.AppError); ok {
 				slog.Error(appErr.Message, slog.String("error", appErr.Error()))
 				sendErrorResponse(c, appErr.Code, appErr.Message, appErr.Error())
+			} else if appValidationError, ok := err.(*app_errors.AppValidationError); ok {
+				slog.Error(appValidationError.Message, slog.String("error", appValidationError.Error()))
+				sendValidationErrorResponse(c, appValidationError)
 			} else {	
 				slog.Error("unknown error", slog.String("error", err.Error()))
 				sendInternalServerErrorResponse(c)
@@ -26,6 +29,19 @@ func ErrorHandler() gin.HandlerFunc {
             c.Abort()
         }
     }
+}
+
+func sendValidationErrorResponse(ctx *gin.Context, appValidationError *app_errors.AppValidationError) {
+	errorResponse := model.ValidationErrorResponse{
+		Type:     "about:blank",
+		Title:    appValidationError.Message,
+		Status:   appValidationError.Code,
+		Detail:   appValidationError.Message,
+		Instance: ctx.Request.URL.Path,
+		Errors:   appValidationError.Errors,
+	}
+	ctx.Header("Content-Type", "application/json")
+	ctx.JSON(appValidationError.Code, errorResponse)
 }
 
 func sendErrorResponse(ctx *gin.Context, status int, title string, detail string) {

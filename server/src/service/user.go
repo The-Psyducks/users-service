@@ -46,15 +46,31 @@ func CreateUserRecordFromUserRequest(req *model.UserRequest) *model.UserRecord {
 
 func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	slog.Info("validating new user")
-	userValidator := NewUserCreationValidator(u.user_db)
+
+	userValidator := NewUserCreationValidator()
     if errs := userValidator.Validate(data); len(errs) > 0 {
-		var errorMessage string
-        for _, err := range errs {
-			errorMessage += err.FieldName + ": " + err.Message + "; "
-        }
-		slog.Error("error validating user", slog.Any("user", data))
-        return model.UserResponse{}, app_errors.NewAppError(http.StatusBadRequest, "Invalid request", errors.New(errorMessage))
+		return model.UserResponse{}, app_errors.NewAppValidationError(errs)
     }
+
+	usernameExists, err := u.user_db.CheckIfUsernameExists(data.UserName)
+
+	if err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error checking if username exists", err)
+	}
+	
+	if usernameExists {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusConflict, "username already exists", errors.New("this username already exists"))
+	}
+
+	mailExists, err := u.user_db.CheckIfMailExists(data.Mail)
+
+	if err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error checking if mail exists", err)
+	}
+
+	if mailExists {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusConflict, "mail already exists", errors.New("this mail already exists"))
+	}
 
 	userRecord := CreateUserRecordFromUserRequest(&data)
 	createdUser, err := u.user_db.CreateUser(*userRecord)
