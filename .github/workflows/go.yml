@@ -8,5 +8,5 @@ on:
     
 jobs:
   go-pipeline:
-    uses: The-Psyducks/ci-templates/.github/workflows/go.yml@main
+    uses: The-Psyducks/ci-templates/.github/workflows/lintTest&RunContainer.yml@main
 
