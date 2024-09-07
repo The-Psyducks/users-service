@@ -44,6 +44,26 @@ func CreateUserRecordFromUserRequest(req *model.UserRequest) *model.UserRecord {
 	}
 }
 
+func (u *User) checkExistingUserData(username, mail string) error {
+	usernameExists, err := u.user_db.CheckIfUsernameExists(username)
+	if err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, "error checking if username exists", err)
+	}
+	if usernameExists {
+		return app_errors.NewAppError(http.StatusConflict, "username already exists", errors.New("this username already exists"))
+	}
+
+	mailExists, err := u.user_db.CheckIfMailExists(mail)
+	if err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, "error checking if mail exists", err)
+	}
+	if mailExists {
+		return app_errors.NewAppError(http.StatusConflict, "mail already exists", errors.New("this mail already exists"))
+	}
+
+	return nil
+}
+
 func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	slog.Info("validating new user")
 
@@ -52,24 +72,8 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppValidationError(errs)
     }
 
-	usernameExists, err := u.user_db.CheckIfUsernameExists(data.UserName)
-
-	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error checking if username exists", err)
-	}
-	
-	if usernameExists {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusConflict, "username already exists", errors.New("this username already exists"))
-	}
-
-	mailExists, err := u.user_db.CheckIfMailExists(data.Mail)
-
-	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error checking if mail exists", err)
-	}
-
-	if mailExists {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusConflict, "mail already exists", errors.New("this mail already exists"))
+	if err := u.checkExistingUserData(data.UserName, data.Mail); err != nil {
+		return model.UserResponse{}, err
 	}
 
 	userRecord := CreateUserRecordFromUserRequest(&data)
