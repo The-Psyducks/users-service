@@ -2,8 +2,8 @@ package service
 
 import (
 	"errors"
-	"net/http"
 	"log/slog"
+	"net/http"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
@@ -45,17 +45,26 @@ func CreateUserRecordFromUserRequest(req *model.UserRequest) *model.UserRecord {
 }
 
 func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
-	//validate data
+	slog.Info("validating new user")
+	userValidator := NewUserCreationValidator(u.user_db)
+    if errs := userValidator.Validate(data); len(errs) > 0 {
+		var errorMessage string
+        for _, err := range errs {
+			errorMessage += err.FieldName + ": " + err.Message + "; "
+        }
+		slog.Error("error validating user", slog.Any("user", data))
+        return model.UserResponse{}, app_errors.NewAppError(http.StatusBadRequest, "Invalid request", errors.New(errorMessage))
+    }
+
 	userRecord := CreateUserRecordFromUserRequest(&data)
 	createdUser, err := u.user_db.CreateUser(*userRecord)
 
 	if err != nil {
-		//todo: user already exists
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error creating user", err)
 	}
-	
+
 	interests, err := u.interest_db.AssociateInterestsToUser(createdUser.Id, data.Interests)
-	
+
 	if err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error associating interest to user", err)
 	}

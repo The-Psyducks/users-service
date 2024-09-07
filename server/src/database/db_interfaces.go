@@ -11,6 +11,9 @@ import (
 type UserDatabase interface {
 	CreateUser(data model.UserRecord) (model.UserRecord, error)
 	GetUserById(id string) (model.UserRecord, error)
+	CheckIfUsernameExists(username string) (bool, error)
+	CheckIfMailExists(mail string) (bool, error)
+	GetUserByUsername(username string) (model.UserRecord, error)
 }
 
 // Database interface to interact with the Interest's database

@@ -23,9 +23,9 @@ func GetAllInterests() []string {
 func GetInterestsByIds(ids []int32) ([]string, error) {
     var interests []string
     for _, id := range ids {
-        name, err := GetInterestName(id)
-        if err != nil {
-            return nil, err
+        name := GetInterestName(id)
+        if name == "" {
+            return nil, fmt.Errorf("interest with ID %d not found", id)
         }
         interests = append(interests, name)
     }
@@ -39,10 +39,10 @@ func IsValidInterest(id int32) bool {
 }
 
 // GetInterestName returns the name of an interest given its ID
-func GetInterestName(id int32) (string, error) {
+func GetInterestName(id int32) string {
     name, exists := predefinedInterests[id]
     if !exists {
-        return "", fmt.Errorf("interest with ID %d not found", id)
+        return ""
     }
-    return name, nil
+    return name
 }

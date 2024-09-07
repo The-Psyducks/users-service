@@ -1,10 +1,11 @@
 package middleware
 
 import (
+	"log/slog"
 	"net/http"
 	"users-service/src/app_errors"
 	"users-service/src/model"
-	"log/slog"
+
 	"github.com/gin-gonic/gin"
 )
 
@@ -13,7 +14,7 @@ func ErrorHandler() gin.HandlerFunc {
 		c.Header("Content-Type", "application/json")
         c.Next()
 
-        if len(c.Errors) > 0 {
+		if len(c.Errors) > 0 {
             err := c.Errors.Last().Err
             if appErr, ok := err.(*app_errors.AppError); ok {
 				slog.Error(appErr.Message, slog.String("error", appErr.Error()))

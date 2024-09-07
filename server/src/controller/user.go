@@ -28,9 +28,9 @@ func (u *User) CreateUser(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-
+	
 	user, err := u.service.CreateUser(data)
-
+	
 	if err != nil {
 		c.Error(err)
 		return
