@@ -1,6 +1,10 @@
 package service
 
 import (
+	"errors"
+	"net/http"
+	"log/slog"
+	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
 )
@@ -45,20 +49,27 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	userRecord := CreateUserRecordFromUserRequest(&data)
 	createdUser, err := u.user_db.CreateUser(*userRecord)
 
-	interests := u.interest_db.AssociateInterestsToUser(createdUser.Id, data.Interests)
+	if err != nil {
+		//todo: user already exists
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error creating user", err)
+	}
+	
+	interests, err := u.interest_db.AssociateInterestsToUser(createdUser.Id, data.Interests)
+	
+	if err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error associating interest to user", err)
+	}
+
 	interestsNames := make([]string, len(interests))
 	for i, interest := range interests {
 		interestsNames[i] = interest.Name
 	}
-
-	if err != nil {
-		return model.UserResponse{}, err
-	}
-
+	slog.Info("user created succesfully", slog.String("user_id", createdUser.Id.String()))
 	return CreateUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
 
 func (u *User) GetRegisterOptions() map[string]interface{} {
+	slog.Info("register optiones retrieved succesfully")
 	return map[string]interface{}{
 		"locations": database.GetAllLocations(),
 		"interests": database.GetAllInterests(),
@@ -67,11 +78,20 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 
 func (u *User) GetUserById(id string) (model.UserResponse, error) {
 	userRecord, err := u.user_db.GetUserById(id)
-	interests := u.interest_db.GetInterestsNamesForUserId(userRecord.Id)
 
 	if err != nil {
-		return model.UserResponse{}, err
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return model.UserResponse{}, app_errors.NewAppError(http.StatusNotFound, "user not found", err)
+		}
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error retrieving user", err)
 	}
 
+	interests, err := u.interest_db.GetInterestsNamesForUserId(userRecord.Id)
+
+	if err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "error getting interests from user", err)
+	}
+
+	slog.Info("user retrieved succesfully", slog.String("user_id", userRecord.Id.String()))
 	return CreateUserResponseFromUserRecordAndInterests(userRecord, interests), nil
 }

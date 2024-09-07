@@ -16,6 +16,6 @@ type UserDatabase interface {
 // Database interface to interact with the Interest's database
 // it is used by the service layer
 type InterestsDatabase interface {
-	AssociateInterestsToUser(userId uuid.UUID, interests []int32) []model.InterestRecord
-	GetInterestsNamesForUserId(id uuid.UUID) []string
+	AssociateInterestsToUser(userId uuid.UUID, interests []int32) ([]model.InterestRecord, error)
+	GetInterestsNamesForUserId(id uuid.UUID) ([]string, error)
 }

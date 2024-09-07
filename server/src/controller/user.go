@@ -1,11 +1,14 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"net/http"
 
-	"users-service/src/service"
+	"github.com/gin-gonic/gin"
+
+	"users-service/src/app_errors"
 	"users-service/src/model"
+	"users-service/src/service"
 )
 
 type User struct {
@@ -20,14 +23,16 @@ func (u *User) CreateUser(c *gin.Context) {
 	var data model.UserRequest
 
 	if err := c.BindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		fmt.Println(err)
+		err = app_errors.NewAppError(http.StatusBadRequest, "invalid request", err)
+		c.Error(err)
 		return
 	}
 
 	user, err := u.service.CreateUser(data)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 
@@ -46,7 +51,7 @@ func (u *User) GetUserById(c *gin.Context) {
 	user, err := u.service.GetUserById(id)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		c.Error(err)
 		return
 	}
 

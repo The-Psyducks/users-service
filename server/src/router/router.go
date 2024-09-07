@@ -2,13 +2,14 @@ package router
 
 import (
 	"fmt"
-	// "io"
+	"io"
 	"os"
 	"log/slog"
 	"users-service/src/controller"
 	"users-service/src/database"
 	"users-service/src/service"
 	"users-service/src/config"
+	"users-service/src/middleware"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,8 +26,8 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	// gin.DefaultWriter = io.Discard
-	// gin.DefaultErrorWriter = io.Discard
+	gin.DefaultWriter = io.Discard
+	gin.DefaultErrorWriter = io.Discard
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 	slog.SetDefault(logger)
 
@@ -35,7 +36,8 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 		Address: cfg.Host + ":" + cfg.Port,
 	}
 
-	// router.Engine.Use(middleware.RequestLogger())
+	router.Engine.Use(middleware.RequestLogger())
+	router.Engine.Use(middleware.ErrorHandler())
 
 	return router
 }

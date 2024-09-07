@@ -18,7 +18,7 @@ func NewInterestsMemoryDB() (*InMemoryDB, error) {
 }
 
 // AssociateInterestsToUser associates interests to a user
-func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []int32) []model.InterestRecord {
+func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []int32) ([]model.InterestRecord, error) {
     if _, exists := db.userInterests[userId]; !exists {
         db.userInterests[userId] = make(map[int32]bool)
     }
@@ -36,11 +36,11 @@ func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []int
         }
     }
 
-    return records
+    return records, nil
 }
 
 // GetInterestsForUserId retrieves interests for a given user ID
-func (db *InMemoryDB) GetInterestsNamesForUserId(id uuid.UUID) []string {
+func (db *InMemoryDB) GetInterestsNamesForUserId(id uuid.UUID) ([]string, error) {
     var records []string
 
     if userInterests, exists := db.userInterests[id]; exists {
@@ -51,5 +51,5 @@ func (db *InMemoryDB) GetInterestsNamesForUserId(id uuid.UUID) []string {
         }
     }
 
-    return records
+    return records, nil
 }
