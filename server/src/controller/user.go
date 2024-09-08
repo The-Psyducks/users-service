@@ -23,14 +23,14 @@ func (u *User) CreateUser(c *gin.Context) {
 
 	if err := c.BindJSON(&data); err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
 	user, err := u.service.CreateUser(data)
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (u *User) GetUserByUsername(c *gin.Context) {
 	user, err := u.service.GetUserByUsername(username)
 
 	if err != nil {
-		c.Error(err)
+		_ = c.Error(err)
 		return
 	}
 

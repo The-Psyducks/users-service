@@ -1,6 +1,7 @@
 package service
 
 import (
+	"log/slog"
 	"regexp"
 	"users-service/src/database"
 	"users-service/src/model"
@@ -16,7 +17,7 @@ func NewUserCreationValidator() *UserCreationValidator {
 	return &UserCreationValidator{}
 }
 
-func (u *UserCreationValidator) Validate(user model.UserRequest) []model.ValidationError {
+func (u *UserCreationValidator) Validate(user model.UserRequest) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 	validate := validator.New()
 
@@ -29,7 +30,10 @@ func (u *UserCreationValidator) Validate(user model.UserRequest) []model.Validat
 	}
 
 	for name, validatorFunc := range customValidators {
-		validate.RegisterValidation(name, validatorFunc)
+		if err := validate.RegisterValidation(name, validatorFunc); err != nil {
+			slog.Error("Error registering custom validator", slog.String("error: ",err.Error()))
+			return []model.ValidationError{}, err
+		}
 	}
 
 	err := validate.Struct(user)
@@ -41,7 +45,7 @@ func (u *UserCreationValidator) Validate(user model.UserRequest) []model.Validat
 		}
 	}
 
-	return u.validationErrors
+	return u.validationErrors, nil
 }
 
 func (u *UserCreationValidator) clearValidationErrors() {

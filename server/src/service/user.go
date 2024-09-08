@@ -69,8 +69,10 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	slog.Info("validating new user")
 
 	userValidator := NewUserCreationValidator()
-	if errs := userValidator.Validate(data); len(errs) > 0 {
-		return model.UserResponse{}, app_errors.NewAppValidationError(errs)
+	if valErrs, err := userValidator.Validate(data); err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating user: %w", err))
+	} else if len(valErrs) > 0 {
+		return model.UserResponse{}, app_errors.NewAppValidationError(valErrs)
 	}
 
 	if err := u.checkExistingUserData(data.UserName, data.Mail); err != nil {
