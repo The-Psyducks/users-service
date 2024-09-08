@@ -70,7 +70,7 @@ func CreateRouter() (*Router, error) {
 }
 
 // Runs the router in the address provided in the configuration
-func (r *Router) Run() {
+func (r *Router) Run() error {
 	fmt.Println("Running in address: ", r.Address)
-	r.Engine.Run(r.Address)
+	return r.Engine.Run(r.Address)
 }
