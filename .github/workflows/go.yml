@@ -1,0 +1,12 @@
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    
+jobs:
+  go-pipeline:
+    uses: The-Psyducks/ci-template/.github/workflows/lintTest&RunContainer.yml@main
+
