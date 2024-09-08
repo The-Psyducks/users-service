@@ -2,10 +2,12 @@ package tests
 
 import (
 	"bytes"
+	"testing"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"users-service/src/router"
+	"github.com/go-playground/assert/v2"
 )
 
 func CreateValidUser(router *router.Router, user User) (int, UserProfile, error) {
@@ -87,7 +89,7 @@ func CreateExistingUser(router *router.Router, user User) (int, ErrorResponse, e
 }
 
 func getExistingUser(router *router.Router, username string) (int, UserProfile, error) {
-	req, err := http.NewRequest("GET", "/users/username"+username, &bytes.Reader{})
+	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
 
 	if err != nil {
 		return 0, UserProfile{}, err
@@ -122,25 +124,37 @@ func getRegisterOptions(router *router.Router) (int, RegisterOptions, error) {
 	return recorder.Code, result, nil
 }
 
-func CheckUserProfileIsUser(user User, location string, interests []string, profile UserProfile) bool {
-	if user.FirstName != profile.FirstName {
-		return false
-	} else if user.LastName != profile.LastName {
-		return false
-	} else if user.UserName != profile.UserName {
-		return false
-	} else if user.Mail != profile.Mail {
-		return false
-	} else if location != profile.Location {
-		return false
-	} else if len(interests) != len(profile.Interests) {
-		return false
-	} else {
-		for i, interest := range interests {
-			if interest != profile.Interests[i] {
-				return false
-			}
-		}
+func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId int, interestsIds []int) (string, []string) {
+    var location string
+    interests := make([]string, len(interestsIds))
+
+    for _, loc := range registerOptions.Locations {
+        if loc.Id == locationId {
+            location = loc.Name
+            break
+        }
+    }
+    
+    for i, interestId := range interestsIds {
+        for _, interest := range registerOptions.Interests {
+            if interest.Id == interestId {
+                interests[i] = interest.Name
+                break
+            }
+        }
+    }
+    return location, interests
+}
+
+func AssertUserProfileIsUser(t *testing.T, user User, location string, interests []string, profile UserProfile) {
+	assert.Equal(t, user.FirstName, profile.FirstName)
+	assert.Equal(t, user.LastName, profile.LastName)
+	assert.Equal(t, user.UserName, profile.UserName)
+	assert.Equal(t, user.Mail, profile.Mail)
+	assert.Equal(t, location, profile.Location)
+
+	assert.Equal(t, len(profile.Interests), len(interests))
+	for i, interest := range interests {
+		assert.Equal(t, interest, profile.Interests[i])
 	}
-	return true
 }

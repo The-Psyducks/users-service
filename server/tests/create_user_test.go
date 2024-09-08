@@ -17,27 +17,25 @@ func TestCreateUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
 
-	locationIndex := 0
-	interestIndex1 := 0
-	interestIndex2 := len(registerOptions.Interests) - 1
+	locationId := 0
+	interestsIds := []int{0, 1}
 	user := User{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
-		Password:  "Edward$Elric:)",
+		Password:  "Edward$Elri3c:)",
 		Mail:      "edwardelric@yahoo.com",
-		Location:  locationIndex,
-		Interests: []int{interestIndex1, interestIndex2},
+		Location:  locationId,
+		Interests: interestsIds,
 	}
 
 	code, userProfile, err := CreateValidUser(router, user)
-	location := registerOptions.Locations[locationIndex].Name
-	interests := []string{registerOptions.Interests[interestIndex1].Name, registerOptions.Interests[interestIndex2].Name}
-	equals := CheckUserProfileIsUser(user, location, interests, userProfile)
+	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
+
+	AssertUserProfileIsUser(t, user, location, interests, userProfile)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusCreated)
-	assert.Equal(t, equals, true)
 }
 
 func TestCreateUserWithInvalidLocation(t *testing.T) {
@@ -53,14 +51,14 @@ func TestCreateUserWithInvalidLocation(t *testing.T) {
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
-		Password:  "Edward$Elric:)",
+		Password:  "Edward$Elr3ic:)",
 		Mail:      "capo@gmail.com",
 		Location:  int(locationIndex),
 		Interests: []int{0},
 	}
 
 	code, response, err := CreateInvalidUser(router, user)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
@@ -77,26 +75,25 @@ func TestCreateUserWithInvalidInterests(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
 
-	interestIndex1 := len(registerOptions.Interests) - 1 //valid
-	interestIndex2 := len(registerOptions.Interests)     //invalid
+	interstsIds := []int{len(registerOptions.Interests) - 1, len(registerOptions.Interests)}
 	user := User{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
-		Password:  "Edward$Elric:)",
+		Password:  "Edward$El3ric:)",
 		Mail:      "capo@gmail.com",
 		Location:  0,
-		Interests: []int{interestIndex1, interestIndex2},
+		Interests: interstsIds,
 	}
 
 	code, response, err := CreateInvalidUser(router, user)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, response.Instance, "/users/register")
 	assert.Equal(t, len(response.Errors), 1)
-	assert.Equal(t, response.Errors[0].Field, "interests_ids")
+	assert.Equal(t, response.Errors[0].Field, "interests")
 }
 
 func TestCreateUserWithInvalidPassword(t *testing.T) {
@@ -114,7 +111,7 @@ func TestCreateUserWithInvalidPassword(t *testing.T) {
 	}
 
 	code, response, err := CreateInvalidUser(router, user)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
@@ -136,11 +133,11 @@ func TestCreateUserWithUsernameThatExists(t *testing.T) {
 		Location:  0,
 		Interests: []int{0},
 	}
-	
+
 	code, _, err := CreateValidUser(router, user)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusCreated)
-		
+
 	user = User{
 		FirstName: "asda",
 		LastName:  "Elrasdasdic",
@@ -155,7 +152,7 @@ func TestCreateUserWithUsernameThatExists(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusConflict)
-	assert.Equal(t, response.Title, "username or email already exists")
+	assert.Equal(t, response.Title, "Username or mail already exists")
 	assert.Equal(t, response.Instance, "/users/register")
 }
 
@@ -176,16 +173,16 @@ func TestCreateUserWithMailThatExists(t *testing.T) {
 		Location:  0,
 		Interests: []int{0},
 	}
-	
+
 	code, _, err = CreateValidUser(router, user)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusCreated)
-	
+
 	user = User{
 		FirstName: "Alphonse",
 		LastName:  "Elric",
 		UserName:  "AlphonseElric",
-		Password:  "Alphon$eElric:)",
+		Password:  "Alph4on$eElric:)",
 		Mail:      "capo@gmail.com",
 		Location:  0,
 		Interests: []int{0},
@@ -195,6 +192,6 @@ func TestCreateUserWithMailThatExists(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusConflict)
-	assert.Equal(t, response.Title, "username or email already exists")
+	assert.Equal(t, response.Title, "Username or mail already exists")
 	assert.Equal(t, response.Instance, "/users/register")
 }

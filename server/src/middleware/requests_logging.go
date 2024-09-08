@@ -21,11 +21,11 @@ func RequestLogger() gin.HandlerFunc {
 
 		formattedDuration := formatDuration(duration)
 
-		logRequest(method, formattedDuration, path, uint32(status))
+		logRequest(method, formattedDuration, path, uint(status))
 	}
 }
 
-func logRequest(method string, time_taken string, endpoint string, status uint32) {
+func logRequest(method string, time_taken string, endpoint string, status uint) {
 	var statusMessage string
 	if status >= 200 && status < 300 {
 		statusMessage = "Successful request"

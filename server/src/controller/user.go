@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -23,8 +22,7 @@ func (u *User) CreateUser(c *gin.Context) {
 	var data model.UserRequest
 
 	if err := c.BindJSON(&data); err != nil {
-		fmt.Println(err)
-		err = app_errors.NewAppError(http.StatusBadRequest, "invalid request", err)
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		c.Error(err)
 		return
 	}

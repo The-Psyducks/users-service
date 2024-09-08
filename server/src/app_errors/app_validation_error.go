@@ -18,13 +18,13 @@ func (e *AppValidationError) Error() string {
 	for _, err := range e.Errors {
 		errorMessages = append(errorMessages, fmt.Sprintf("%s: %s", err.Field, err.Message))
 	}
-	return fmt.Sprintf("Validation errors: %s", strings.Join(errorMessages, "; "))
+	return fmt.Sprintf("validation errors: %s", strings.Join(errorMessages, "; "))
 }
 
 func NewAppValidationError(errors []model.ValidationError) *AppValidationError {
 	return &AppValidationError{
 		Code:    http.StatusBadRequest,
-		Message: "Validation error",
+		Message: "validation error",
 		Errors:  errors,
 	}
 }

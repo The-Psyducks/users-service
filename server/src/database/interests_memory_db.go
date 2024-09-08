@@ -7,20 +7,20 @@ import (
 
 // InMemoryDB struct to hold the data
 type InMemoryDB struct {
-    userInterests map[uuid.UUID]map[int32]bool // userId -> map of interestId -> bool
+    userInterests map[uuid.UUID]map[int]bool // userId -> map of interestId -> bool
 }
 
 // NewInterestsMemoryDB creates a new instance of InMemoryDB
 func NewInterestsMemoryDB() (*InMemoryDB, error) {
     return &InMemoryDB{
-        userInterests: make(map[uuid.UUID]map[int32]bool),
+        userInterests: make(map[uuid.UUID]map[int]bool),
     }, nil
 }
 
 // AssociateInterestsToUser associates interests to a user
-func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []int32) ([]model.InterestRecord, error) {
+func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []int) ([]model.InterestRecord, error) {
     if _, exists := db.userInterests[userId]; !exists {
-        db.userInterests[userId] = make(map[int32]bool)
+        db.userInterests[userId] = make(map[int]bool)
     }
 
     var records []model.InterestRecord

@@ -19,7 +19,7 @@ type Config struct {
 
 // LoadConfig loads the configuration from the Environment variables
 func LoadConfig() *Config {
-	viper.SetConfigFile(".env")
+	viper.SetConfigFile("../.env")
 	viper.AutomaticEnv()
 
 	viper.SetDefault("PORT", "8080")

@@ -3,46 +3,42 @@ package database
 import "fmt"
 
 // Predefined interests
-var predefinedInterests = map[int32]string{
-    0: "programming",
-    1: "movies",
-    2: "reading",
-    3: "traveling",
-    4: "cooking",
+var predefinedInterests = map[int]string{
+	0: "programming",
+	1: "movies",
+	2: "reading",
+	3: "traveling",
+	4: "cooking",
 }
 
-// GetAllInterests returns all predefined interests
-func GetAllInterests() []string {
-    var interests []string
-    for _, interest := range predefinedInterests {
-        interests = append(interests, interest)
-    }
-    return interests
+// GetAllInterestsAndIds returns all predefined interests
+func GetAllInterestsAndIds() map[int]string {
+    return predefinedInterests
 }
 
-func GetInterestsByIds(ids []int32) ([]string, error) {
-    var interests []string
-    for _, id := range ids {
-        name := GetInterestName(id)
-        if name == "" {
-            return nil, fmt.Errorf("interest with ID %d not found", id)
-        }
-        interests = append(interests, name)
-    }
-    return interests, nil
+func GetInterestsByIds(ids []int) ([]string, error) {
+	var interests []string
+	for _, id := range ids {
+		name := GetInterestName(id)
+		if name == "" {
+			return nil, fmt.Errorf("interest with ID %d not found", id)
+		}
+		interests = append(interests, name)
+	}
+	return interests, nil
 }
 
 // IsValidInterest checks if an interest ID is valid
-func IsValidInterest(id int32) bool {
-    _, exists := predefinedInterests[id]
-    return exists
+func IsValidInterest(id int) bool {
+	_, exists := predefinedInterests[id]
+	return exists
 }
 
 // GetInterestName returns the name of an interest given its ID
-func GetInterestName(id int32) string {
-    name, exists := predefinedInterests[id]
-    if !exists {
-        return ""
-    }
-    return name
+func GetInterestName(id int) string {
+	name, exists := predefinedInterests[id]
+	if !exists {
+		return ""
+	}
+	return name
 }

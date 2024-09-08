@@ -6,10 +6,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
 	"github.com/go-playground/assert/v2"
 
 	"users-service/src/router"
 )
+
 // tests:
 // - TestGetUser
 // - TestGetNotExistingUser
@@ -24,32 +26,29 @@ func TestGetUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
 
-	locationIndex := 0
-	interestIndex1 := 0
-	interestIndex2 := 1
+	locationId := 0
+	interestsIds := []int{0, 1}
 	user := User{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
-		Password:  "Edward$Elric:)",
+		Password:  "Edward$El1ric:)",
 		Mail:      "edwardo@elric.com",
-		Location:  int(locationIndex),
-		Interests: []int{interestIndex1, interestIndex2},
+		Location:  locationId,
+		Interests: interestsIds,
 	}
 
 	code, _, err = CreateValidUser(router, user)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusCreated)
-	
+
 	code, userProfile, err := getExistingUser(router, user.UserName)
-	location := registerOptions.Locations[locationIndex].Name
-	interests := []string{registerOptions.Interests[interestIndex1].Name, registerOptions.Interests[interestIndex2].Name}
-	equals := CheckUserProfileIsUser(user, location, interests, userProfile)
+	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
+	AssertUserProfileIsUser(t, user, location, interests, userProfile)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
-	assert.Equal(t, equals, true)
 }
 
 func TestGetNotExistingUser(t *testing.T) {
@@ -65,7 +64,7 @@ func TestGetNotExistingUser(t *testing.T) {
 	router.Engine.ServeHTTP(recorder, req)
 	result := ErrorResponse{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &result)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, recorder.Code, http.StatusNotFound)
 	assert.Equal(t, result.Title, "user not found")
