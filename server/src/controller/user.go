@@ -1,11 +1,13 @@
 package controller
 
 import (
-	"github.com/gin-gonic/gin"
 	"net/http"
 
-	"users-service/src/service"
+	"github.com/gin-gonic/gin"
+
+	"users-service/src/app_errors"
 	"users-service/src/model"
+	"users-service/src/service"
 )
 
 type User struct {
@@ -20,14 +22,15 @@ func (u *User) CreateUser(c *gin.Context) {
 	var data model.UserRequest
 
 	if err := c.BindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
 		return
 	}
 
 	user, err := u.service.CreateUser(data)
 
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		_ = c.Error(err)
 		return
 	}
 
@@ -40,13 +43,13 @@ func (u *User) GetRegisterOptions(c *gin.Context) {
 	c.JSON(http.StatusOK, data)
 }
 
-func (u *User) GetUserById(c *gin.Context) {
-	id := c.Param("id")
+func (u *User) GetUserByUsername(c *gin.Context) {
+	username := c.Param("username")
 
-	user, err := u.service.GetUserById(id)
+	user, err := u.service.GetUserByUsername(username)
 
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
+		_ = c.Error(err)
 		return
 	}
 

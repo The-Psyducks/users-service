@@ -8,12 +8,12 @@ RUN go mod download
 
 COPY /server ./
 
-RUN go build -o twitsnap ./src/main.go
+RUN go build -o twitsnap ./main.go
 
 # Test stage
 FROM builder AS twitsnap-test-stage
 
-CMD ["go", "test", "./tests"]
+CMD ["go", "test", "-v", "./tests"]
 
 # Run stage
 FROM alpine:3.20

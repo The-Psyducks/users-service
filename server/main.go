@@ -12,5 +12,7 @@ func main () {
 		log.Fatalf("failed to create router: %v", err)
 	}
 
-	r.Run()
+	if err := r.Run(); err != nil {
+		log.Fatalf("failed to start router: %v", err)
+	}
 }
