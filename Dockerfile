@@ -20,6 +20,6 @@ FROM alpine:3.20
 
 WORKDIR /home/app
 
-COPY --from=builder /home/app/twitsnap /home/app/.env ./
+COPY --from=builder /home/app/twitsnap ./
 
 CMD ["./twitsnap"]
