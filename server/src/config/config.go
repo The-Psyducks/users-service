@@ -1,9 +1,6 @@
 package config
 
-import (
-	"github.com/spf13/viper"
-	"log/slog"
-)
+import "os"
 
 // Config struct that holds the configuration of the server
 type Config struct {
@@ -19,25 +16,21 @@ type Config struct {
 
 // LoadConfig loads the configuration from the Environment variables
 func LoadConfig() *Config {
-	viper.SetConfigFile("../.env")
-	viper.AutomaticEnv()
-
-	viper.SetDefault("PORT", "8080")
-	viper.SetDefault("HOST", "0.0.0.0")
-	viper.SetDefault("ENVIRONMENT", "development")
-
-	if err := viper.ReadInConfig(); err != nil {
-		slog.Error(".env configuration error", slog.String("error", err.Error()), slog.String("info:", "The .env configuration file was not found or there was an error reading it"))
-	}
-
 	return &Config{
-		Host:             viper.GetString("HOST"),
-		Port:             viper.GetString("PORT"),
-		Environment:      viper.GetString("ENVIRONMENT"),
-		DatabaseHost:     viper.GetString("DATABASE_HOST"),
-		DatabasePort:     viper.GetString("DATABASE_PORT"),
-		DatabaseName:     viper.GetString("DATABASE_NAME"),
-		DatabaseUser:     viper.GetString("DATABASE_USER"),
-		DatabasePassword: viper.GetString("DATABASE_PASSWORD"),
+		Host:             getEnvOrDefault("HOST", "0.0.0.0"),
+		Port:             getEnvOrDefault("PORT", "8080"),
+		Environment:      getEnvOrDefault("ENVIRONMENT", "development"),
+		DatabaseHost:     os.Getenv("DATABASE_HOST"),
+		DatabasePort:     os.Getenv("DATABASE_PORT"),
+		DatabaseName:     os.Getenv("DATABASE_NAME"),
+		DatabaseUser:     os.Getenv("DATABASE_USER"),
+		DatabasePassword: os.Getenv("DATABASE_PASSWORD"),
 	}
+}
+
+func getEnvOrDefault(key, defaultValue string) string {
+	if value, exists := os.LookupEnv(key); exists {
+		return value
+	}
+	return defaultValue
 }
