@@ -22,30 +22,7 @@ func CreateUserService(user_db database.UserDatabase, interest_db database.Inter
 	}
 }
 
-func CreateUserResponseFromUserRecordAndInterests(record model.UserRecord, interests []string) model.UserResponse {
-	return model.UserResponse{
-		Id:        record.Id,
-		UserName:  record.UserName,
-		FirstName: record.FirstName,
-		LastName:  record.LastName,
-		Mail:      record.Mail,
-		Location:  record.Location,
-		Interests: interests,
-	}
-}
-
-func CreateUserRecordFromUserRequest(req *model.UserRequest) *model.UserRecord {
-	return &model.UserRecord{
-		UserName:  req.UserName,
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Mail:      req.Mail,
-		Password:  req.Password,
-		Location:  database.GetLocationName(req.LocationId),
-	}
-}
-
-func (u *User) checkExistingUserData(username, mail string) error {
+func (u *User) checkExistingUserData(username, mail string) *app_errors.AppError {
 	usernameExists, err := u.user_db.CheckIfUsernameExists(username)
 	if err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if username exists: %w", err))
@@ -66,20 +43,26 @@ func (u *User) checkExistingUserData(username, mail string) error {
 }
 
 func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
-	slog.Info("validating new user")
+	slog.Info("creating new user")
 
 	userValidator := NewUserCreationValidator()
+
 	if valErrs, err := userValidator.Validate(data); err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating user: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.UserResponse{}, app_errors.NewAppValidationError(valErrs)
 	}
 
-	if err := u.checkExistingUserData(data.UserName, data.Mail); err != nil {
-		return model.UserResponse{}, err
+	if appErr := u.checkExistingUserData(data.UserName, data.Mail); appErr != nil {
+		return model.UserResponse{}, appErr
 	}
 
-	userRecord := CreateUserRecordFromUserRequest(&data)
+	userRecord, appErr := generateUserRecordFromUserRequest(&data)
+
+	if appErr != nil {
+		return model.UserResponse{}, nil
+	}
+
 	createdUser, err := u.user_db.CreateUser(*userRecord)
 
 	if err != nil {
@@ -92,12 +75,9 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error associating interest to user: %w", err))
 	}
 
-	interestsNames := make([]string, len(interests))
-	for i, interest := range interests {
-		interestsNames[i] = interest.Name
-	}
-	slog.Info("user created succesfully", slog.String("user_id", createdUser.Id.String()))
-	return CreateUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
+	interestsNames := extractInterestNames(interests)
+	slog.Info("user created succesfully", slog.String("username", createdUser.UserName))
+	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
 
 func (u *User) GetRegisterOptions() map[string]interface{} {
@@ -119,6 +99,26 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 	}
 }
 
+func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) {
+	slog.Info("checking login information")
+
+	userRecord, err := u.user_db.GetUserByUsername(data.UserName)
+
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return false, app_errors.NewAppError(http.StatusUnauthorized, "Incorrect username or password", errors.New("invalid username"))
+		}
+		return false, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving user: %w", err))
+	}
+
+	if !CheckPasswordHash(data.Password, userRecord.Password) {
+		return false, app_errors.NewAppError(http.StatusUnauthorized, "Incorrect username or password", errors.New("invalid password"))
+	}
+
+	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
+	return true, nil
+}
+
 func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 	userRecord, err := u.user_db.GetUserByUsername(username)
 
@@ -135,6 +135,6 @@ func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error getting interests from user: %w", err))
 	}
 
-	slog.Info("user retrieved succesfully", slog.String("user_id", userRecord.Id.String()))
-	return CreateUserResponseFromUserRecordAndInterests(userRecord, interests), nil
+	slog.Info("user retrieved succesfully", slog.String("username", userRecord.UserName))
+	return createUserResponseFromUserRecordAndInterests(userRecord, interests), nil
 }

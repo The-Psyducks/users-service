@@ -66,6 +66,8 @@ func CreateRouter() (*Router, error) {
 	
 	r.Engine.GET("/users/:username", userController.GetUserByUsername)
 
+	r.Engine.POST("/users/login", userController.Login)
+
 	return r, nil
 }
 

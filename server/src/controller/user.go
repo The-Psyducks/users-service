@@ -55,3 +55,22 @@ func (u *User) GetUserByUsername(c *gin.Context) {
 
 	c.JSON(http.StatusOK, user)
 }
+
+func (u *User) Login(c *gin.Context) {
+	var data model.UserLoginRequest
+
+	if err := c.BindJSON(&data); err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+
+	valid, err := u.service.CheckLoginCredentials(data)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"valid": valid})
+}

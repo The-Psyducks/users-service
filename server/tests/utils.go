@@ -88,6 +88,58 @@ func CreateExistingUser(router *router.Router, user User) (int, ErrorResponse, e
 	return recorder.Code, result, nil
 }
 
+func LoginValidUser(router *router.Router, loginReq LoginRequest) (int, LoginResponse, error) {
+	marshalledSnap, err := json.Marshal(loginReq)
+
+	if err != nil {
+		return 0, LoginResponse{}, err
+	}
+
+	req, err := http.NewRequest("POST", "/users/login", bytes.NewReader(marshalledSnap))
+
+	if err != nil {
+		return 0, LoginResponse{}, err
+	}
+
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := LoginResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return 0, LoginResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
+func LoginInvalidUser(router *router.Router, loginReq LoginRequest) (int, ErrorResponse, error) {
+	marshalledSnap, err := json.Marshal(loginReq)
+
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	req, err := http.NewRequest("POST", "/users/login", bytes.NewReader(marshalledSnap))
+
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
 func getExistingUser(router *router.Router, username string) (int, UserProfile, error) {
 	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
 
