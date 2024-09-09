@@ -67,5 +67,5 @@ func TestGetNotExistingUser(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, recorder.Code, http.StatusNotFound)
-	assert.Equal(t, result.Title, "user not found")
+	assert.Equal(t, result.Title, "User not found")
 }
