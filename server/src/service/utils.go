@@ -3,10 +3,11 @@ package service
 import (
 	"fmt"
 	"net/http"
-	"golang.org/x/crypto/bcrypt"
-	"users-service/src/model"
 	"users-service/src/app_errors"
 	"users-service/src/database"
+	"users-service/src/model"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func createUserResponseFromUserRecordAndInterests(record model.UserRecord, interests []string) model.UserResponse {
@@ -21,11 +22,11 @@ func createUserResponseFromUserRecordAndInterests(record model.UserRecord, inter
 	}
 }
 
-func createUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecord, *app_errors.AppError) {
+func generateUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecord, *app_errors.AppError) {
 	password, err := HashPassword(req.Password)
 
 	if err != nil {
-		return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error hashing password: %w", err))	
+		return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error hashing password: %w", err))
 	}
 
 	return &model.UserRecord{
@@ -44,6 +45,14 @@ func HashPassword(password string) (string, error) {
 }
 
 func CheckPasswordHash(password, hash string) bool {
-    err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-    return err == nil
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func extractInterestNames(interests []model.InterestRecord) []string {
+	interestsNames := make([]string, len(interests))
+	for i, interest := range interests {
+		interestsNames[i] = interest.Name
+	}
+	return interestsNames
 }

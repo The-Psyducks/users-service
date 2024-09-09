@@ -43,9 +43,10 @@ func (u *User) checkExistingUserData(username, mail string) *app_errors.AppError
 }
 
 func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
-	slog.Info("validating new user")
+	slog.Info("creating new user")
 
 	userValidator := NewUserCreationValidator()
+
 	if valErrs, err := userValidator.Validate(data); err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating user: %w", err))
 	} else if len(valErrs) > 0 {
@@ -56,7 +57,7 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, appErr
 	}
 
-	userRecord, appErr := createUserRecordFromUserRequest(&data)
+	userRecord, appErr := generateUserRecordFromUserRequest(&data)
 
 	if appErr != nil {
 		return model.UserResponse{}, nil
@@ -74,10 +75,7 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error associating interest to user: %w", err))
 	}
 
-	interestsNames := make([]string, len(interests))
-	for i, interest := range interests {
-		interestsNames[i] = interest.Name
-	}
+	interestsNames := extractInterestNames(interests)
 	slog.Info("user created succesfully", slog.String("user_id", createdUser.Id.String()))
 	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
