@@ -34,18 +34,24 @@ func CreateUserResponseFromUserRecordAndInterests(record model.UserRecord, inter
 	}
 }
 
-func CreateUserRecordFromUserRequest(req *model.UserRequest) *model.UserRecord {
+func CreateUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecord, *app_errors.AppError) {
+	password, err := HashPassword(req.Password)
+
+	if err != nil {
+		return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error hashing password: %w", err))	
+	}
+
 	return &model.UserRecord{
 		UserName:  req.UserName,
 		FirstName: req.FirstName,
 		LastName:  req.LastName,
 		Mail:      req.Mail,
-		Password:  req.Password,
+		Password:  password,
 		Location:  database.GetLocationName(req.LocationId),
-	}
+	}, nil
 }
 
-func (u *User) checkExistingUserData(username, mail string) error {
+func (u *User) checkExistingUserData(username, mail string) *app_errors.AppError {
 	usernameExists, err := u.user_db.CheckIfUsernameExists(username)
 	if err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if username exists: %w", err))
@@ -75,11 +81,16 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppValidationError(valErrs)
 	}
 
-	if err := u.checkExistingUserData(data.UserName, data.Mail); err != nil {
-		return model.UserResponse{}, err
+	if appErr := u.checkExistingUserData(data.UserName, data.Mail); appErr != nil {
+		return model.UserResponse{}, appErr
 	}
 
-	userRecord := CreateUserRecordFromUserRequest(&data)
+	userRecord, appErr := CreateUserRecordFromUserRequest(&data)
+
+	if appErr != nil {
+		return model.UserResponse{}, nil
+	}
+
 	createdUser, err := u.user_db.CreateUser(*userRecord)
 
 	if err != nil {
