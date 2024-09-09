@@ -39,3 +39,8 @@ type UserRecord struct {
 	Location  string    `json:"location"`
 	CreatedAt time.Time `json:"created_at"`
 }
+
+type UserLoginRequest struct {
+	UserName string `json:"username" validate:"required"`
+	Password string `json:"password" validate:"required"`
+}

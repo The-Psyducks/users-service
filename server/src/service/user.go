@@ -76,7 +76,7 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	}
 
 	interestsNames := extractInterestNames(interests)
-	slog.Info("user created succesfully", slog.String("user_id", createdUser.Id.String()))
+	slog.Info("user created succesfully", slog.String("username", createdUser.UserName))
 	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
 
@@ -99,6 +99,28 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 	}
 }
 
+func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) {
+	slog.Info("checking login information")
+
+	invalidCredentialsErr := app_errors.NewAppError(http.StatusUnauthorized, "Invalid credentials", errors.New("invalid credentials"))
+
+	userRecord, err := u.user_db.GetUserByUsername(data.UserName)
+
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return false, invalidCredentialsErr
+		}
+		return false, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving user: %w", err))
+	}
+
+	if !CheckPasswordHash(data.Password, userRecord.Password) {
+		return false, invalidCredentialsErr
+	}
+
+	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
+	return true, nil
+}
+
 func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 	userRecord, err := u.user_db.GetUserByUsername(username)
 
@@ -115,6 +137,6 @@ func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error getting interests from user: %w", err))
 	}
 
-	slog.Info("user retrieved succesfully", slog.String("user_id", userRecord.Id.String()))
+	slog.Info("user retrieved succesfully", slog.String("username", userRecord.UserName))
 	return createUserResponseFromUserRecordAndInterests(userRecord, interests), nil
 }
