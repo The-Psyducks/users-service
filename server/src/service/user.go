@@ -22,35 +22,6 @@ func CreateUserService(user_db database.UserDatabase, interest_db database.Inter
 	}
 }
 
-func CreateUserResponseFromUserRecordAndInterests(record model.UserRecord, interests []string) model.UserResponse {
-	return model.UserResponse{
-		Id:        record.Id,
-		UserName:  record.UserName,
-		FirstName: record.FirstName,
-		LastName:  record.LastName,
-		Mail:      record.Mail,
-		Location:  record.Location,
-		Interests: interests,
-	}
-}
-
-func CreateUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecord, *app_errors.AppError) {
-	password, err := HashPassword(req.Password)
-
-	if err != nil {
-		return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error hashing password: %w", err))	
-	}
-
-	return &model.UserRecord{
-		UserName:  req.UserName,
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Mail:      req.Mail,
-		Password:  password,
-		Location:  database.GetLocationName(req.LocationId),
-	}, nil
-}
-
 func (u *User) checkExistingUserData(username, mail string) *app_errors.AppError {
 	usernameExists, err := u.user_db.CheckIfUsernameExists(username)
 	if err != nil {
@@ -85,7 +56,7 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, appErr
 	}
 
-	userRecord, appErr := CreateUserRecordFromUserRequest(&data)
+	userRecord, appErr := createUserRecordFromUserRequest(&data)
 
 	if appErr != nil {
 		return model.UserResponse{}, nil
@@ -108,7 +79,7 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		interestsNames[i] = interest.Name
 	}
 	slog.Info("user created succesfully", slog.String("user_id", createdUser.Id.String()))
-	return CreateUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
+	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
 
 func (u *User) GetRegisterOptions() map[string]interface{} {
@@ -147,5 +118,5 @@ func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 	}
 
 	slog.Info("user retrieved succesfully", slog.String("user_id", userRecord.Id.String()))
-	return CreateUserResponseFromUserRecordAndInterests(userRecord, interests), nil
+	return createUserResponseFromUserRecordAndInterests(userRecord, interests), nil
 }
