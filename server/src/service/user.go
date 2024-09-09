@@ -102,19 +102,17 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) {
 	slog.Info("checking login information")
 
-	invalidCredentialsErr := app_errors.NewAppError(http.StatusUnauthorized, "Invalid credentials", errors.New("invalid credentials"))
-
 	userRecord, err := u.user_db.GetUserByUsername(data.UserName)
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
-			return false, invalidCredentialsErr
+			return false, app_errors.NewAppError(http.StatusUnauthorized, "Incorrect username or password", errors.New("invalid username"))
 		}
 		return false, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving user: %w", err))
 	}
 
 	if !CheckPasswordHash(data.Password, userRecord.Password) {
-		return false, invalidCredentialsErr
+		return false, app_errors.NewAppError(http.StatusUnauthorized, "Incorrect username or password", errors.New("invalid password"))
 	}
 
 	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
