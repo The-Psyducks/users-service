@@ -1,4 +1,6 @@
 /database/postgres
 
-docker-compose-dev.yaml
-Dockerfile-dev
+# For dev Dockerfile and docker-compose
+/bdd
+docker-compose.dev.yaml
+Dockerfile.dev

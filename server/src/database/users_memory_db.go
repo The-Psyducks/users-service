@@ -3,6 +3,7 @@ package database
 import (
 	"sort"
 	"time"
+	"strings"
 	"users-service/src/model"
 
 	"github.com/google/uuid"
@@ -20,7 +21,6 @@ func NewUserMemoryDB() (*UserMemoryDB, error) {
 	}, nil
 }
 
-// CreateUser creates a new user in the database
 func (m *UserMemoryDB) CreateUser(data model.UserRecord) (model.UserRecord, error) {
 	newUser := model.UserRecord{
 		Id:        uuid.New(),
@@ -48,7 +48,7 @@ func (m *UserMemoryDB) GetUserById(id string) (model.UserRecord, error) {
 
 func (m *UserMemoryDB) CheckIfUsernameExists(username string) (bool, error) {
 	for _, user := range m.data {
-		if user.UserName == username {
+		if strings.EqualFold(user.UserName, username) {
 			return true, nil
 		}
 	}
@@ -57,7 +57,7 @@ func (m *UserMemoryDB) CheckIfUsernameExists(username string) (bool, error) {
 
 func (m *UserMemoryDB) CheckIfMailExists(mail string) (bool, error) {
 	for _, user := range m.data {
-		if user.Mail == mail {
+		if strings.EqualFold(user.Mail, mail) {
 			return true, nil
 		}
 	}

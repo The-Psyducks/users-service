@@ -120,7 +120,7 @@ func TestCreateUserWithInvalidPassword(t *testing.T) {
 	assert.Equal(t, response.Errors[0].Field, "password")
 }
 
-func TestCreateUserWithUsernameThatExists(t *testing.T) {
+func TestCreateUserWithUsernameThatExistsWithDifferentCase(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -141,7 +141,7 @@ func TestCreateUserWithUsernameThatExists(t *testing.T) {
 	user = User{
 		FirstName: "asda",
 		LastName:  "Elrasdasdic",
-		UserName:  "EdwardoElric",
+		UserName:  "edWardoElrIc",
 		Password:  "askdo02d(S",
 		Mail:      "bestia@gmail.com",
 		Location:  0,
