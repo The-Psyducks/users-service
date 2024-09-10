@@ -12,10 +12,6 @@ import (
 	"users-service/src/router"
 )
 
-// tests:
-// - TestGetUser
-// - TestGetNotExistingUser
-
 func TestGetUser(t *testing.T) {
 	router, err := router.CreateRouter()
 

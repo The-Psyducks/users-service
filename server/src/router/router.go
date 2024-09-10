@@ -7,9 +7,11 @@ import (
 	"os"
 	"users-service/src/config"
 	"users-service/src/controller"
-	"users-service/src/database"
 	"users-service/src/middleware"
 	"users-service/src/service"
+
+	"users-service/src/database/users_db"
+	"users-service/src/database/interests_db"
 
 	"github.com/gin-gonic/gin"
 )
@@ -47,12 +49,12 @@ func CreateRouter() (*Router, error) {
 	cfg := config.LoadConfig()
 	r := createRouterFromConfig(cfg)
 
-	user_db, err := database.NewUserMemoryDB()
+	user_db, err := users_db.NewUserMemoryDB()
 	if err != nil {
 		slog.Error("failed to connect to users database", slog.String("error", err.Error()))
 		return nil, err
 	}
-	interests_db, err := database.NewInterestsMemoryDB()
+	interests_db, err := interests_db.NewInterestsMemoryDB()
 	if err != nil {
 		slog.Error("failed to connect to interests database", slog.String("error", err.Error()))
 		return nil, err

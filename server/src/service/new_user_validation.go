@@ -3,7 +3,7 @@ package service
 import (
 	"log/slog"
 	"regexp"
-	"users-service/src/database"
+	"users-service/src/database/register_options"
 	"users-service/src/model"
 
 	"github.com/go-playground/validator/v10"
@@ -100,7 +100,7 @@ func (u *UserCreationValidator) passwordValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool {
 	location := fl.Field().Int()
-	if database.GetLocationName(int(location)) == "" {
+	if register_options.GetLocationName(int(location)) == "" {
 		u.addValidationError("location", "Invalid location")
 		return false
 	}
@@ -110,7 +110,7 @@ func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool 
 func (u *UserCreationValidator) interestsValidator(fl validator.FieldLevel) bool {
 	interests := fl.Field().Interface().([]int)
 	for _, interest := range interests {
-		if database.GetInterestName(interest) == "" {
+		if register_options.GetInterestName(interest) == "" {
 			u.addValidationError("interests", "Invalid interest")
 			return false
 		}

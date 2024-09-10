@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"users-service/src/app_errors"
-	"users-service/src/database"
+	"users-service/src/database/register_options"
 	"users-service/src/model"
 
 	"golang.org/x/crypto/bcrypt"
@@ -35,7 +35,7 @@ func generateUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecor
 		LastName:  req.LastName,
 		Mail:      req.Mail,
 		Password:  password,
-		Location:  database.GetLocationName(req.LocationId),
+		Location:  register_options.GetLocationName(req.LocationId),
 	}, nil
 }
 

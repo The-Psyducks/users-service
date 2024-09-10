@@ -1,7 +1,9 @@
-package database
+package interests_db
 
 import (
-	"users-service/src/model"
+    "users-service/src/model"
+	"users-service/src/database/register_options"
+    
 	"github.com/google/uuid"
 )
 
@@ -26,7 +28,7 @@ func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []int
     var records []model.InterestRecord
 
     for _, interestId := range interests {
-        if interestName, exists := predefinedInterests[interestId]; exists {
+        if interestName := register_options.GetInterestName(interestId); interestName != "" {
             db.userInterests[userId][interestId] = true
             records = append(records, model.InterestRecord{
                 InterestId: interestId,
@@ -45,7 +47,7 @@ func (db *InMemoryDB) GetInterestsNamesForUserId(id uuid.UUID) ([]string, error)
 
     if userInterests, exists := db.userInterests[id]; exists {
         for interestId := range userInterests {
-            if interestName, exists := predefinedInterests[interestId]; exists {
+            if interestName := register_options.GetInterestName(interestId); interestName != "" {
                 records = append(records, interestName)
             }
         }

@@ -7,15 +7,18 @@ import (
 	"net/http"
 	"users-service/src/app_errors"
 	"users-service/src/database"
+	"users-service/src/database/register_options"
+	"users-service/src/database/users_db"
+	"users-service/src/database/interests_db"
 	"users-service/src/model"
 )
 
 type User struct {
-	user_db     database.UserDatabase
-	interest_db database.InterestsDatabase
+	user_db     users_db.UserDatabase
+	interest_db interests_db.InterestsDatabase
 }
 
-func CreateUserService(user_db database.UserDatabase, interest_db database.InterestsDatabase) *User {
+func CreateUserService(user_db users_db.UserDatabase, interest_db interests_db.InterestsDatabase) *User {
 	return &User{
 		user_db:     user_db,
 		interest_db: interest_db,
@@ -84,12 +87,12 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 	slog.Info("register options retrieved successfully")
 
 	locations := []model.Location{}
-	for id, name := range database.GetAllLocationsAndIds() {
+	for id, name := range register_options.GetAllLocationsAndIds() {
 		locations = append(locations, model.Location{Id: id, Name: name})
 	}
 
 	interests := []model.Interest{}
-	for id, interest := range database.GetAllInterestsAndIds() {
+	for id, interest := range register_options.GetAllInterestsAndIds() {
 		interests = append(interests, model.Interest{Id: id, Interest: interest})
 	}
 

@@ -1,10 +1,11 @@
-package database
+package users_db
 
 import (
 	"sort"
 	"time"
 	"strings"
 	"users-service/src/model"
+	"users-service/src/database"
 
 	"github.com/google/uuid"
 )
@@ -41,7 +42,7 @@ func (m *UserMemoryDB) CreateUser(data model.UserRecord) (model.UserRecord, erro
 func (m *UserMemoryDB) GetUserById(id string) (model.UserRecord, error) {
 	user, found := m.data[id]
 	if !found {
-		return model.UserRecord{}, ErrKeyNotFound
+		return model.UserRecord{}, database.ErrKeyNotFound
 	}
 	return user, nil
 }
@@ -70,13 +71,13 @@ func (m *UserMemoryDB) GetUserByUsername(username string) (model.UserRecord, err
 			return user, nil
 		}
 	}
-	return model.UserRecord{}, ErrKeyNotFound
+	return model.UserRecord{}, database.ErrKeyNotFound
 }
 
 func (m *UserMemoryDB) Delete(id string) error {
 	_, found := m.data[id]
 	if !found {
-		return ErrKeyNotFound
+		return database.ErrKeyNotFound
 	}
 	delete(m.data, id)
 	return nil

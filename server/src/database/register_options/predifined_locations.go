@@ -1,4 +1,4 @@
-package database
+package register_options
 
 // predefined Locations
 var predefinedLocations = map[int]string{

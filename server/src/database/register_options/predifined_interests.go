@@ -1,4 +1,4 @@
-package database
+package register_options
 
 import "fmt"
 
@@ -34,7 +34,7 @@ func IsValidInterest(id int) bool {
 	return exists
 }
 
-// GetInterestName returns the name of an interest given its ID
+// GetInterestName returns the name of an interest given its ID or "" if the ID is invalid
 func GetInterestName(id int) string {
 	name, exists := predefinedInterests[id]
 	if !exists {
