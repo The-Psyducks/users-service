@@ -23,7 +23,7 @@ func createUserResponseFromUserRecordAndInterests(record model.UserRecord, inter
 }
 
 func generateUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecord, *app_errors.AppError) {
-	password, err := HashPassword(req.Password)
+	password, err := hashPassword(req.Password)
 
 	if err != nil {
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error hashing password: %w", err))
@@ -39,20 +39,25 @@ func generateUserRecordFromUserRequest(req *model.UserRequest) (*model.UserRecor
 	}, nil
 }
 
-func HashPassword(password string) (string, error) {
+func hashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	return string(hashedPassword), err
 }
 
-func CheckPasswordHash(password, hash string) bool {
+func checkPasswordHash(password, hash string) bool {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
 	return err == nil
 }
 
-func extractInterestNames(interests []model.InterestRecord) []string {
+func extractInterestNames(interests []int) ([]string, error) {
 	interestsNames := make([]string, len(interests))
 	for i, interest := range interests {
-		interestsNames[i] = interest.Name
+		if name := register_options.GetInterestName(interest); name != "" {
+			interestsNames[i] = name
+		} else {
+			return nil, fmt.Errorf("error: interest with id %d not found", interest)
+		}
+
 	}
-	return interestsNames
+	return interestsNames, nil
 }

@@ -13,6 +13,10 @@ type UserDatabase interface {
 	// GetUserById retrieves a user from the database by its ID
 	GetUserById(id string) (model.UserRecord, error)
 
+	// GetUserByUsername retrieves a user from the database by its username
+	// it is case sensitive
+	GetUserByUsername(username string) (model.UserRecord, error)
+	
 	// CheckIfUsernameExists checks if a username already exists in the database
 	// it is case insensitive
 	CheckIfUsernameExists(username string) (bool, error)
@@ -21,8 +25,5 @@ type UserDatabase interface {
 	// it is case insensitive
 	CheckIfMailExists(mail string) (bool, error)
 
-	// GetUserByUsername retrieves a user from the database by its username
-	// it is case sensitive
-	GetUserByUsername(username string) (model.UserRecord, error)
 }
 

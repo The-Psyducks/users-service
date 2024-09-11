@@ -1,16 +1,16 @@
 package service
 
 import (
-	"errors"
 	"fmt"
+	"errors"
 	"log/slog"
 	"net/http"
-	"users-service/src/app_errors"
+	"users-service/src/model"
 	"users-service/src/database"
-	"users-service/src/database/register_options"
+	"users-service/src/app_errors"
 	"users-service/src/database/users_db"
 	"users-service/src/database/interests_db"
-	"users-service/src/model"
+	"users-service/src/database/register_options"
 )
 
 type User struct {
@@ -49,7 +49,6 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	slog.Info("creating new user")
 
 	userValidator := NewUserCreationValidator()
-
 	if valErrs, err := userValidator.Validate(data); err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user: %w", err))
 	} else if len(valErrs) > 0 {
@@ -61,24 +60,25 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 	}
 
 	userRecord, appErr := generateUserRecordFromUserRequest(&data)
-
 	if appErr != nil {
-		return model.UserResponse{}, nil
+		return model.UserResponse{}, appErr
 	}
 
 	createdUser, err := u.user_db.CreateUser(*userRecord)
-
 	if err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating user: %w", err))
 	}
 
-	interests, err := u.interest_db.AssociateInterestsToUser(createdUser.Id, data.InterestsIds)
+	interestsNames, err := extractInterestNames(data.InterestsIds)
+	if err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error extracting interest names: %w", err))
+	}
 
+	err = u.interest_db.AssociateInterestsToUser(createdUser.Id, interestsNames)
 	if err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
 	}
 
-	interestsNames := extractInterestNames(interests)
 	slog.Info("user created succesfully", slog.String("username", createdUser.UserName))
 	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
@@ -114,7 +114,7 @@ func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) 
 		return false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	if !CheckPasswordHash(data.Password, userRecord.Password) {
+	if !checkPasswordHash(data.Password, userRecord.Password) {
 		return false, app_errors.NewAppError(http.StatusUnauthorized, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
@@ -132,8 +132,7 @@ func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	interests, err := u.interest_db.GetInterestsNamesForUserId(userRecord.Id)
-
+	interests, err := u.interest_db.GetInterestsForUserId(userRecord.Id)
 	if err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting interests from user: %w", err))
 	}

@@ -1,8 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"log/slog"
 	"regexp"
+	"users-service/src/constants"
 	"users-service/src/database/register_options"
 	"users-service/src/model"
 
@@ -31,7 +33,7 @@ func (u *UserCreationValidator) Validate(user model.UserRequest) ([]model.Valida
 
 	for name, validatorFunc := range customValidators {
 		if err := validate.RegisterValidation(name, validatorFunc); err != nil {
-			slog.Error("Error registering custom validator", slog.String("error: ",err.Error()))
+			slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
 			return []model.ValidationError{}, err
 		}
 	}
@@ -61,6 +63,12 @@ func (u *UserCreationValidator) addValidationError(fieldName, message string) {
 
 func (u *UserCreationValidator) mailValidator(fl validator.FieldLevel) bool {
 	mail := fl.Field().String()
+
+	if len(mail) < constants.MinEmailLength || len(mail) > constants.MaxEmailLength {
+		u.addValidationError("mail", fmt.Sprintf("Mail must be between %d and %d characters long", constants.MinEmailLength, constants.MaxEmailLength))
+		return false
+	}
+
 	mailPattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
 	matched, err := regexp.MatchString(mailPattern, mail)
 	if err != nil || !matched {
@@ -72,7 +80,7 @@ func (u *UserCreationValidator) mailValidator(fl validator.FieldLevel) bool {
 
 func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool {
 	username := fl.Field().String()
-	if len(username) < 4 || len(username) > 20 {
+	if len(username) < constants.MinUsernameLength || len(username) > constants.MaxUsernameLength {
 		u.addValidationError("username", "Username must be between 4 and 20 characters long")
 		return false
 	}
@@ -82,7 +90,7 @@ func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool 
 func (u *UserCreationValidator) passwordValidator(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
 
-	if len(password) < 8 || len(password) > 20 {
+	if len(password) < constants.MinPasswordLength || len(password) > constants.MaxPasswordLength {
 		u.addValidationError("password", "Password must be between 8 and 20 characters long")
 		return false
 	}

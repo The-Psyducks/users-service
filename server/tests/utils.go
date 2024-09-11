@@ -206,7 +206,16 @@ func AssertUserProfileIsUser(t *testing.T, user User, location string, interests
 	assert.Equal(t, location, profile.Location)
 
 	assert.Equal(t, len(profile.Interests), len(interests))
-	for i, interest := range interests {
-		assert.Equal(t, interest, profile.Interests[i])
-	}
+    for _, interest := range interests {
+        found := false
+        for _, profileInterest := range profile.Interests {
+            if interest == profileInterest {
+                found = true
+                break
+            }
+        }
+        if !found {
+            t.Errorf("Interest %s not found in profile interests", interest)
+        }
+    }
 }
