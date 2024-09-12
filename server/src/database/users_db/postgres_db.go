@@ -38,10 +38,10 @@ func CreateUsersPostgresDB(databaseHost string, databasePort string, databaseNam
 		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
 	}
 
-	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "users")
-	if _, err := db.Exec(dropDatabase); err != nil {
-		return nil, fmt.Errorf("failed to drop database: %w", err)
-	}
+	// dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "users")
+	// if _, err := db.Exec(dropDatabase); err != nil {
+	// 	return nil, fmt.Errorf("failed to drop database: %w", err)
+	// }
 
 	schema := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS users (
