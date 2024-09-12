@@ -7,4 +7,6 @@ var (
 	MaxUsernameLength = 20
 	MinEmailLength    = 3
 	MaxEmailLength    = 254
+	MaxFirstNameLength = 100
+	MaxLastNameLength = 100
 )

@@ -47,8 +47,8 @@ func CreateUsersPostgresDB(databaseHost string, databasePort string, databaseNam
 	CREATE TABLE IF NOT EXISTS users (
 		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 		username VARCHAR(%d) NOT NULL UNIQUE,
-		first_name VARCHAR(100) NOT NULL,
-		last_name VARCHAR(100) NOT NULL,
+		first_name VARCHAR(%d) NOT NULL,
+		last_name VARCHAR(%d) NOT NULL,
 		email VARCHAR(%d) NOT NULL UNIQUE,
 		password TEXT NOT NULL,
 		location VARCHAR(255) NOT NULL,
@@ -57,7 +57,7 @@ func CreateUsersPostgresDB(databaseHost string, databasePort string, databaseNam
 	
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
-	`, constants.MaxUsernameLength, constants.MaxEmailLength)
+	`, constants.MaxUsernameLength, constants.MaxFirstNameLength, constants.MaxLastNameLength, constants.MaxEmailLength)
 	
 
 	if _, err := db.Exec(schema); err != nil {

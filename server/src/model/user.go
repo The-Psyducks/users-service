@@ -8,8 +8,8 @@ import (
 
 // UserRequest is a struct that represents a user HTTP request
 type UserRequest struct {
-	FirstName    string `json:"first_name" validate:"required"`
-	LastName     string `json:"last_name" validate:"required"`
+	FirstName    string `json:"first_name" validate:"required,firstnamevalidator"`
+	LastName     string `json:"last_name" validate:"required,lastnamevalidator"`
 	UserName     string `json:"username" validate:"required,usernamevalidator"`
 	Password     string `json:"password" validate:"required,passwordvalidator"`
 	Mail         string `json:"mail" validate:"required,mailvalidator"`

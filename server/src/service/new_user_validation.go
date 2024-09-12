@@ -24,6 +24,8 @@ func (u *UserCreationValidator) Validate(user model.UserRequest) ([]model.Valida
 	validate := validator.New()
 
 	customValidators := map[string]validator.Func{
+		"firstnamevalidator": u.firstnamevalidator,
+		"lastnamevalidator":  u.lastnamevalidator,
 		"usernamevalidator":  u.usernameValidator,
 		"passwordvalidator":  u.passwordValidator,
 		"mailvalidator":      u.mailValidator,
@@ -78,10 +80,27 @@ func (u *UserCreationValidator) mailValidator(fl validator.FieldLevel) bool {
 	return true
 }
 
+func (u *UserCreationValidator) firstnamevalidator(fl validator.FieldLevel) bool {
+	first_name := fl.Field().String()
+	if len(first_name) > constants.MaxFirstNameLength {
+		u.addValidationError("first_name", fmt.Sprintf("First name must be less than %d characters long", constants.MaxFirstNameLength))
+		return false
+	}
+	return true
+}
+
+func (u *UserCreationValidator) lastnamevalidator(fl validator.FieldLevel) bool {
+	last_name := fl.Field().String()
+	if len(last_name) > constants.MaxLastNameLength {
+		u.addValidationError("last_name", fmt.Sprintf("Last name must be less than %d characters long", constants.MaxLastNameLength))
+		return false
+	}
+	return true
+}
 func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool {
 	username := fl.Field().String()
 	if len(username) < constants.MinUsernameLength || len(username) > constants.MaxUsernameLength {
-		u.addValidationError("username", "Username must be between 4 and 20 characters long")
+		u.addValidationError("username", fmt.Sprintf("Username must be between %d and %d characters long", constants.MinUsernameLength, constants.MaxUsernameLength))
 		return false
 	}
 	return true
