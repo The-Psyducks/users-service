@@ -68,7 +68,7 @@ func TestLoginInvalidUser(t *testing.T) {
 	code, resp, err := LoginInvalidUser(router, login)
 	
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusUnauthorized)
+	assert.Equal(t, code, http.StatusNotFound)
 	assert.Equal(t, resp.Title, "Incorrect username or password")
 	assert.Equal(t, resp.Instance, "/users/login")
 }

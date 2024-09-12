@@ -16,9 +16,14 @@ func ErrorHandler() gin.HandlerFunc {
 
 		if len(c.Errors) > 0 {
             err := c.Errors.Last().Err
+			
             if appErr, ok := err.(*app_errors.AppError); ok {
 				slog.Error(appErr.Message, slog.String("error", appErr.Error()))
-				sendErrorResponse(c, appErr.Code, appErr.Message, appErr.Error())
+				if appErr.Code == http.StatusInternalServerError {
+					sendInternalServerErrorResponse(c)
+				} else {
+					sendErrorResponse(c, appErr.Code, appErr.Message, appErr.Error())
+				}
 			} else if appValidationError, ok := err.(*app_errors.AppValidationError); ok {
 				slog.Error(appValidationError.Message, slog.String("error", appValidationError.Error()))
 				sendValidationErrorResponse(c, appValidationError)

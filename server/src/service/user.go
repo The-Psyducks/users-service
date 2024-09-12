@@ -110,13 +110,13 @@ func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) 
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
-			return false, app_errors.NewAppError(http.StatusUnauthorized, IncorrectUsernameOrPassword, errors.New("invalid username"))
+			return false, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid username"))
 		}
 		return false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
 	if !checkPasswordHash(data.Password, userRecord.Password) {
-		return false, app_errors.NewAppError(http.StatusUnauthorized, IncorrectUsernameOrPassword, errors.New("invalid password"))
+		return false, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
 	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
