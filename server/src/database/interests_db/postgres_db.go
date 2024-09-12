@@ -1,8 +1,8 @@
 package interests_db
 
 import (
-	// "database/sql"
-	// "errors"
+	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/jmoiron/sqlx"
@@ -39,13 +39,13 @@ func CreateInterestsPostgresDB(databaseHost string, databasePort string, databas
 		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
 	}
 
-	// dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s;", "interests")
-	// if _, err := db.Exec(dropDatabase); err != nil {
-	// 	return nil, fmt.Errorf("failed to drop database: %w", err)
-	// }
+	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "interests")
+	if _, err := db.Exec(dropDatabase); err != nil {
+		return nil, fmt.Errorf("failed to drop database: %w", err)
+	}
 
 	schema := `
-    CREATE TABLE IF NOT EXISTS interests (
+    CREATE TABLE IF NOT EXISTS user_interests (
         user_id UUID NOT NULL,
         interest VARCHAR(255) NOT NULL,
 		PRIMARY KEY (user_id, interest),
@@ -61,22 +61,47 @@ func CreateInterestsPostgresDB(databaseHost string, databasePort string, databas
 	return &postgresDB, nil
 }
 
-func (postDB *InterestsPostgresDB) AssociateInterestsToUser(userId uuid.UUID, interests []int) ([]model.Interest, error) {
-	var interestsRecords []model.Interest
+func (postDB *InterestsPostgresDB) AssociateInterestsToUser(userId uuid.UUID, interests []string) error {
 	var interestRecord model.Interest
 	query := `
-		INSERT INTO user_interests (user_id, interest_id)
+		INSERT INTO user_interests (user_id, interest)
 		VALUES ($1, $2)
-		RETURNING user_id, interest_id
 	`
 
 	for _, interest := range interests {
 		err := postDB.db.QueryRow(query, userId, interest).Scan(&interestRecord.Id, &interestRecord.Interest)
 		if err != nil {
-			return interestsRecords, fmt.Errorf("error inserting interest record: %w", err)
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+			return fmt.Errorf("error inserting interest record: %w", err)
 		}
-		interestsRecords = append(interestsRecords, interestRecord)
+	}
+	return nil
+}
+
+func (postDB *InterestsPostgresDB) GetInterestsForUserId(id uuid.UUID) ([]string, error) {
+	var interests []string
+	query := `
+		SELECT interest
+		FROM user_interests
+		WHERE user_id = $1
+	`
+
+	rows, err := postDB.db.Query(query, id)
+	if err != nil {
+		return nil, fmt.Errorf("error getting interests for user: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var interest string
+		err := rows.Scan(&interest)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning interest: %w", err)
+		}
+		interests = append(interests, interest)
 	}
 
-	return interestsRecords, nil
+	return interests, nil
 }

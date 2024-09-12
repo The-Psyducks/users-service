@@ -74,6 +74,7 @@ func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error extracting interest names: %w", err))
 	}
 
+	fmt.Println("interestsNames", interestsNames)
 	err = u.interest_db.AssociateInterestsToUser(createdUser.Id, interestsNames)
 	if err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))

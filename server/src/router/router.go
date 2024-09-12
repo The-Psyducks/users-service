@@ -10,8 +10,8 @@ import (
 	"users-service/src/middleware"
 	"users-service/src/service"
 
-	"users-service/src/database/users_db"
 	"users-service/src/database/interests_db"
+	"users-service/src/database/users_db"
 
 	"github.com/gin-gonic/gin"
 )
@@ -49,12 +49,24 @@ func CreateRouter() (*Router, error) {
 	cfg := config.LoadConfig()
 	r := createRouterFromConfig(cfg)
 
-	user_db, err := users_db.NewUserMemoryDB()
+	// user_db, err := users_db.NewUserMemoryDB()
+	user_db, err := users_db.CreateUsersPostgresDB(
+				cfg.DatabaseHost,
+				cfg.DatabasePort,
+				cfg.DatabaseName,
+				cfg.DatabasePassword,
+				cfg.DatabaseUser)
 	if err != nil {
 		slog.Error("failed to connect to users database", slog.String("error", err.Error()))
 		return nil, err
 	}
-	interests_db, err := interests_db.NewInterestsMemoryDB()
+	// interests_db, err := interests_db.CreateInterestsMemoryDB()
+	interests_db, err := interests_db.CreateInterestsPostgresDB(
+					cfg.DatabaseHost,
+					cfg.DatabasePort,
+					cfg.DatabaseName,
+					cfg.DatabasePassword,
+					cfg.DatabaseUser)
 	if err != nil {
 		slog.Error("failed to connect to interests database", slog.String("error", err.Error()))
 		return nil, err
@@ -65,7 +77,7 @@ func CreateRouter() (*Router, error) {
 
 	r.Engine.GET("/users/register", userController.GetRegisterOptions)
 	r.Engine.POST("/users/register", userController.CreateUser)
-	
+
 	r.Engine.GET("/users/:username", userController.GetUserByUsername)
 
 	r.Engine.POST("/users/login", userController.Login)

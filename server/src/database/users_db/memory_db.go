@@ -2,10 +2,10 @@ package users_db
 
 import (
 	"sort"
-	"time"
 	"strings"
-	"users-service/src/model"
+	"time"
 	"users-service/src/database"
+	"users-service/src/model"
 
 	"github.com/google/uuid"
 )
@@ -15,8 +15,8 @@ type UserMemoryDB struct {
 	data map[string]model.UserRecord
 }
 
-// NewUserMemoryDB creates a new MemoryDB
-func NewUserMemoryDB() (*UserMemoryDB, error) {
+// CreateUserMemoryDB creates a new MemoryDB
+func CreateUserMemoryDB() (*UserMemoryDB, error) {
 	return &UserMemoryDB{
 		data: make(map[string]model.UserRecord),
 	}, nil

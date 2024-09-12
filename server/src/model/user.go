@@ -30,14 +30,14 @@ type UserResponse struct {
 
 // UserRecord is a struct that represents a user in the database
 type UserRecord struct {
-	Id        uuid.UUID `json:"id"`
-	UserName  string    `json:"username"`
-	FirstName string    `json:"first_name"`
-	LastName  string    `json:"last_name"`
-	Mail      string    `json:"mail"`
-	Password  string    `json:"password"`
-	Location  string    `json:"location"`
-	CreatedAt time.Time `json:"created_at"`
+    Id        uuid.UUID `json:"id" db:"id"`
+    UserName  string    `json:"username" db:"username"`
+    FirstName string    `json:"first_name" db:"first_name"`
+    LastName  string    `json:"last_name" db:"last_name"`
+    Mail      string    `json:"mail" db:"email"`
+    Password  string    `json:"password" db:"password"`
+    Location  string    `json:"location" db:"location"`
+    CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
 type UserLoginRequest struct {

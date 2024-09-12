@@ -38,26 +38,27 @@ func CreateUsersPostgresDB(databaseHost string, databasePort string, databaseNam
 		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
 	}
 
-	// dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s;", "users")
-	// if _, err := db.Exec(dropDatabase); err != nil {
-	// 	return nil, fmt.Errorf("failed to drop database: %w", err)
-	// }
+	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "users")
+	if _, err := db.Exec(dropDatabase); err != nil {
+		return nil, fmt.Errorf("failed to drop database: %w", err)
+	}
 
 	schema := fmt.Sprintf(`
-    CREATE TABLE IF NOT EXISTS users (
-        id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-        username VARCHAR(%d) NOT NULL UNIQUE,
-        first_name VARCHAR(100) NOT NULL,
-        last_name VARCHAR(100) NOT NULL,
-        email VARCHAR(%d) NOT NULL UNIQUE,
-        password TEXT NOT NULL,
-        location VARCHAR(255) NOT NULL,
-        created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    );
-
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
-    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
-    `, constants.MaxUsernameLength, constants.MaxEmailLength)
+	CREATE TABLE IF NOT EXISTS users (
+		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+		username VARCHAR(%d) NOT NULL UNIQUE,
+		first_name VARCHAR(100) NOT NULL,
+		last_name VARCHAR(100) NOT NULL,
+		email VARCHAR(%d) NOT NULL UNIQUE,
+		password TEXT NOT NULL,
+		location VARCHAR(255) NOT NULL,
+		created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+	);
+	
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+	`, constants.MaxUsernameLength, constants.MaxEmailLength)
+	
 
 	if _, err := db.Exec(schema); err != nil {
 		return nil, fmt.Errorf("failed to create table: %w", err)
@@ -124,7 +125,7 @@ func (postDB *UsersPostgresDB) GetUserByUsername(username string) (model.UserRec
 
 func (postDB *UsersPostgresDB) CheckIfUsernameExists(username string) (bool, error) {
     var count int
-    query := `SELECT COUNT(*) FROM users WHERE username = $1`
+    query := `SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER($1)`
     err := postDB.db.QueryRow(query, username).Scan(&count)
 
     if err != nil {
