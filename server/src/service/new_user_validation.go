@@ -136,11 +136,17 @@ func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) interestsValidator(fl validator.FieldLevel) bool {
 	interests := fl.Field().Interface().([]int)
+	seen := make(map[int]bool)
 	for _, interest := range interests {
 		if register_options.GetInterestName(interest) == "" {
 			u.addValidationError("interests", "Invalid interest")
 			return false
 		}
+		if seen[interest] {
+			u.addValidationError("interests", "Duplicate interests")
+			return false
+		}
+		seen[interest] = true
 	}
 	return true
 }
