@@ -11,7 +11,7 @@ type Provider struct {
 
 type ResolveRequest struct {
 	Email        string   `json:"email" validate:"required"`
-	ProviderData Provider `json:"provider" validate:"required"`
+	ProviderData Provider `json:"provider"`
 }
 
 type ResolveResponse struct {
@@ -20,11 +20,11 @@ type ResolveResponse struct {
 }
 
 type UserPersonalInfoRequest struct {
-	FirstName  string `json:"first_name" validate:"required"`
-	LastName   string `json:"last_name" validate:"required"`
-	UserName   string `json:"username" validate:"required"`
-	Password   string `json:"password" validate:"required"`
-	LocationId int    `json:"location" validate:"required"`
+    FirstName  string `json:"first_name" validate:"required,firstnamevalidator"`
+    LastName   string `json:"last_name" validate:"required,lastnamevalidator"`
+    UserName   string `json:"username" validate:"required,usernamevalidator"`
+    Password   string `json:"password" validate:"required,passwordvalidator"`
+    LocationId int    `json:"location" validate:"locationvalidator"`
 }
 
 type UserPersonalInfoRecord struct {

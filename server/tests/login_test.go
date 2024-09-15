@@ -8,25 +8,25 @@ import (
 
 	"users-service/src/router"
 )
+
 func TestLoginUser(t *testing.T) {
 	router, err := router.CreateRouter()
 
 	assert.Equal(t, err, nil)
 
-	user := User{
+	email := "edwardelric@yahoo.com"
+	interestsIds := []int{0, 1}
+	user := UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
 		Password:  "Edward$Elri3c:)",
-		Mail:      "edwardelric@yahoo.com",
 		Location:  0,
-		Interests: []int{0, 1},
 	}
 
-	code, _, err := CreateValidUser(router, user)
+	_, err = CreateValidUser(router, email, user, interestsIds)
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusCreated)
 
 	login := LoginRequest{
 		UserName: user.UserName,
@@ -42,31 +42,30 @@ func TestLoginUser(t *testing.T) {
 
 func TestLoginInvalidUser(t *testing.T) {
 	router, err := router.CreateRouter()
-	
+
 	assert.Equal(t, err, nil)
-	
-	user := User{
+
+	email := "edwardelric@yahoo.com"
+	interestsIds := []int{0, 1}
+	user := UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
 		Password:  "Edward$Elri3c:)",
-		Mail:      "edwardelric@yahoo.com",
 		Location:  0,
-		Interests: []int{0, 1},
 	}
-	
-	code, _, err := CreateValidUser(router, user)
-	
+
+	_, err = CreateValidUser(router, email, user, interestsIds)
+
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusCreated)
-	
+
 	login := LoginRequest{
 		UserName: "AtsumuMiya",
 		Password: "InarizakiGOAT",
 	}
-	
+
 	code, resp, err := LoginInvalidUser(router, login)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusNotFound)
 	assert.Equal(t, resp.Title, "Incorrect username or password")

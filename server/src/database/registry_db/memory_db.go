@@ -1,7 +1,6 @@
 package registry_db
 
 import (
-	"log/slog"
 	"users-service/src/database"
 	"users-service/src/model"
 
@@ -75,7 +74,6 @@ func (db *RegistryMemoryDB) AddInterestsToRegistryEntry(id uuid.UUID, interests 
 	}
 	entry.Interests = interests
 	db.entries[id] = entry
-	slog.Info("interests added to registry entry", slog.Any("rinterests", interests))
 	return nil
 }
 

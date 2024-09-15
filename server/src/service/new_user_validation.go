@@ -2,21 +2,25 @@ package service
 
 import (
 	"fmt"
-	"log/slog"
 	"regexp"
-	"users-service/src/constants"
-	"users-service/src/database/register_options"
+	"log/slog"
 	"users-service/src/model"
+	"users-service/src/constants"
+	"users-service/src/database/users_db"
+	"users-service/src/database/register_options"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type UserCreationValidator struct {
+	usersDb 		users_db.UserDatabase
 	validationErrors []model.ValidationError
 }
 
-func NewUserCreationValidator() *UserCreationValidator {
-	return &UserCreationValidator{}
+func NewUserCreationValidator(usersDb users_db.UserDatabase) *UserCreationValidator {
+	return &UserCreationValidator{
+		usersDb: usersDb,
+	}
 }
 
 func (u *UserCreationValidator) ValidateMail(mail string) ([]model.ValidationError, error) {
@@ -30,7 +34,11 @@ func (u *UserCreationValidator) ValidateMail(mail string) ([]model.ValidationErr
 
 	err := validate.Var(mail, "mailvalidator")
 	if err != nil {
-		u.addValidationError("mail", err.Error())
+		for _, err := range err.(validator.ValidationErrors) {
+			if err.ActualTag() != "mailvalidator" {
+				u.addValidationError("interests", err.Error())
+			}
+		}
 	}
 
 	return u.validationErrors, nil
@@ -78,7 +86,11 @@ func (u *UserCreationValidator) ValidateInterests(interests []int) ([]model.Vali
 
 	err := validate.Var(interests, "interestsvalidator")
 	if err != nil {
-		u.addValidationError("interests", err.Error())
+		for _, err := range err.(validator.ValidationErrors) {
+			if err.ActualTag() != "interestsvalidator" {
+				u.addValidationError("interests", err.Error())
+			}
+		}
 	}
 
 	return u.validationErrors, nil
@@ -135,6 +147,19 @@ func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool 
 		u.addValidationError("username", fmt.Sprintf("Username must be between %d and %d characters long", constants.MinUsernameLength, constants.MaxUsernameLength))
 		return false
 	}
+
+	user, err := u.usersDb.CheckIfUsernameExists(username)
+	if err != nil {
+		u.addValidationError("username", "Error checking if username exists")
+		return false
+	}
+
+	if user {
+		u.addValidationError("username", "Username already exists")
+		return false
+	}
+
+
 	return true
 }
 
@@ -168,6 +193,11 @@ func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) interestsValidator(fl validator.FieldLevel) bool {
 	interests := fl.Field().Interface().([]int)
+	if len(interests) > constants.MaxInterests {
+		u.addValidationError("interests", fmt.Sprintf("Interests must be less than %d", constants.MaxInterests))
+		return false
+	}
+
 	seen := make(map[int]bool)
 	for _, interest := range interests {
 		if register_options.GetInterestName(interest) == "" {

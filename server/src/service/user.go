@@ -21,6 +21,7 @@ type User struct {
 	userDb     users_db.UserDatabase
 	interestDb interests_db.InterestsDatabase
 	registryDb registry_db.RegistryDatabase
+	userValidator  *UserCreationValidator
 }
 
 func CreateUserService(userDb users_db.UserDatabase, interestDb interests_db.InterestsDatabase, registryDb registry_db.RegistryDatabase) *User {
@@ -28,6 +29,7 @@ func CreateUserService(userDb users_db.UserDatabase, interestDb interests_db.Int
 		userDb:     userDb,
 		interestDb: interestDb,
 		registryDb: registryDb,
+		userValidator: NewUserCreationValidator(userDb),
 	}
 }
 
@@ -55,8 +57,7 @@ func (u *User) ResolveUserEmail(data model.ResolveRequest) (model.ResolveRespons
 
 	// chequeo de provider y verificacion del token
 
-	userValidator := NewUserCreationValidator()
-	if valErrs, err := userValidator.ValidateMail(data.Email); err != nil {
+	if valErrs, err := u.userValidator.ValidateMail(data.Email); err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating mail: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.ResolveResponse{}, app_errors.NewAppValidationError(valErrs)
@@ -130,19 +131,10 @@ func (u *User) VerifyEmail(id uuid.UUID, pin string) error {
 func (u *User) AddPersonalInfo(id uuid.UUID, data model.UserPersonalInfoRequest) error {
 	slog.Info("adding personal info")
 
-	userValidator := NewUserCreationValidator()
-	if valErrs, err := userValidator.ValidatePersonalInfo(data); err != nil {
+	if valErrs, err := u.userValidator.ValidatePersonalInfo(data); err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
 	} else if len(valErrs) > 0 {
 		return app_errors.NewAppValidationError(valErrs)
-	}
-
-	hasAccount, err := u.checkIfUsernameHasAccount(data.UserName)
-	if err != nil {
-		return err
-	}
-	if hasAccount {
-		return app_errors.NewAppError(http.StatusConflict, UsernameAlreadyExists, fmt.Errorf("username already exists"))
 	}
 
 	if err := u.validateRegistryEntry(id); err != nil {
@@ -169,8 +161,7 @@ func (u *User) AddPersonalInfo(id uuid.UUID, data model.UserPersonalInfoRequest)
 func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
 	slog.Info("adding interests")
 
-	userValidator := NewUserCreationValidator()
-	if valErrs, err := userValidator.ValidateInterests(interestsIds); err != nil {
+	if valErrs, err := u.userValidator.ValidateInterests(interestsIds); err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
 	} else if len(valErrs) > 0 {
 		return app_errors.NewAppValidationError(valErrs)

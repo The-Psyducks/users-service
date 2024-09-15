@@ -22,26 +22,24 @@ func TestGetUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
 
+	email := "edwardo@elric.com"
 	locationId := 0
 	interestsIds := []int{0, 1}
-	user := User{
+	user := UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
 		Password:  "Edward$El1ric:)",
-		Mail:      "edwardo@elric.com",
 		Location:  locationId,
-		Interests: interestsIds,
 	}
 
-	code, _, err = CreateValidUser(router, user)
+	_, err = CreateValidUser(router, email, user, interestsIds)
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusCreated)
 
 	code, userProfile, err := getExistingUser(router, user.UserName)
 	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
-	AssertUserProfileIsUser(t, user, location, interests, userProfile)
+	AssertUserProfileIsUser(t, email, user, location, interests, userProfile)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)

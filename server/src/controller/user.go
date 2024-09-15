@@ -141,7 +141,7 @@ func (u *User) AddInterests(c *gin.Context) {
 	return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusNoContent, gin.H{})
 }
 
 func (u *User) CompleteRegistry(c *gin.Context) {

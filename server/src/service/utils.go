@@ -87,19 +87,6 @@ func (u *User) checkIfEmailHasAccount(email string) (bool, error) {
 
 }
 
-func (u *User) checkIfUsernameHasAccount(email string) (bool, error) {
-	slog.Info("checking if username has account")
-
-	user, err := u.userDb.CheckIfUsernameExists(email)
-
-	if err != nil {
-		return false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if username exists: %w", err))
-	}
-
-	return user, nil
-
-}
-
 func (u *User) validateRegistryEntry(id uuid.UUID) error {
 	slog.Info("checking if registry entry exists")
 
@@ -137,7 +124,6 @@ func (u *User) validateRegistryStep(id uuid.UUID, step string) error {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting registry entry: %w", err))
 	}
 
-	slog.Info("registry: ", slog.Any("registry", registry))
 	actual_step := getStepForRegistryEntry(registry)
 	if actual_step != step {
 		return app_errors.NewAppError(http.StatusConflict, InvalidRegistryStep, fmt.Errorf("invalid registry step, should be %s, it is %s", actual_step, step))
