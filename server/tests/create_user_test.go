@@ -85,6 +85,28 @@ func TestCreateUserWithFirstAndLastNameTooLong(t *testing.T) {
 	assertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
+func TestCreateUserWithUsernameAndPasswordTooShort(t *testing.T) {
+	router, err := router.CreateRouter()
+	assert.Equal(t, err, nil)
+
+	email := "capo@gmail.com"
+	personalInfo := UserPersonalInfo{
+		FirstName: "Edward",
+		LastName:  "Elric",
+		UserName:  "As",
+		Password:  "O^1i",
+		Location:  0,
+	}
+
+	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusBadRequest)
+	assert.Equal(t, response.Title, "validation error")
+	assert.Equal(t, len(response.Errors), 2)
+	assertRegisterInstancePattern(t, "personal-info", response.Instance)
+}
+
 func TestCreateUserWithInvalidLocation(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
@@ -113,7 +135,7 @@ func TestCreateUserWithInvalidLocation(t *testing.T) {
 	assertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
-func TestCreateUserWithInvalidInterests(t *testing.T) {
+func TestCreateUserWithNotExistingInterests(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -123,6 +145,30 @@ func TestCreateUserWithInvalidInterests(t *testing.T) {
 
 	email := "capo@gmail.com"
 	interstsIds := []int{len(registerOptions.Interests) - 1, len(registerOptions.Interests)}
+	user := UserPersonalInfo{
+		FirstName: "Edward",
+		LastName:  "Elric",
+		UserName:  "EdwardoElric",
+		Password:  "Edward$El3ric:)",
+		Location:  0,
+	}
+
+	code, response, err := CreateUserWithInvalidInterests(router, email, user, interstsIds)
+
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusBadRequest)
+	assert.Equal(t, response.Title, "validation error")
+	assert.Equal(t, len(response.Errors), 1)
+	assert.Equal(t, response.Errors[0].Field, "interests")
+	assertRegisterInstancePattern(t, "interests", response.Instance)
+}
+
+func TestCreateUserWithRepeatedInterests(t *testing.T) {
+	router, err := router.CreateRouter()
+	assert.Equal(t, err, nil)
+
+	email := "capo@gmail.com"
+	interstsIds := []int{0, 0, 1}
 	user := UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",

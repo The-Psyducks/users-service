@@ -13,7 +13,7 @@ import (
 	"github.com/go-playground/assert/v2"
 )
 
-func CreateValidUserRegistry(router *router.Router, email string) (ResolverSignUpResponse, error) {
+func getUserRegistryForSignUp(router *router.Router, email string) (ResolverSignUpResponse, error) {
 	payload := map[string]string{
 		"email": email,
 	}
@@ -35,11 +35,8 @@ func CreateValidUserRegistry(router *router.Router, email string) (ResolverSignU
 		return ResolverSignUpResponse{}, err
 	}
 
-	if res.NextAuthStep != "SIGN_UP" {
-		return ResolverSignUpResponse{}, fmt.Errorf("error, next auth step was %s", res.NextAuthStep)
-	}
-	if res.Metadata.OnboardingStep != EmailVerificationStep {
-		return ResolverSignUpResponse{}, fmt.Errorf("error, onboarding step was %s", res.Metadata.OnboardingStep)
+	if res.NextAuthStep != SignUpAuthStep {
+		return ResolverSignUpResponse{}, fmt.Errorf("error, next auth step was %s when it had to be %s", res.NextAuthStep, SignUpAuthStep)
 	}
 	if res.Metadata.RegistrationId == "" {
 		return ResolverSignUpResponse{}, fmt.Errorf("error, registration id was empty")
@@ -59,7 +56,7 @@ func sendEmailVerificationAndVerificateIt(router *router.Router, id string) erro
 	router.Engine.ServeHTTP(recorder, req)
 
 	if recorder.Code != http.StatusNoContent {
-		return fmt.Errorf("error, status code sending email verification was %d", recorder.Code)
+		return fmt.Errorf("error, status code sending email verification was %d, it had to be %d", recorder.Code, http.StatusNoContent)
 	}
 
 	payload := map[string]string{
@@ -156,7 +153,7 @@ func completeRegistry(router *router.Router, id string) (int, UserProfile, error
 }
 
 func CreateValidUser(router *router.Router, email string, personalInfo UserPersonalInfo, interests []int) (UserProfile, error) {
-	res, err := CreateValidUserRegistry(router, email)
+	res, err := getUserRegistryForSignUp(router, email)
 	if err != nil {
 		return UserProfile{}, err
 	}
@@ -194,7 +191,7 @@ func CreateValidUser(router *router.Router, email string, personalInfo UserPerso
 }
 
 func CreateUserWithInvalidPersonalInfo(router *router.Router, email string, personalInfo UserPersonalInfo) (int, ValidationErrorResponse, error) {
-	res, err := CreateValidUserRegistry(router, email)
+	res, err := getUserRegistryForSignUp(router, email)
 	if err != nil {
 		return 0, ValidationErrorResponse{}, err
 	}
@@ -228,7 +225,7 @@ func CreateUserWithInvalidPersonalInfo(router *router.Router, email string, pers
 }
 
 func CreateUserWithInvalidInterests(router *router.Router, email string, personalInfo UserPersonalInfo, interestsIds []int) (int, ValidationErrorResponse, error) {
-	res, err := CreateValidUserRegistry(router, email)
+	res, err := getUserRegistryForSignUp(router, email)
 	if err != nil {
 		return 0, ValidationErrorResponse{}, err
 	}
