@@ -42,21 +42,6 @@ func TestLoginUser(t *testing.T) {
 
 func TestLoginInvalidUser(t *testing.T) {
 	router, err := router.CreateRouter()
-
-	assert.Equal(t, err, nil)
-
-	email := "edwardelric@yahoo.com"
-	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
-		FirstName: "Edward",
-		LastName:  "Elric",
-		UserName:  "EdwardoElric",
-		Password:  "Edward$Elri3c:)",
-		Location:  0,
-	}
-
-	_, err = CreateValidUser(router, email, user, interestsIds)
-
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
