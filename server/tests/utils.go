@@ -365,6 +365,23 @@ func getExistingUser(router *router.Router, username string) (int, UserProfile, 
 	return recorder.Code, result, nil
 }
 
+func getNotExistingUser(router *router.Router, username string) (int, ErrorResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
 func getRegisterOptions(router *router.Router) (int, RegisterOptions, error) {
 	req, err := http.NewRequest("GET", "/users/register", &bytes.Reader{})
 
