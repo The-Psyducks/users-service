@@ -114,11 +114,6 @@ func putInterests(router *router.Router, id string, interests []int) (int, error
 	}
 
 	endpoint := fmt.Sprintf("/users/register/%s/interests", id)
-
-	if err != nil {
-		return 0, err
-	}
-
 	req, err := http.NewRequest("PUT", endpoint, bytes.NewReader(marshalledInfo))
 
 	if err != nil {
