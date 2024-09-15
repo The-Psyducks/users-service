@@ -16,14 +16,12 @@ type UserDatabase interface {
 	// GetUserByUsername retrieves a user from the database by its username
 	// it is case sensitive
 	GetUserByUsername(username string) (model.UserRecord, error)
-	
+
 	// CheckIfUsernameExists checks if a username already exists in the database
 	// it is case insensitive
 	CheckIfUsernameExists(username string) (bool, error)
 
-	// CheckIfMailExists checks if a mail already exists in the database
+	// CheckIfEmailExists checks if a mail already exists in the database
 	// it is case insensitive
-	CheckIfMailExists(mail string) (bool, error)
-
+	CheckIfEmailExists(email string) (bool, error)
 }
-

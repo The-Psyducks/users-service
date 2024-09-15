@@ -2,18 +2,18 @@ package service
 
 import (
 	"fmt"
-	"regexp"
 	"log/slog"
-	"users-service/src/model"
+	"regexp"
 	"users-service/src/constants"
-	"users-service/src/database/users_db"
 	"users-service/src/database/register_options"
+	"users-service/src/database/users_db"
+	"users-service/src/model"
 
 	"github.com/go-playground/validator/v10"
 )
 
 type UserCreationValidator struct {
-	usersDb 		users_db.UserDatabase
+	usersDb          users_db.UserDatabase
 	validationErrors []model.ValidationError
 }
 
@@ -23,19 +23,19 @@ func NewUserCreationValidator(usersDb users_db.UserDatabase) *UserCreationValida
 	}
 }
 
-func (u *UserCreationValidator) ValidateMail(mail string) ([]model.ValidationError, error) {
+func (u *UserCreationValidator) ValidateEmail(email string) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 
 	validate := validator.New()
-	if err := validate.RegisterValidation("mailvalidator", u.mailValidator); err != nil {
+	if err := validate.RegisterValidation("emailvalidator", u.emailValidator); err != nil {
 		slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
 		return []model.ValidationError{}, err
 	}
 
-	err := validate.Var(mail, "mailvalidator")
+	err := validate.Var(email, "emailvalidator")
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
-			if err.ActualTag() != "mailvalidator" {
+			if err.ActualTag() != "emailvalidator" {
 				u.addValidationError("interests", err.Error())
 			}
 		}
@@ -107,18 +107,18 @@ func (u *UserCreationValidator) addValidationError(fieldName, message string) {
 	})
 }
 
-func (u *UserCreationValidator) mailValidator(fl validator.FieldLevel) bool {
-	mail := fl.Field().String()
+func (u *UserCreationValidator) emailValidator(fl validator.FieldLevel) bool {
+	email := fl.Field().String()
 
-	if len(mail) < constants.MinEmailLength || len(mail) > constants.MaxEmailLength {
-		u.addValidationError("mail", fmt.Sprintf("Mail must be between %d and %d characters long", constants.MinEmailLength, constants.MaxEmailLength))
+	if len(email) < constants.MinEmailLength || len(email) > constants.MaxEmailLength {
+		u.addValidationError("email", fmt.Sprintf("Email must be between %d and %d characters long", constants.MinEmailLength, constants.MaxEmailLength))
 		return false
 	}
 
-	mailPattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
-	matched, err := regexp.MatchString(mailPattern, mail)
+	emailPattern := `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	matched, err := regexp.MatchString(emailPattern, email)
 	if err != nil || !matched {
-		u.addValidationError("mail", "Invalid email format")
+		u.addValidationError("email", "Invalid email format")
 		return false
 	}
 	return true
@@ -158,7 +158,6 @@ func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool 
 		u.addValidationError("username", "Username already exists")
 		return false
 	}
-
 
 	return true
 }

@@ -141,6 +141,33 @@ func TestCreateUserWithInvalidInterests(t *testing.T) {
 	assertRegisterInstancePattern(t, "interests", response.Instance)
 }
 
+func TestCreateUserWithInvalidMail(t *testing.T) {
+	router, err := router.CreateRouter()
+	assert.Equal(t, err, nil)
+
+	payload := map[string]string{
+		"email": "como andamos king",
+	}
+	marshalledInfo, err := json.Marshal(payload)
+	assert.Equal(t, err, nil)
+
+	req, err := http.NewRequest("POST", "/users/resolver", bytes.NewReader(marshalledInfo))
+	assert.Equal(t, err, nil)
+
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	res := ValidationErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &res)
+	assert.Equal(t, err, nil)
+
+	assert.Equal(t, recorder.Code, http.StatusBadRequest)
+	assert.Equal(t, res.Title, "validation error")
+	assert.Equal(t, len(res.Errors), 1)
+	assert.Equal(t, res.Errors[0].Field, "email")
+	assert.Equal(t, res.Instance, "/users/resolver")
+}
+
 func TestCreateUserWithMailThatExists(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)

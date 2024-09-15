@@ -18,17 +18,17 @@ import (
 )
 
 type User struct {
-	userDb     users_db.UserDatabase
-	interestDb interests_db.InterestsDatabase
-	registryDb registry_db.RegistryDatabase
-	userValidator  *UserCreationValidator
+	userDb        users_db.UserDatabase
+	interestDb    interests_db.InterestsDatabase
+	registryDb    registry_db.RegistryDatabase
+	userValidator *UserCreationValidator
 }
 
 func CreateUserService(userDb users_db.UserDatabase, interestDb interests_db.InterestsDatabase, registryDb registry_db.RegistryDatabase) *User {
 	return &User{
-		userDb:     userDb,
-		interestDb: interestDb,
-		registryDb: registryDb,
+		userDb:        userDb,
+		interestDb:    interestDb,
+		registryDb:    registryDb,
 		userValidator: NewUserCreationValidator(userDb),
 	}
 }
@@ -57,7 +57,7 @@ func (u *User) ResolveUserEmail(data model.ResolveRequest) (model.ResolveRespons
 
 	// chequeo de provider y verificacion del token
 
-	if valErrs, err := u.userValidator.ValidateMail(data.Email); err != nil {
+	if valErrs, err := u.userValidator.ValidateEmail(data.Email); err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating mail: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.ResolveResponse{}, app_errors.NewAppValidationError(valErrs)
@@ -176,7 +176,7 @@ func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
 	}
 
 	interestsNames, err := extractInterestNames(interestsIds)
-	slog.Info("extracted interests names", slog.Any("ids", interestsIds) ,slog.Any("interests", interestsNames))
+	slog.Info("extracted interests names", slog.Any("ids", interestsIds), slog.Any("interests", interestsNames))
 	if err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error extracting interest names: %w", err))
 	}

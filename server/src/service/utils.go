@@ -19,7 +19,7 @@ func createUserResponseFromUserRecordAndInterests(record model.UserRecord, inter
 		UserName:  record.UserName,
 		FirstName: record.FirstName,
 		LastName:  record.LastName,
-		Mail:      record.Mail,
+		Email:     record.Email,
 		Location:  record.Location,
 		Interests: interests,
 	}
@@ -45,7 +45,7 @@ func generateUserRecordFromRegistryEntry(registry model.RegistryEntry) model.Use
 		UserName:  registry.PersonalInfo.UserName,
 		FirstName: registry.PersonalInfo.FirstName,
 		LastName:  registry.PersonalInfo.LastName,
-		Mail:      registry.Email,
+		Email:     registry.Email,
 		Password:  registry.PersonalInfo.Password,
 		Location:  registry.PersonalInfo.Location,
 	}
@@ -77,7 +77,7 @@ func extractInterestNames(interests []int) ([]string, error) {
 func (u *User) checkIfEmailHasAccount(email string) (bool, error) {
 	slog.Info("checking if email has account")
 
-	user, err := u.userDb.CheckIfMailExists(email)
+	user, err := u.userDb.CheckIfEmailExists(email)
 
 	if err != nil {
 		return false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if email exists: %w", err))

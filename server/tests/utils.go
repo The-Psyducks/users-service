@@ -1,13 +1,13 @@
 package tests
 
 import (
-	"fmt"
 	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"regexp"
 	"testing"
-	"net/http"
-	"encoding/json"
-	"net/http/httptest"
 	"users-service/src/router"
 
 	"github.com/go-playground/assert/v2"
@@ -15,8 +15,8 @@ import (
 
 func CreateValidUserRegistry(router *router.Router, email string) (ResolverSignUpResponse, error) {
 	payload := map[string]string{
-        "email": email,
-    }
+		"email": email,
+	}
 	marshalledInfo, err := json.Marshal(payload)
 	if err != nil {
 		return ResolverSignUpResponse{}, err
@@ -412,7 +412,7 @@ func AssertUserProfileIsUser(t *testing.T, email string, user UserPersonalInfo, 
 	assert.Equal(t, user.FirstName, profile.FirstName)
 	assert.Equal(t, user.LastName, profile.LastName)
 	assert.Equal(t, user.UserName, profile.UserName)
-	assert.Equal(t, email, profile.Mail)
+	assert.Equal(t, email, profile.Email)
 	assert.Equal(t, location, profile.Location)
 
 	assert.Equal(t, len(profile.Interests), len(interests))
@@ -431,8 +431,8 @@ func AssertUserProfileIsUser(t *testing.T, email string, user UserPersonalInfo, 
 }
 
 func assertRegisterInstancePattern(t *testing.T, finalUrl string, expected string) {
-    instancePattern := fmt.Sprintf(`^\/users\/register\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/%s$`, regexp.QuoteMeta(finalUrl))
-    matched, err := regexp.MatchString(instancePattern, expected)
-    assert.Equal(t, err, nil)
+	instancePattern := fmt.Sprintf(`^\/users\/register\/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\/%s$`, regexp.QuoteMeta(finalUrl))
+	matched, err := regexp.MatchString(instancePattern, expected)
+	assert.Equal(t, err, nil)
 	assert.Equal(t, matched, true)
 }

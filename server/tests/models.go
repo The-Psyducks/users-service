@@ -5,18 +5,18 @@ import (
 )
 
 type ResolverResponse struct {
-	NextAuthStep 	string 		`json:"next_auth_step"`
-	Metadata    	interface{} `json:"metadata"`
+	NextAuthStep string      `json:"next_auth_step"`
+	Metadata     interface{} `json:"metadata"`
 }
 
 type ResolverSignUpResponse struct {
-	NextAuthStep 	string 					`json:"next_auth_step"`
-	Metadata    	MetadataSingUpResponse	`json:"metadata"`
+	NextAuthStep string                 `json:"next_auth_step"`
+	Metadata     MetadataSingUpResponse `json:"metadata"`
 }
 
 type MetadataSingUpResponse struct {
-	OnboardingStep 	string	`json:"onboarding_step"`
-	RegistrationId  string	`json:"registration_id"`
+	OnboardingStep string `json:"onboarding_step"`
+	RegistrationId string `json:"registration_id"`
 }
 
 type UserPersonalInfo struct {
@@ -32,7 +32,7 @@ type UserProfile struct {
 	FirstName string    `json:"first_name" binding:"required"`
 	LastName  string    `json:"last_name" binding:"required"`
 	UserName  string    `json:"username" binding:"required"`
-	Mail      string    `json:"mail" binding:"required"`
+	Email     string    `json:"email" binding:"required"`
 	Location  string    `json:"location" binding:"required"`
 	Interests []string  `json:"interests" binding:"required"`
 }

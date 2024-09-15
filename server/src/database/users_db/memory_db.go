@@ -28,7 +28,7 @@ func (m *UserMemoryDB) CreateUser(data model.UserRecord) (model.UserRecord, erro
 		UserName:  data.UserName,
 		FirstName: data.FirstName,
 		LastName:  data.LastName,
-		Mail:      data.Mail,
+		Email:     data.Email,
 		Password:  data.Password,
 		Location:  data.Location,
 		CreatedAt: time.Now().UTC(),
@@ -56,9 +56,9 @@ func (m *UserMemoryDB) CheckIfUsernameExists(username string) (bool, error) {
 	return false, nil
 }
 
-func (m *UserMemoryDB) CheckIfMailExists(mail string) (bool, error) {
+func (m *UserMemoryDB) CheckIfEmailExists(email string) (bool, error) {
 	for _, user := range m.data {
-		if strings.EqualFold(user.Mail, mail) {
+		if strings.EqualFold(user.Email, email) {
 			return true, nil
 		}
 	}

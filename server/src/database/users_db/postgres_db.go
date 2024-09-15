@@ -135,10 +135,10 @@ func (postDB *UsersPostgresDB) CheckIfUsernameExists(username string) (bool, err
     return count > 0, nil
 }
 
-func (postDB *UsersPostgresDB) CheckIfMailExists(mail string) (bool, error) {
+func (postDB *UsersPostgresDB) CheckIfEmailExists(email string) (bool, error) {
     var count int
     query := `SELECT COUNT(*) FROM users WHERE email = $1`
-    err := postDB.db.QueryRow(query, mail).Scan(&count)
+    err := postDB.db.QueryRow(query, email).Scan(&count)
 
     if err != nil {
         return false, fmt.Errorf("error checking email existence: %w", err)
