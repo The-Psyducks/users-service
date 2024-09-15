@@ -19,7 +19,24 @@ func NewUserCreationValidator() *UserCreationValidator {
 	return &UserCreationValidator{}
 }
 
-func (u *UserCreationValidator) Validate(user model.UserRequest) ([]model.ValidationError, error) {
+func (u *UserCreationValidator) ValidateMail(mail string) ([]model.ValidationError, error) {
+	u.clearValidationErrors()
+
+	validate := validator.New()
+	if err := validate.RegisterValidation("mailvalidator", u.mailValidator); err != nil {
+		slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
+		return []model.ValidationError{}, err
+	}
+
+	err := validate.Var(mail, "mailvalidator")
+	if err != nil {
+		u.addValidationError("mail", err.Error())
+	}
+
+	return u.validationErrors, nil
+}
+
+func (u *UserCreationValidator) ValidatePersonalInfo(personalInfo model.UserPersonalInfoRequest) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 	validate := validator.New()
 
@@ -28,9 +45,7 @@ func (u *UserCreationValidator) Validate(user model.UserRequest) ([]model.Valida
 		"lastnamevalidator":  u.lastnamevalidator,
 		"usernamevalidator":  u.usernameValidator,
 		"passwordvalidator":  u.passwordValidator,
-		"mailvalidator":      u.mailValidator,
 		"locationvalidator":  u.locationValidator,
-		"interestsvalidator": u.interestsValidator,
 	}
 
 	for name, validatorFunc := range customValidators {
@@ -40,13 +55,30 @@ func (u *UserCreationValidator) Validate(user model.UserRequest) ([]model.Valida
 		}
 	}
 
-	err := validate.Struct(user)
+	err := validate.Struct(personalInfo)
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if _, isCustom := customValidators[err.ActualTag()]; !isCustom {
 				u.addValidationError(err.Field(), err.Tag())
 			}
 		}
+	}
+
+	return u.validationErrors, nil
+}
+
+func (u *UserCreationValidator) ValidateInterests(interests []int) ([]model.ValidationError, error) {
+	u.clearValidationErrors()
+	validate := validator.New()
+
+	if err := validate.RegisterValidation("interestsvalidator", u.interestsValidator); err != nil {
+		slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
+		return []model.ValidationError{}, err
+	}
+
+	err := validate.Var(interests, "interestsvalidator")
+	if err != nil {
+		u.addValidationError("interests", err.Error())
 	}
 
 	return u.validationErrors, nil

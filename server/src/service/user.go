@@ -1,87 +1,34 @@
 package service
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"users-service/src/model"
-	"users-service/src/database"
 	"users-service/src/app_errors"
-	"users-service/src/database/users_db"
+	"users-service/src/constants"
+	"users-service/src/database"
 	"users-service/src/database/interests_db"
 	"users-service/src/database/register_options"
+	"users-service/src/database/registry_db"
+	"users-service/src/database/users_db"
+	"users-service/src/model"
+
+	"github.com/google/uuid"
 )
 
 type User struct {
-	user_db     users_db.UserDatabase
-	interest_db interests_db.InterestsDatabase
+	userDb     users_db.UserDatabase
+	interestDb interests_db.InterestsDatabase
+	registryDb registry_db.RegistryDatabase
 }
 
-func CreateUserService(user_db users_db.UserDatabase, interest_db interests_db.InterestsDatabase) *User {
+func CreateUserService(userDb users_db.UserDatabase, interestDb interests_db.InterestsDatabase, registryDb registry_db.RegistryDatabase) *User {
 	return &User{
-		user_db:     user_db,
-		interest_db: interest_db,
+		userDb:     userDb,
+		interestDb: interestDb,
+		registryDb: registryDb,
 	}
-}
-
-func (u *User) checkExistingUserData(username, mail string) *app_errors.AppError {
-	usernameExists, err := u.user_db.CheckIfUsernameExists(username)
-	if err != nil {
-		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if username exists: %w", err))
-	}
-	if usernameExists {
-		return app_errors.NewAppError(http.StatusConflict, UsernameOrMailAlreadyExists, errors.New("this username already exists"))
-	}
-
-	mailExists, err := u.user_db.CheckIfMailExists(mail)
-	if err != nil {
-		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if mail exists: %w", err))
-	}
-	if mailExists {
-		return app_errors.NewAppError(http.StatusConflict, UsernameOrMailAlreadyExists, errors.New("this mail already exists"))
-	}
-
-	return nil
-}
-
-func (u *User) CreateUser(data model.UserRequest) (model.UserResponse, error) {
-	slog.Info("creating new user")
-
-	userValidator := NewUserCreationValidator()
-	if valErrs, err := userValidator.Validate(data); err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user: %w", err))
-	} else if len(valErrs) > 0 {
-		return model.UserResponse{}, app_errors.NewAppValidationError(valErrs)
-	}
-
-	if appErr := u.checkExistingUserData(data.UserName, data.Mail); appErr != nil {
-		return model.UserResponse{}, appErr
-	}
-
-	userRecord, appErr := generateUserRecordFromUserRequest(&data)
-	if appErr != nil {
-		return model.UserResponse{}, appErr
-	}
-
-	createdUser, err := u.user_db.CreateUser(*userRecord)
-	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating user: %w", err))
-	}
-
-	interestsNames, err := extractInterestNames(data.InterestsIds)
-	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error extracting interest names: %w", err))
-	}
-
-	fmt.Println("interestsNames", interestsNames)
-	err = u.interest_db.AssociateInterestsToUser(createdUser.Id, interestsNames)
-	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
-	}
-
-	slog.Info("user created succesfully", slog.String("username", createdUser.UserName))
-	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
 
 func (u *User) GetRegisterOptions() map[string]interface{} {
@@ -103,10 +50,183 @@ func (u *User) GetRegisterOptions() map[string]interface{} {
 	}
 }
 
+func (u *User) ResolveUserEmail(data model.ResolveRequest) (model.ResolveResponse, error) {
+	slog.Info("resolving user email")
+
+	// chequeo de provider y verificacion del token
+
+	userValidator := NewUserCreationValidator()
+	if valErrs, err := userValidator.ValidateMail(data.Email); err != nil {
+		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating mail: %w", err))
+	} else if len(valErrs) > 0 {
+		return model.ResolveResponse{}, app_errors.NewAppValidationError(valErrs)
+	}
+
+	hasAccount, err := u.checkIfEmailHasAccount(data.Email)
+	if err != nil {
+		return model.ResolveResponse{}, err
+	}
+
+	if hasAccount {
+		slog.Info("user email resolved successfully: it has account", slog.String("email", data.Email))
+		return model.ResolveResponse{
+			NextAuthStep: constants.LoginStep,
+			Metadata:     nil,
+		}, nil
+	}
+
+	exists, err := u.registryDb.CheckIfRegistryEntryExistsByEmail(data.Email)
+	if err != nil {
+		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if registry entry exists: %w", err))
+	}
+
+	if exists {
+		slog.Info("user email resolved successfully: it has registry entry", slog.String("email", data.Email))
+		return u.resolveExistingRegistry(data.Email)
+	}
+
+	slog.Info("user email resolved successfully: it doesnt have account", slog.String("email", data.Email))
+	return u.createNewRegistry(data.Email)
+}
+
+func (u *User) SendVerificationEmail(id uuid.UUID) error {
+	slog.Info("sending verification email")
+
+	if err := u.validateRegistryEntry(id); err != nil {
+		return err
+	}
+
+	if err := u.validateRegistryStep(id, constants.EmailVerificationStep); err != nil {
+		return err
+	}
+
+	// if err := u.registryDb.SendVerificationEmail(id, email); err != nil {
+	// 	return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error sending verification email: %w", err))
+	// }
+
+	slog.Info("verification email sent successfully", slog.String("registration_id", id.String()))
+	return nil
+}
+
+func (u *User) VerifyEmail(id uuid.UUID, pin string) error {
+	slog.Info("verifying email")
+
+	if err := u.validateRegistryEntry(id); err != nil {
+		return err
+	}
+
+	if err := u.validateRegistryStep(id, constants.EmailVerificationStep); err != nil {
+		return err
+	}
+
+	if err := u.registryDb.VerifyEmail(id); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error verifying email: %w", err))
+	}
+
+	slog.Info("email verified successfully", slog.String("registration_id", id.String()))
+	return nil
+}
+
+func (u *User) AddPersonalInfo(id uuid.UUID, data model.UserPersonalInfoRequest) error {
+	slog.Info("adding personal info")
+
+	userValidator := NewUserCreationValidator()
+	if valErrs, err := userValidator.ValidatePersonalInfo(data); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
+	} else if len(valErrs) > 0 {
+		return app_errors.NewAppValidationError(valErrs)
+	}
+
+	hasAccount, err := u.checkIfUsernameHasAccount(data.UserName)
+	if err != nil {
+		return err
+	}
+	if hasAccount {
+		return app_errors.NewAppError(http.StatusConflict, UsernameAlreadyExists, fmt.Errorf("username already exists"))
+	}
+
+	if err := u.validateRegistryEntry(id); err != nil {
+		return err
+	}
+
+	if err := u.validateRegistryStep(id, constants.PersonalInfoStep); err != nil {
+		return err
+	}
+
+	userInfo, err := generateUserPersonalInfoRecordFromRequest(data)
+	if err != nil {
+		return err
+	}
+
+	if err := u.registryDb.AddPersonalInfoToRegistryEntry(id, *userInfo); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error adding personal info to registry entry: %w", err))
+	}
+
+	slog.Info("personal info added successfully", slog.String("registration_id", id.String()))
+	return nil
+}
+
+func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
+	slog.Info("adding interests")
+
+	userValidator := NewUserCreationValidator()
+	if valErrs, err := userValidator.ValidateInterests(interestsIds); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
+	} else if len(valErrs) > 0 {
+		return app_errors.NewAppValidationError(valErrs)
+	}
+
+	if err := u.validateRegistryEntry(id); err != nil {
+		return err
+	}
+
+	if err := u.validateRegistryStep(id, constants.InterestsStep); err != nil {
+		return err
+	}
+
+	interestsNames, err := extractInterestNames(interestsIds)
+	slog.Info("extracted interests names", slog.Any("ids", interestsIds) ,slog.Any("interests", interestsNames))
+	if err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error extracting interest names: %w", err))
+	}
+
+	if err := u.registryDb.AddInterestsToRegistryEntry(id, interestsNames); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error adding interests to registry entry: %w", err))
+	}
+
+	slog.Info("interests added successfully", slog.String("registration id", id.String()))
+	return nil
+}
+
+func (u *User) CompleteRegistry(id uuid.UUID) (model.UserResponse, error) {
+	slog.Info("completing registry")
+
+	if err := u.validateRegistryStep(id, constants.CompleteStep); err != nil {
+		return model.UserResponse{}, err
+	}
+
+	registry, err := u.registryDb.GetRegistryEntry(id)
+	if err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting registry entry: %w", err))
+	}
+
+	if err := u.registryDb.DeleteRegistryEntry(id); err != nil {
+		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error deleting registry entry: %w", err))
+	}
+
+	userResponse, err := u.createUserWithInterestsFromRegistry(registry, registry.Interests)
+	if err != nil {
+		return model.UserResponse{}, err
+	}
+
+	slog.Info("registry completed successfully", slog.String("registration id", id.String()))
+	return userResponse, nil
+}
+
 func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) {
 	slog.Info("checking login information")
 
-	userRecord, err := u.user_db.GetUserByUsername(data.UserName)
+	userRecord, err := u.userDb.GetUserByUsername(data.UserName)
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -124,7 +244,7 @@ func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (bool, error) 
 }
 
 func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
-	userRecord, err := u.user_db.GetUserByUsername(username)
+	userRecord, err := u.userDb.GetUserByUsername(username)
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -133,7 +253,7 @@ func (u *User) GetUserByUsername(username string) (model.UserResponse, error) {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	interests, err := u.interest_db.GetInterestsForUserId(userRecord.Id)
+	interests, err := u.interestDb.GetInterestsForUserId(userRecord.Id)
 	if err != nil {
 		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting interests from user: %w", err))
 	}

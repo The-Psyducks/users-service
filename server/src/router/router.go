@@ -1,18 +1,20 @@
 package router
 
 import (
-	"os"
-	"io"
 	"fmt"
+	"io"
 	"log/slog"
+	"os"
 	"testing"
-	"github.com/gin-gonic/gin"
 	"users-service/src/config"
 	"users-service/src/controller"
+	"users-service/src/database/interests_db"
+	"users-service/src/database/users_db"
+	"users-service/src/database/registry_db"
 	"users-service/src/middleware"
 	"users-service/src/service"
-	"users-service/src/database/users_db"
-	"users-service/src/database/interests_db"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
@@ -44,66 +46,82 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 }
 
 // Creates the databases based on the configuration provided in the env file
-func createDatabases(cfg *config.Config) (users_db.UserDatabase, interests_db.InterestsDatabase, error) {
-    var user_db users_db.UserDatabase
-    var interest_db interests_db.InterestsDatabase
-    var err error
+func createDatabases(cfg *config.Config) (users_db.UserDatabase, interests_db.InterestsDatabase, registry_db.RegistryDatabase, error) {
+	var userDb users_db.UserDatabase
+	var interestDb interests_db.InterestsDatabase
+	var registryDb registry_db.RegistryDatabase
+	var err error
 
-    if testing.Testing() {
-        user_db, err = users_db.CreateUserMemoryDB()
-        if err != nil {
-            return nil, nil, fmt.Errorf("failed to create user memory database: %w", err)
-        }
-        interest_db, err = interests_db.CreateInterestsMemoryDB()
-        if err != nil {
-            return nil, nil, fmt.Errorf("failed to create interests memory database: %w", err)
-        }
-    } else {
-        user_db, err = users_db.CreateUsersPostgresDB(
-            cfg.DatabaseHost,
-            cfg.DatabasePort,
-            cfg.DatabaseName,
-            cfg.DatabasePassword,
-            cfg.DatabaseUser)
-        if err != nil {
-            return nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
-        }
-        interest_db, err = interests_db.CreateInterestsPostgresDB(
-            cfg.DatabaseHost,
-            cfg.DatabasePort,
-            cfg.DatabaseName,
-            cfg.DatabasePassword,
-            cfg.DatabaseUser)
-        if err != nil {
-            return nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
-        }
-    }
+	if testing.Testing() || cfg.Environment == "development" {
+		userDb, err = users_db.CreateUserMemoryDB()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to create user memory database: %w", err)
+		}
+		interestDb, err = interests_db.CreateInterestsMemoryDB()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to create interests memory database: %w", err)
+		}
+		registryDb, err = registry_db.CreateRegistryMemoryDB()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
+		}
+	} else {
+		userDb, err = users_db.CreateUsersPostgresDB(
+			cfg.DatabaseHost,
+			cfg.DatabasePort,
+			cfg.DatabaseName,
+			cfg.DatabasePassword,
+			cfg.DatabaseUser)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
+		}
+		interestDb, err = interests_db.CreateInterestsPostgresDB(
+			cfg.DatabaseHost,
+			cfg.DatabasePort,
+			cfg.DatabaseName,
+			cfg.DatabasePassword,
+			cfg.DatabaseUser)
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
+		}
+		registryDb, err = registry_db.CreateRegistryMemoryDB()
+		if err != nil {
+			return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
+		}
+	}
 
-    return user_db, interest_db, nil
+	return userDb, interestDb, registryDb, nil
 }
 
 // Creates a new router with the configuration provided in the env file
 func CreateRouter() (*Router, error) {
-    cfg := config.LoadConfig()
-    r := createRouterFromConfig(cfg)
+	cfg := config.LoadConfig()
+	r := createRouterFromConfig(cfg)
 
-    user_db, interest_db, err := createDatabases(cfg)
-    if err != nil {
-        slog.Error("failed to create databases", slog.String("error", err.Error()))
-        return nil, err
-    }
+	userDb, interestDb, registryDb, err := createDatabases(cfg)
+	if err != nil {
+		slog.Error("failed to create databases", slog.String("error", err.Error()))
+		return nil, err
+	}
 
-    userService := service.CreateUserService(user_db, interest_db)
-    userController := controller.CreateUserController(userService)
+	userService := service.CreateUserService(userDb, interestDb, registryDb)
+	userController := controller.CreateUserController(userService)
 
-    r.Engine.GET("/users/register", userController.GetRegisterOptions)
-    r.Engine.POST("/users/register", userController.CreateUser)
-    r.Engine.GET("/users/:username", userController.GetUserByUsername)
-    r.Engine.POST("/users/login", userController.Login)
+	r.Engine.GET("/users/register", userController.GetRegisterOptions)
+	
+    r.Engine.POST("/users/resolver", userController.ResolveUserEmail)
+    r.Engine.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
+    r.Engine.POST("/users/register/:id/verify-email", userController.VerifyEmail)
+    r.Engine.PUT("/users/register/:id/personal-info", userController.AddPersonalInfo)
+    r.Engine.PUT("/users/register/:id/interests", userController.AddInterests)
+    r.Engine.POST("/users/register/:id/complete", userController.CompleteRegistry)
 
-    return r, nil
+
+	r.Engine.GET("/users/:username", userController.GetUserByUsername)
+	r.Engine.POST("/users/login", userController.Login)
+
+	return r, nil
 }
-
 
 // Runs the router in the address provided in the configuration
 func (r *Router) Run() error {

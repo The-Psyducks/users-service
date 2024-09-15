@@ -6,20 +6,20 @@ import (
 	"github.com/google/uuid"
 )
 
-// InMemoryDB struct to hold the data
-type InMemoryDB struct {
+// InterestsMemoryDB struct to hold the data
+type InterestsMemoryDB struct {
 	userInterests map[uuid.UUID]map[string]bool
 }
 
 // CreateInterestsMemoryDB creates a new instance of InMemoryDB
-func CreateInterestsMemoryDB() (*InMemoryDB, error) {
-	return &InMemoryDB{
+func CreateInterestsMemoryDB() (*InterestsMemoryDB, error) {
+	return &InterestsMemoryDB{
 		userInterests: make(map[uuid.UUID]map[string]bool),
 	}, nil
 }
 
 // AssociateInterestsToUser associates interests to a user
-func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []string) error {
+func (db *InterestsMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []string) error {
 	if _, exists := db.userInterests[userId]; !exists {
 		db.userInterests[userId] = make(map[string]bool)
 	}
@@ -34,7 +34,7 @@ func (db *InMemoryDB) AssociateInterestsToUser(userId uuid.UUID, interests []str
 }
 
 // GetInterestsForUserId retrieves interests for a given user ID
-func (db *InMemoryDB) GetInterestsForUserId(id uuid.UUID) ([]string, error) {
+func (db *InterestsMemoryDB) GetInterestsForUserId(id uuid.UUID) ([]string, error) {
 	interestSet, exists := db.userInterests[id]
 	if !exists {
 		return nil, database.ErrKeyNotFound
