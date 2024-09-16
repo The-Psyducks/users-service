@@ -198,37 +198,21 @@ func (db *RegistryPostgresDB) AddPersonalInfoToRegistryEntry(id uuid.UUID, perso
 }
 
 func (db *RegistryPostgresDB) AddInterestsToRegistryEntry(id uuid.UUID, interests []string) error {
-    tx, err := db.db.Begin()
+    var exists bool
+    err := db.db.QueryRow("SELECT EXISTS(SELECT 1 FROM registry_interests WHERE registry_id = $1)", id).Scan(&exists)
     if err != nil {
-        return fmt.Errorf("failed to begin transaction: %w", err)
-    }
-    defer func() error {
-        if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
-			return fmt.Errorf("failed to rollback transaction: %w", err)
-		}
-		return nil
-    }()
-
-    _, err = tx.Exec("DELETE FROM registry_interests WHERE registry_id = $1", id)
-    if err != nil {
-        return fmt.Errorf("failed to delete existing interests: %w", err)
+        return fmt.Errorf("failed to check existing interests: %w", err)
     }
 
-    stmt, err := tx.Prepare("INSERT INTO registry_interests (registry_id, interest) VALUES ($1, $2)")
-    if err != nil {
-        return fmt.Errorf("failed to prepare statement: %w", err)
+    if exists {
+        return fmt.Errorf("interests already exist for registry entry with id %s", id)
     }
-    defer stmt.Close()
 
     for _, interest := range interests {
-        _, err = stmt.Exec(id, interest)
+        _, err = db.db.Exec("INSERT INTO registry_interests (registry_id, interest) VALUES ($1, $2)", id, interest)
         if err != nil {
             return fmt.Errorf("failed to insert interest '%s': %w", interest, err)
         }
-    }
-
-    if err = tx.Commit(); err != nil {
-        return fmt.Errorf("failed to commit transaction: %w", err)
     }
 
     return nil
