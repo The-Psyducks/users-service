@@ -1,20 +1,20 @@
 package router
 
 import (
-	"fmt"
 	"io"
-	"log/slog"
 	"os"
-	// "testing"
+	"fmt"
+	"log/slog"
+	_ "github.com/lib/pq"
+	"github.com/jmoiron/sqlx"
+	"github.com/gin-gonic/gin"
 	"users-service/src/config"
+	"users-service/src/service"
 	"users-service/src/controller"
-	"users-service/src/database/interests_db"
+	"users-service/src/middleware"
 	"users-service/src/database/users_db"
 	"users-service/src/database/registry_db"
-	"users-service/src/middleware"
-	"users-service/src/service"
-
-	"github.com/gin-gonic/gin"
+	"users-service/src/database/interests_db"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
@@ -45,74 +45,49 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 	return router
 }
 
-// Creates the databases based on the configuration provided in the env file
+// Creates a new database connection using the configuration provided in the env file
+func createDBConnection(cfg *config.Config) (*sqlx.DB, error) {
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+			cfg.DatabaseUser,
+			cfg.DatabasePassword,
+			cfg.DatabaseHost,
+			cfg.DatabasePort,
+			cfg.DatabaseName)
+
+	db, err := sqlx.Connect("postgres", dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	enableUUIDExtension := `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`
+	if _, err := db.Exec(enableUUIDExtension); err != nil {
+		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
+	}
+
+	return db, nil
+}
+
+// Creates the databases for the users, interests and registry
 func createDatabases(cfg *config.Config) (users_db.UserDatabase, interests_db.InterestsDatabase, registry_db.RegistryDatabase, error) {
 	var userDb users_db.UserDatabase
 	var interestDb interests_db.InterestsDatabase
 	var registryDb registry_db.RegistryDatabase
 	var err error
 
-	// if testing.Testing() || cfg.Environment == "development" {
-	// 	userDb, err = users_db.CreateUserMemoryDB()
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("failed to create user memory database: %w", err)
-	// 	}
-	// 	interestDb, err = interests_db.CreateInterestsMemoryDB()
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("failed to create interests memory database: %w", err)
-	// 	}
-	// 	registryDb, err = registry_db.CreateRegistryMemoryDB()
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
-	// 	}
-	// } else {
-	// 	userDb, err = users_db.CreateUsersPostgresDB(
-	// 		cfg.DatabaseHost,
-	// 		cfg.DatabasePort,
-	// 		cfg.DatabaseName,
-	// 		cfg.DatabasePassword,
-	// 		cfg.DatabaseUser)
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
-	// 	}
-	// 	interestDb, err = interests_db.CreateInterestsPostgresDB(
-	// 		cfg.DatabaseHost,
-	// 		cfg.DatabasePort,
-	// 		cfg.DatabaseName,
-	// 		cfg.DatabasePassword,
-	// 		cfg.DatabaseUser)
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
-	// 	}
-	// 	registryDb, err = registry_db.CreateRegistryMemoryDB()
-	// 	if err != nil {
-	// 		return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
-	// 	}
-	// }
-	userDb, err = users_db.CreateUsersPostgresDB(
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseName,
-		cfg.DatabasePassword,
-		cfg.DatabaseUser)
+	db, err := createDBConnection(cfg)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to connect to database: %w", err)
+	}
+
+	userDb, err = users_db.CreateUsersPostgresDB(db)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
 	}
-	interestDb, err = interests_db.CreateInterestsPostgresDB(
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseName,
-		cfg.DatabasePassword,
-		cfg.DatabaseUser)
+	interestDb, err = interests_db.CreateInterestsPostgresDB(db)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
 	}
-	registryDb, err = registry_db.CreateRegistryPostgresDB(
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseName,
-		cfg.DatabasePassword,
-		cfg.DatabaseUser)
+	registryDb, err = registry_db.CreateRegistryPostgresDB(db)
 
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to connect to registry database: %w", err)
@@ -150,7 +125,7 @@ func CreateRouter() (*Router, error) {
 	return r, nil
 }
 
-// Runs the router in the address provided in the configuration
+// Runs the router in the address provided in the env file
 func (r *Router) Run() error {
 	fmt.Println("Running in address: ", r.Address)
 	return r.Engine.Run(r.Address)

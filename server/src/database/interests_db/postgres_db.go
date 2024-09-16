@@ -14,27 +14,7 @@ type InterestsPostgresDB struct {
 	db *sqlx.DB
 }
 
-func CreateInterestsPostgresDB(databaseHost string, databasePort string, databaseName string, databasePassword string, databaseUser string) (*InterestsPostgresDB, error) {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		databaseUser,
-		databasePassword,
-		databaseHost,
-		databasePort,
-		databaseName)
-
-	db, err := sqlx.Connect("postgres", dsn)
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	enableUUIDExtension := `
-    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-    `
-	if _, err := db.Exec(enableUUIDExtension); err != nil {
-		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
-	}
-
+func CreateInterestsPostgresDB(db *sqlx.DB) (*InterestsPostgresDB, error) {
 	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "interests")
 	if _, err := db.Exec(dropDatabase); err != nil {
 		return nil, fmt.Errorf("failed to drop database: %w", err)

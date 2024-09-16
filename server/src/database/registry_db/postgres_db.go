@@ -16,24 +16,7 @@ type RegistryPostgresDB struct {
 	db *sqlx.DB
 }
 
-func CreateRegistryPostgresDB(databaseHost, databasePort, databaseName, databasePassword, databaseUser string) (*RegistryPostgresDB, error) {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		databaseUser,
-		databasePassword,
-		databaseHost,
-		databasePort,
-		databaseName)
-
-	db, err := sqlx.Connect("postgres", dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	enableUUIDExtension := `CREATE EXTENSION IF NOT EXISTS "uuid-ossp";`
-	if _, err := db.Exec(enableUUIDExtension); err != nil {
-		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
-	}
-
+func CreateRegistryPostgresDB(db *sqlx.DB) (*RegistryPostgresDB, error) {
 	dropTables := `
     DROP TABLE IF EXISTS registry_interests CASCADE;
     DROP TABLE IF EXISTS registry_entries CASCADE;
