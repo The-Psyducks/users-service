@@ -39,8 +39,8 @@ func (m *UserMemoryDB) CreateUser(data model.UserRecord) (model.UserRecord, erro
 }
 
 // GetUserById retrieves a user from the database by its ID
-func (m *UserMemoryDB) GetUserById(id string) (model.UserRecord, error) {
-	user, found := m.data[id]
+func (m *UserMemoryDB) GetUserById(id uuid.UUID) (model.UserRecord, error) {
+	user, found := m.data[id.String()]
 	if !found {
 		return model.UserRecord{}, database.ErrKeyNotFound
 	}
@@ -74,12 +74,12 @@ func (m *UserMemoryDB) GetUserByUsername(username string) (model.UserRecord, err
 	return model.UserRecord{}, database.ErrKeyNotFound
 }
 
-func (m *UserMemoryDB) Delete(id string) error {
-	_, found := m.data[id]
+func (m *UserMemoryDB) Delete(id uuid.UUID) error {
+	_, found := m.data[id.String()]
 	if !found {
 		return database.ErrKeyNotFound
 	}
-	delete(m.data, id)
+	delete(m.data, id.String())
 	return nil
 }
 

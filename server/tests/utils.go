@@ -30,6 +30,7 @@ func getUserRegistryForSignUp(router *router.Router, email string) (ResolverSign
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
 	res := ResolverSignUpResponse{}
+	fmt.Printf("recorder body: %s ",recorder.Body.String())
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
 	if err != nil {
 		return ResolverSignUpResponse{}, err

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -37,10 +38,12 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 	user, err := u.service.ResolveUserEmail(data)
 
 	if err != nil {
+		fmt.Println("error", err)
 		_ = c.Error(err)
 		return
 	}
 
+	fmt.Println("user ", user)
 	c.JSON(http.StatusOK, user)
 }
 

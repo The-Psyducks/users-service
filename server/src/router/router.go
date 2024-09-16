@@ -5,7 +5,7 @@ import (
 	"io"
 	"log/slog"
 	"os"
-	"testing"
+	// "testing"
 	"users-service/src/config"
 	"users-service/src/controller"
 	"users-service/src/database/interests_db"
@@ -52,42 +52,64 @@ func createDatabases(cfg *config.Config) (users_db.UserDatabase, interests_db.In
 	var registryDb registry_db.RegistryDatabase
 	var err error
 
-	if testing.Testing() || cfg.Environment == "development" {
-		userDb, err = users_db.CreateUserMemoryDB()
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to create user memory database: %w", err)
-		}
-		interestDb, err = interests_db.CreateInterestsMemoryDB()
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to create interests memory database: %w", err)
-		}
-		registryDb, err = registry_db.CreateRegistryMemoryDB()
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
-		}
-	} else {
-		userDb, err = users_db.CreateUsersPostgresDB(
-			cfg.DatabaseHost,
-			cfg.DatabasePort,
-			cfg.DatabaseName,
-			cfg.DatabasePassword,
-			cfg.DatabaseUser)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
-		}
-		interestDb, err = interests_db.CreateInterestsPostgresDB(
-			cfg.DatabaseHost,
-			cfg.DatabasePort,
-			cfg.DatabaseName,
-			cfg.DatabasePassword,
-			cfg.DatabaseUser)
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
-		}
-		registryDb, err = registry_db.CreateRegistryMemoryDB()
-		if err != nil {
-			return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
-		}
+	// if testing.Testing() || cfg.Environment == "development" {
+	// 	userDb, err = users_db.CreateUserMemoryDB()
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("failed to create user memory database: %w", err)
+	// 	}
+	// 	interestDb, err = interests_db.CreateInterestsMemoryDB()
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("failed to create interests memory database: %w", err)
+	// 	}
+	// 	registryDb, err = registry_db.CreateRegistryMemoryDB()
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
+	// 	}
+	// } else {
+	// 	userDb, err = users_db.CreateUsersPostgresDB(
+	// 		cfg.DatabaseHost,
+	// 		cfg.DatabasePort,
+	// 		cfg.DatabaseName,
+	// 		cfg.DatabasePassword,
+	// 		cfg.DatabaseUser)
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
+	// 	}
+	// 	interestDb, err = interests_db.CreateInterestsPostgresDB(
+	// 		cfg.DatabaseHost,
+	// 		cfg.DatabasePort,
+	// 		cfg.DatabaseName,
+	// 		cfg.DatabasePassword,
+	// 		cfg.DatabaseUser)
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
+	// 	}
+	// 	registryDb, err = registry_db.CreateRegistryMemoryDB()
+	// 	if err != nil {
+	// 		return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
+	// 	}
+	// }
+	userDb, err = users_db.CreateUsersPostgresDB(
+		cfg.DatabaseHost,
+		cfg.DatabasePort,
+		cfg.DatabaseName,
+		cfg.DatabasePassword,
+		cfg.DatabaseUser)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
+	}
+	interestDb, err = interests_db.CreateInterestsPostgresDB(
+		cfg.DatabaseHost,
+		cfg.DatabasePort,
+		cfg.DatabaseName,
+		cfg.DatabasePassword,
+		cfg.DatabaseUser)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
+	}
+	registryDb, err = registry_db.CreateRegistryMemoryDB()
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
 	}
 
 	return userDb, interestDb, registryDb, nil

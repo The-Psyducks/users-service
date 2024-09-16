@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
@@ -95,7 +96,7 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 	return user, nil
 }
 
-func (postDB *UsersPostgresDB) GetUserById(id string) (model.UserRecord, error) {
+func (postDB *UsersPostgresDB) GetUserById(id uuid.UUID) (model.UserRecord, error) {
 	var user model.UserRecord
 	query := `SELECT * FROM users WHERE id = $1`
 	err := postDB.db.Get(&user, query, id)

@@ -2,6 +2,7 @@ package users_db
 
 import (
 	"users-service/src/model"
+	"github.com/google/uuid"
 )
 
 // UserDatabase interface to interact with the user's database
@@ -11,7 +12,7 @@ type UserDatabase interface {
 	CreateUser(data model.UserRecord) (model.UserRecord, error)
 
 	// GetUserById retrieves a user from the database by its ID
-	GetUserById(id string) (model.UserRecord, error)
+	GetUserById(id uuid.UUID) (model.UserRecord, error)
 
 	// GetUserByUsername retrieves a user from the database by its username
 	// it is case sensitive

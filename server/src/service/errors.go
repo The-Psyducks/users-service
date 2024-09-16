@@ -15,4 +15,5 @@ const (
 	UsernameNotFound            = "User not found"
 	RegistryNotFound            = "Registry not found"
 	InvalidRegistryStep			= "Invalid registry step"
+	InvalidInterest			= "Invalid interest"
 )
