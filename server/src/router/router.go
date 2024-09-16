@@ -47,14 +47,20 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 
 // Creates a new database connection using the configuration provided in the env file
 func createDBConnection(cfg *config.Config) (*sqlx.DB, error) {
-	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-			cfg.DatabaseUser,
-			cfg.DatabasePassword,
-			cfg.DatabaseHost,
-			cfg.DatabasePort,
-			cfg.DatabaseName)
-
-	db, err := sqlx.Connect("postgres", dsn)
+	var db *sqlx.DB
+	var err error
+	if cfg.Environment == "HEROKU" {
+		db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+	} else {
+		dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+				cfg.DatabaseUser,
+				cfg.DatabasePassword,
+				cfg.DatabaseHost,
+				cfg.DatabasePort,
+				cfg.DatabaseName)
+	
+		db, err = sqlx.Connect("postgres", dsn)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
