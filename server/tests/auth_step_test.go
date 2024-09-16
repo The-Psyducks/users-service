@@ -25,7 +25,7 @@ func TestGetUserAuthStepWhenItsPersonalInfo(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	email := "monke@gmail.com"
+	email := "monke1@gmail.com"
 
 	res, err := getUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
@@ -45,7 +45,7 @@ func TestGetUserAuthStepWhenItsInterests(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	email := "monke@gmail.com"
+	email := "monke2@gmail.com"
 
 	res, err := getUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
@@ -77,7 +77,7 @@ func TestGetUserAuthStepWhenItsComplete (t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	email := "monke@gmail.com"
+	email := "monke3@gmail.com"
 
 	res, err := getUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)

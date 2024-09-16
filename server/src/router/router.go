@@ -107,11 +107,16 @@ func createDatabases(cfg *config.Config) (users_db.UserDatabase, interests_db.In
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
 	}
-	registryDb, err = registry_db.CreateRegistryMemoryDB()
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to create registry memory database: %w", err)
-	}
+	registryDb, err = registry_db.CreateRegistryPostgresDB(
+		cfg.DatabaseHost,
+		cfg.DatabasePort,
+		cfg.DatabaseName,
+		cfg.DatabasePassword,
+		cfg.DatabaseUser)
 
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to connect to registry database: %w", err)
+	}
 	return userDb, interestDb, registryDb, nil
 }
 

@@ -39,10 +39,10 @@ func CreateUsersPostgresDB(databaseHost string, databasePort string, databaseNam
 		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
 	}
 
-	// dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "users")
-	// if _, err := db.Exec(dropDatabase); err != nil {
-	// 	return nil, fmt.Errorf("failed to drop database: %w", err)
-	// }
+	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "users")
+	if _, err := db.Exec(dropDatabase); err != nil {
+		return nil, fmt.Errorf("failed to drop database: %w", err)
+	}
 
 	schema := fmt.Sprintf(`
 	CREATE TABLE IF NOT EXISTS users (
@@ -125,25 +125,25 @@ func (postDB *UsersPostgresDB) GetUserByUsername(username string) (model.UserRec
 }
 
 func (postDB *UsersPostgresDB) CheckIfUsernameExists(username string) (bool, error) {
-    var count int
-    query := `SELECT COUNT(*) FROM users WHERE LOWER(username) = LOWER($1)`
-    err := postDB.db.QueryRow(query, username).Scan(&count)
+    var exists bool
+    query := `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = LOWER($1))`
+    err := postDB.db.QueryRow(query, username).Scan(&exists)
 
     if err != nil {
         return false, fmt.Errorf("error checking username existence: %w", err)
     }
 
-    return count > 0, nil
+    return exists, nil
 }
 
 func (postDB *UsersPostgresDB) CheckIfEmailExists(email string) (bool, error) {
-    var count int
-    query := `SELECT COUNT(*) FROM users WHERE email = $1`
-    err := postDB.db.QueryRow(query, email).Scan(&count)
+    var exists bool
+    query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
+    err := postDB.db.QueryRow(query, email).Scan(&exists)
 
     if err != nil {
         return false, fmt.Errorf("error checking email existence: %w", err)
     }
 
-    return count > 0, nil
+    return exists, nil
 }

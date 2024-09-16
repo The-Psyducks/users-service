@@ -4,13 +4,9 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-
 	"github.com/google/uuid"
-	// "users-service/src/constants"
-	// "users-service/src/database"
 	"users-service/src/model"
 )
 
@@ -39,10 +35,10 @@ func CreateInterestsPostgresDB(databaseHost string, databasePort string, databas
 		return nil, fmt.Errorf("failed to enable uuid extension: %w", err)
 	}
 
-	// dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "interests")
-	// if _, err := db.Exec(dropDatabase); err != nil {
-	// 	return nil, fmt.Errorf("failed to drop database: %w", err)
-	// }
+	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "interests")
+	if _, err := db.Exec(dropDatabase); err != nil {
+		return nil, fmt.Errorf("failed to drop database: %w", err)
+	}
 
 	schema := `
     CREATE TABLE IF NOT EXISTS user_interests (
