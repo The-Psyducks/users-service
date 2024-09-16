@@ -202,7 +202,12 @@ func (db *RegistryPostgresDB) AddInterestsToRegistryEntry(id uuid.UUID, interest
     if err != nil {
         return fmt.Errorf("failed to begin transaction: %w", err)
     }
-    defer tx.Rollback()
+    defer func() error {
+        if err := tx.Rollback(); err != nil && err != sql.ErrTxDone {
+			return fmt.Errorf("failed to rollback transaction: %w", err)
+		}
+		return nil
+    }()
 
     _, err = tx.Exec("DELETE FROM registry_interests WHERE registry_id = $1", id)
     if err != nil {
