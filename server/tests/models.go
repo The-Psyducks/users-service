@@ -80,5 +80,5 @@ type LoginRequest struct {
 }
 
 type LoginResponse struct {
-	Valid bool `json:"valid"`
+	AccessToken string `json:"access_token"`
 }

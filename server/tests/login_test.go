@@ -33,11 +33,10 @@ func TestLoginUser(t *testing.T) {
 		Password: user.Password,
 	}
 
-	code, resp, err := LoginValidUser(router, login)
+	code, _, err := LoginValidUser(router, login)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
-	assert.Equal(t, resp.Valid, true)
 }
 
 func TestLoginNotExistingUser(t *testing.T) {

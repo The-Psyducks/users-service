@@ -186,12 +186,12 @@ func (u *User) Login(c *gin.Context) {
 		return
 	}
 
-	valid, err := u.service.CheckLoginCredentials(data)
+	token, err := u.service.CheckLoginCredentials(data)
 
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"valid": valid})
+	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
