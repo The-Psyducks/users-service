@@ -14,7 +14,6 @@ import (
 	"users-service/src/middleware"
 	"users-service/src/database/users_db"
 	"users-service/src/database/registry_db"
-	"users-service/src/database/interests_db"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
@@ -74,31 +73,26 @@ func createDBConnection(cfg *config.Config) (*sqlx.DB, error) {
 }
 
 // Creates the databases for the users, interests and registry
-func createDatabases(cfg *config.Config) (users_db.UserDatabase, interests_db.InterestsDatabase, registry_db.RegistryDatabase, error) {
+func createDatabases(cfg *config.Config) (users_db.UserDatabase, registry_db.RegistryDatabase, error) {
 	var userDb users_db.UserDatabase
-	var interestDb interests_db.InterestsDatabase
 	var registryDb registry_db.RegistryDatabase
 	var err error
 
 	db, err := createDBConnection(cfg)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to connect to database: %w", err)
+		return nil, nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
 	userDb, err = users_db.CreateUsersPostgresDB(db)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
-	}
-	interestDb, err = interests_db.CreateInterestsPostgresDB(db)
-	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to connect to interests database: %w", err)
+		return nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
 	}
 	registryDb, err = registry_db.CreateRegistryPostgresDB(db)
 
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("failed to connect to registry database: %w", err)
+		return nil, nil, fmt.Errorf("failed to connect to registry database: %w", err)
 	}
-	return userDb, interestDb, registryDb, nil
+	return userDb, registryDb, nil
 }
 
 // Creates a new router with the configuration provided in the env file
@@ -106,13 +100,13 @@ func CreateRouter() (*Router, error) {
 	cfg := config.LoadConfig()
 	r := createRouterFromConfig(cfg)
 
-	userDb, interestDb, registryDb, err := createDatabases(cfg)
+	userDb, registryDb, err := createDatabases(cfg)
 	if err != nil {
 		slog.Error("failed to create databases", slog.String("error", err.Error()))
 		return nil, err
 	}
 
-	userService := service.CreateUserService(userDb, interestDb, registryDb)
+	userService := service.CreateUserService(userDb, registryDb)
 	userController := controller.CreateUserController(userService)
 
 	public := r.Engine.Group("/")

@@ -28,7 +28,7 @@ func (u *User) GetUserProfile(session_user_id string, username string) (model.Us
 
 func (u *User) getPrivateProfile(user model.UserRecord) (model.UserPrivateProfile, error) {
 	slog.Info("user Private profile retrieved succesfully", slog.String("userId", user.Id.String()))
-	interests, err := u.interestDb.GetInterestsForUserId(user.Id)
+	interests, err := u.userDb.GetInterestsForUserId(user.Id)
 	if err != nil {
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting interests from user: %w", err))
 	}

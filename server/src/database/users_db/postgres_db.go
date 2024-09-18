@@ -19,26 +19,36 @@ type UsersPostgresDB struct {
 }
 
 func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
-	dropDatabase := fmt.Sprintf("DROP TABLE IF EXISTS %s CASCADE;", "users")
+	dropDatabase := fmt.Sprintf(`
+		DROP TABLE IF EXISTS %s CASCADE;
+		DROP TABLE IF EXISTS %s CASCADE;
+		`, "users", "user_interests")
 	if _, err := db.Exec(dropDatabase); err != nil {
 		return nil, fmt.Errorf("failed to drop database: %w", err)
 	}
 
 	schema := fmt.Sprintf(`
-	CREATE TABLE IF NOT EXISTS users (
-		id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-		username VARCHAR(%d) NOT NULL UNIQUE,
-		first_name VARCHAR(%d) NOT NULL,
-		last_name VARCHAR(%d) NOT NULL,
-		email VARCHAR(%d) NOT NULL UNIQUE,
-		password TEXT NOT NULL,
-		location VARCHAR(255) NOT NULL,
-		created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-	);
-	
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
-	CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
-	`, constants.MaxUsernameLength, constants.MaxFirstNameLength, constants.MaxLastNameLength, constants.MaxEmailLength)
+		CREATE TABLE IF NOT EXISTS users (
+			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+			username VARCHAR(%d) NOT NULL UNIQUE,
+			first_name VARCHAR(%d) NOT NULL,
+			last_name VARCHAR(%d) NOT NULL,
+			email VARCHAR(%d) NOT NULL UNIQUE,
+			password TEXT NOT NULL,
+			location VARCHAR(255) NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+		);
+		
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+		CREATE TABLE IF NOT EXISTS user_interests (
+		user_id UUID NOT NULL,
+		interest VARCHAR(255) NOT NULL,
+		PRIMARY KEY (user_id, interest),
+		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		);
+		`, constants.MaxUsernameLength, constants.MaxFirstNameLength, constants.MaxLastNameLength, constants.MaxEmailLength)
 	
 
 	if _, err := db.Exec(schema); err != nil {
@@ -140,4 +150,49 @@ func (postDB *UsersPostgresDB) CheckIfEmailExists(email string) (bool, error) {
     }
 
     return exists, nil
+}
+
+func (postDB *UsersPostgresDB) AssociateInterestsToUser(userId uuid.UUID, interests []string) error {
+	var interestRecord model.Interest
+	query := `
+		INSERT INTO user_interests (user_id, interest)
+		VALUES ($1, $2)
+	`
+
+	for _, interest := range interests {
+		err := postDB.db.QueryRow(query, userId, interest).Scan(&interestRecord.Id, &interestRecord.Interest)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+			return fmt.Errorf("error inserting interest record: %w", err)
+		}
+	}
+	return nil
+}
+
+func (postDB *UsersPostgresDB) GetInterestsForUserId(id uuid.UUID) ([]string, error) {
+	var interests []string
+	query := `
+		SELECT interest
+		FROM user_interests
+		WHERE user_id = $1
+	`
+
+	rows, err := postDB.db.Query(query, id)
+	if err != nil {
+		return nil, fmt.Errorf("error getting interests for user: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var interest string
+		err := rows.Scan(&interest)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning interest: %w", err)
+		}
+		interests = append(interests, interest)
+	}
+
+	return interests, nil
 }
