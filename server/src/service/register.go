@@ -188,7 +188,7 @@ func (u *User) createUserWithInterestsFromRegistry(registry model.RegistryEntry,
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating user: %w", err))
 	}
 
-	err = u.interestDb.AssociateInterestsToUser(createdUser.Id, interestsNames)
+	err = u.userDb.AssociateInterestsToUser(createdUser.Id, interestsNames)
 	if err != nil {
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
 	}
