@@ -15,15 +15,11 @@ var (
 )
 
 func init() {
-	var err error
 	jwtSecret = os.Getenv("JWT_SECRET")
 	jwtExpirationHoursStr := os.Getenv("JWT_DURATION_HOURS")
 
 	if jwtExpirationHoursStr != "" {
-		jwtExpirationHours, err = strconv.Atoi(jwtExpirationHoursStr)
-		if err != nil {
-			jwtExpirationHoursStr = ""
-		}
+		jwtExpirationHours, _ = strconv.Atoi(jwtExpirationHoursStr)
 	}
 }
 
