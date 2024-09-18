@@ -192,6 +192,10 @@ func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) interestsValidator(fl validator.FieldLevel) bool {
 	interests := fl.Field().Interface().([]int)
+	if len(interests) == 0 {
+		u.addValidationError("interests", "A user must have at least one interest")
+		return false
+	}
 	if len(interests) > constants.MaxInterests {
 		u.addValidationError("interests", fmt.Sprintf("Interests must be less than %d", constants.MaxInterests))
 		return false
