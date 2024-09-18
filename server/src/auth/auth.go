@@ -2,30 +2,50 @@ package auth
 
 import (
 	"fmt"
+	"os"
 	"time"
+	"strconv"
 
 	"github.com/golang-jwt/jwt/v5"
 )
 
-const (
-	jwtSecret = "monkeCrack"
-	jwtExpirationHours = 2
+var (
+	jwtSecret          string
+	jwtExpirationHours int
 )
 
+func init() {
+	var err error
+	jwtSecret = os.Getenv("JWT_SECRET")
+	jwtExpirationHoursStr := os.Getenv("JWT_DURATION_HOURS")
+
+	if jwtExpirationHoursStr != "" {
+		jwtExpirationHours, err = strconv.Atoi(jwtExpirationHoursStr)
+		if err != nil {
+			jwtExpirationHoursStr = ""
+		}
+	}
+}
+
 type Claims struct {
-	UserId 		string	`json:"user_id"`
-	UserAdmin 	bool 	`json:"user_admin"`
+	UserId    string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userId string, userAdmin bool) (string, error) {
+func GenerateToken(userId string, username string, userAdmin bool) (string, error) {
+	if jwtSecret == "" {
+		return "", fmt.Errorf("JWT_SECRET environment variable is not set")
+	}
+	if jwtExpirationHours == 0 {
+		return "", fmt.Errorf("JWT_DURATION_HOURS environment variable is not set or invalid")
+	}
+
 	claims := Claims{
-		UserId: userId,
-		UserAdmin: userAdmin,
+		UserId:    userId,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * jwtExpirationHours)),
-			IssuedAt: jwt.NewNumericDate(time.Now()),
-			Issuer: "ThePsyducks",
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(jwtExpirationHours) * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+			Issuer:    "ThePsyducks-users-service",
 		},
 	}
 
@@ -40,11 +60,15 @@ func GenerateToken(userId string, userAdmin bool) (string, error) {
 }
 
 func ValidateToken(tokenString string) (*Claims, error) {
+	if jwtSecret == "" {
+		return nil, fmt.Errorf("JWT_SECRET environment variable is not set")
+	}
+
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return jwtSecret, nil
+		return []byte(jwtSecret), nil
 	})
 
 	if err != nil {

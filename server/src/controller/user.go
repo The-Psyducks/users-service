@@ -164,19 +164,6 @@ func (u *User) CompleteRegistry(c *gin.Context) {
 	c.JSON(http.StatusOK, userResponse)
 }
 
-func (u *User) GetUserByUsername(c *gin.Context) {
-	username := c.Param("username")
-
-	user, err := u.service.GetUserByUsername(username)
-
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, user)
-}
-
 func (u *User) Login(c *gin.Context) {
 	var data model.UserLoginRequest
 
@@ -194,4 +181,18 @@ func (u *User) Login(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
+}
+
+func (u *User) GetUserProfile(c *gin.Context) {
+	userId := c.Param("session_user_id")
+	username := c.Param("username")
+
+	user, err := u.service.GetUserProfile(userId, username)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }

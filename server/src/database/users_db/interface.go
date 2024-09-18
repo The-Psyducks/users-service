@@ -18,6 +18,10 @@ type UserDatabase interface {
 	// it is case sensitive
 	GetUserByUsername(username string) (model.UserRecord, error)
 
+	// GetUserByEmail retrieves a user from the database by its username
+	// it is case sensitive
+	GetUserByEmail(email string) (model.UserRecord, error)
+
 	// CheckIfUsernameExists checks if a username already exists in the database
 	// it is case insensitive
 	CheckIfUsernameExists(username string) (bool, error)

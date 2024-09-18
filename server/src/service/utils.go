@@ -11,8 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func createUserResponseFromUserRecordAndInterests(record model.UserRecord, interests []string) model.UserResponse {
-	return model.UserResponse{
+func createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord, interests []string) model.UserPrivateProfile {
+	return model.UserPrivateProfile{
 		Id:        record.Id,
 		UserName:  record.UserName,
 		FirstName: record.FirstName,
@@ -54,7 +54,7 @@ func hashPassword(password string) (string, error) {
 	if err != nil {
 		return "", app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error hashing password: %w", err))
 	}
-	
+
 	return string(hashedPassword), nil
 }
 
@@ -91,4 +91,3 @@ func getStepForRegistryEntry(entry model.RegistryEntry) string {
 
 	return constants.CompleteStep
 }
-

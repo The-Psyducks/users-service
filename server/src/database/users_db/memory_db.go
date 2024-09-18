@@ -74,6 +74,15 @@ func (m *UserMemoryDB) GetUserByUsername(username string) (model.UserRecord, err
 	return model.UserRecord{}, database.ErrKeyNotFound
 }
 
+func (m *UserMemoryDB) GetUserByEmail(email string) (model.UserRecord, error) {
+	for _, user := range m.data {
+		if user.Email == email {
+			return user, nil
+		}
+	}
+	return model.UserRecord{}, database.ErrKeyNotFound
+}
+
 func (m *UserMemoryDB) Delete(id uuid.UUID) error {
 	_, found := m.data[id.String()]
 	if !found {

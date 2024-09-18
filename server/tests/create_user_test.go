@@ -37,7 +37,7 @@ func TestCreateUser(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 
-	AssertUserProfileIsUser(t, email, personalInfo, location, interests, userProfile)
+	AssertUserPrivateProfileIsUser(t, email, personalInfo, location, interests, userProfile)
 }
 
 func TestCreateUserWithInvalidPassword(t *testing.T) {

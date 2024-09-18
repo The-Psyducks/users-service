@@ -14,7 +14,7 @@ import (
 func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (string, error) {
 	slog.Info("checking login information")
 
-	userRecord, err := u.userDb.GetUserByUsername(data.UserName)
+	userRecord, err := u.userDb.GetUserByEmail(data.Email)
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -27,7 +27,7 @@ func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (string, error
 		return "", app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
-	authToken, err := auth.GenerateToken(userRecord.UserName, true)
+	authToken, err := auth.GenerateToken(userRecord.Id.String(), userRecord.UserName, true)
 
 	if err != nil {
 		return "", app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating token: %w", err))

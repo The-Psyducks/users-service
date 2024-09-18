@@ -17,8 +17,8 @@ type UserRequest struct {
 	InterestsIds []int  `json:"interests_ids" validate:"required,interestsvalidator"`
 }
 
-// UserResponse is a struct that represents a user in the HTTP response
-type UserResponse struct {
+// UserPrivateProfile is a struct that represents a user in the HTTP response
+type UserPrivateProfile struct {
 	Id        uuid.UUID `json:"id" binding:"required"`
 	FirstName string    `json:"first_name" binding:"required"`
 	LastName  string    `json:"last_name" binding:"required"`
@@ -26,6 +26,14 @@ type UserResponse struct {
 	Email     string    `json:"email" binding:"required"`
 	Location  string    `json:"location" binding:"required"`
 	Interests []string  `json:"interests" binding:"required"`
+}
+
+// UserPublicProfile is a struct that represents a user in the HTTP response
+type UserPublicProfile struct {
+	Id        uuid.UUID `json:"id" binding:"required"`
+	FirstName string    `json:"first_name" binding:"required"`
+	LastName  string    `json:"last_name" binding:"required"`
+	UserName  string    `json:"username" binding:"required"`
 }
 
 // UserRecord is a struct that represents a user in the database
@@ -41,6 +49,6 @@ type UserRecord struct {
 }
 
 type UserLoginRequest struct {
-	UserName string `json:"username" validate:"required"`
+	Email string `json:"email" validate:"required"`
 	Password string `json:"password" validate:"required"`
 }

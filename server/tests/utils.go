@@ -2,9 +2,9 @@ package tests
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
+	"encoding/json"
 	"net/http/httptest"
 	"regexp"
 	"testing"
@@ -30,7 +30,7 @@ func getUserRegistryForSignUp(router *router.Router, email string) (ResolverSign
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
 	res := ResolverSignUpResponse{}
-	fmt.Printf("recorder body: %s ",recorder.Body.String())
+	fmt.Printf("recorder body: %s ", recorder.Body.String())
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
 	if err != nil {
 		return ResolverSignUpResponse{}, err
@@ -343,13 +343,27 @@ func LoginInvalidUser(router *router.Router, loginReq LoginRequest) (int, ErrorR
 	return recorder.Code, result, nil
 }
 
-func getExistingUser(router *router.Router, username string) (int, UserProfile, error) {
-	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
+func createAndLoginUser(router *router.Router, email string, user UserPersonalInfo, interestsIds []int) (int, LoginResponse, error) {
+	_, err := CreateValidUser(router, email, user, interestsIds)
+	if err != nil {
+		return 0, LoginResponse{}, err
+	}
 
+	login := LoginRequest{
+		Email:    email,
+		Password: user.Password,
+	}
+
+	return LoginValidUser(router, login)
+}
+
+func getExistingUser(router *router.Router, username string, token string) (int, UserProfile, error) {
+	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
 	if err != nil {
 		return 0, UserProfile{}, err
 	}
 
+	req.Header.Add("Authorization", "Bearer "+token)
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
 	result := UserProfile{}
@@ -361,12 +375,13 @@ func getExistingUser(router *router.Router, username string) (int, UserProfile, 
 	return recorder.Code, result, nil
 }
 
-func getNotExistingUser(router *router.Router, username string) (int, ErrorResponse, error) {
+func getNotExistingUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
 	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}
 
+	req.Header.Add("Authorization", "Bearer "+token)
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
 	result := ErrorResponse{}
@@ -418,7 +433,7 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 	return location, interests
 }
 
-func AssertUserProfileIsUser(t *testing.T, email string, user UserPersonalInfo, location string, interests []string, profile UserProfile) {
+func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersonalInfo, location string, interests []string, profile UserProfile) {
 	assert.Equal(t, user.FirstName, profile.FirstName)
 	assert.Equal(t, user.LastName, profile.LastName)
 	assert.Equal(t, user.UserName, profile.UserName)

@@ -75,8 +75,8 @@ type ValidationErrorResponse struct {
 }
 
 type LoginRequest struct {
-	UserName string `json:"username"`
-	Password string `json:"password"`
+	Email 		string 	`json:"email"`
+	Password	string	`json:"password"`
 }
 
 type LoginResponse struct {
