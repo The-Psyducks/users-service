@@ -394,21 +394,37 @@ func getNotExistingUser(router *router.Router, username string, token string) (i
 }
 
 func getRegisterOptions(router *router.Router) (int, RegisterOptions, error) {
-	req, err := http.NewRequest("GET", "/users/register", &bytes.Reader{})
-
+	req, err := http.NewRequest("GET", "/users/register/locations", &bytes.Reader{})
 	if err != nil {
 		return 0, RegisterOptions{}, err
 	}
 
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	result := RegisterOptions{}
-	err = json.Unmarshal(recorder.Body.Bytes(), &result)
-
+	var locations  struct {
+		Locations []Location `json:"locations"`
+	}
+	err = json.Unmarshal(recorder.Body.Bytes(), &locations)
 	if err != nil {
 		return 0, RegisterOptions{}, err
 	}
-	return recorder.Code, result, nil
+	
+	req, err = http.NewRequest("GET", "/users/register/interests", &bytes.Reader{})
+	if err != nil {
+		return 0, RegisterOptions{}, err
+	}
+	
+	recorder = httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	var interests  struct {
+		Interests []Interest `json:"interests"`
+	}
+	err = json.Unmarshal(recorder.Body.Bytes(), &interests)
+	if err != nil {
+		return 0, RegisterOptions{}, err
+	}
+
+	return recorder.Code, RegisterOptions{Locations: locations.Locations, Interests: interests.Interests}, nil
 }
 
 func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId int, interestsIds []int) (string, []string) {

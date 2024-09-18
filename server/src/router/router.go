@@ -117,7 +117,8 @@ func CreateRouter() (*Router, error) {
 
 	public := r.Engine.Group("/")
 	{
-		public.GET("/users/register", userController.GetRegisterOptions)
+		public.GET("/users/register/locations", userController.GetLocations)
+		public.GET("/users/register/interests", userController.GetInterests)
 		public.POST("/users/resolver", userController.ResolveUserEmail)
 		public.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
 		public.POST("/users/register/:id/verify-email", userController.VerifyEmail)

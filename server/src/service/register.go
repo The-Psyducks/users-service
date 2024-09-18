@@ -12,6 +12,29 @@ import (
 	"github.com/google/uuid"
 )
 
+func (u *User) GetLocations() map[string]interface{} {
+	locations := []model.Location{}
+	for id, name := range register_options.GetAllLocationsAndIds() {
+		locations = append(locations, model.Location{Id: id, Name: name})
+	}
+		
+	slog.Info("locations retrieved successfully")
+	return map[string]interface{}{
+		"locations": locations,
+	}
+}
+func (u *User) GetInterests() map[string]interface{} {
+	
+	interests := []model.Interest{}
+	for id, interest := range register_options.GetAllInterestsAndIds() {
+		interests = append(interests, model.Interest{Id: id, Interest: interest})
+	}
+	
+	slog.Info("interests retrieved successfully")
+	return map[string]interface{}{
+		"interests": interests,
+	}
+}
 func (u *User) GetRegisterOptions() map[string]interface{} {
 	slog.Info("register options retrieved successfully")
 

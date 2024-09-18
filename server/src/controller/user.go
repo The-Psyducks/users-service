@@ -20,8 +20,14 @@ func CreateUserController(service *service.User) *User {
 	return &User{service: service}
 }
 
-func (u *User) GetRegisterOptions(c *gin.Context) {
-	data := u.service.GetRegisterOptions()
+func (u *User) GetLocations(c *gin.Context) {
+	data := u.service.GetLocations()
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (u *User) GetInterests(c *gin.Context) {
+	data := u.service.GetInterests()
 
 	c.JSON(http.StatusOK, data)
 }
