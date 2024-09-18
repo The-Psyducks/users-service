@@ -20,8 +20,14 @@ func CreateUserController(service *service.User) *User {
 	return &User{service: service}
 }
 
-func (u *User) GetRegisterOptions(c *gin.Context) {
-	data := u.service.GetRegisterOptions()
+func (u *User) GetLocations(c *gin.Context) {
+	data := u.service.GetLocations()
+
+	c.JSON(http.StatusOK, data)
+}
+
+func (u *User) GetInterests(c *gin.Context) {
+	data := u.service.GetInterests()
 
 	c.JSON(http.StatusOK, data)
 }
@@ -164,19 +170,6 @@ func (u *User) CompleteRegistry(c *gin.Context) {
 	c.JSON(http.StatusOK, userResponse)
 }
 
-func (u *User) GetUserByUsername(c *gin.Context) {
-	username := c.Param("username")
-
-	user, err := u.service.GetUserByUsername(username)
-
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, user)
-}
-
 func (u *User) Login(c *gin.Context) {
 	var data model.UserLoginRequest
 
@@ -186,12 +179,26 @@ func (u *User) Login(c *gin.Context) {
 		return
 	}
 
-	valid, err := u.service.CheckLoginCredentials(data)
+	token, err := u.service.CheckLoginCredentials(data)
 
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"valid": valid})
+	c.JSON(http.StatusOK, gin.H{"access_token": token})
+}
+
+func (u *User) GetUserProfile(c *gin.Context) {
+	userId := c.Param("session_user_id")
+	username := c.Param("username")
+
+	user, err := u.service.GetUserProfile(userId, username)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
 }

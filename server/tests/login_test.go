@@ -29,15 +29,14 @@ func TestLoginUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
-		UserName: user.UserName,
+		Email: email,
 		Password: user.Password,
 	}
 
-	code, resp, err := LoginValidUser(router, login)
+	code, _, err := LoginValidUser(router, login)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
-	assert.Equal(t, resp.Valid, true)
 }
 
 func TestLoginNotExistingUser(t *testing.T) {
@@ -45,7 +44,7 @@ func TestLoginNotExistingUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 	
 	login := LoginRequest{
-		UserName: "AtsumuMiya",
+		Email: "AtsumuMiya@GOAT.com",
 		Password: "InarizakiGOAT",
 	}
 	
@@ -77,7 +76,7 @@ func TestLoginUserWithInvalidPassword(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
-		UserName: user.UserName,
+		Email: email,
 		Password: "Edward$Elri3c:",
 	}
 
@@ -117,7 +116,7 @@ func TestLoginUserStillInRegistry(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
-		UserName: personalInfo.UserName,
+		Email: email,
 		Password: personalInfo.Password,
 	}
 

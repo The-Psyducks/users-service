@@ -104,6 +104,20 @@ func (postDB *UsersPostgresDB) GetUserByUsername(username string) (model.UserRec
 	return user, nil
 }
 
+func (postDB *UsersPostgresDB) GetUserByEmail(email string) (model.UserRecord, error) {
+	var user model.UserRecord
+	query := `SELECT * FROM users WHERE email = $1 LIMIT 1`
+	err := postDB.db.Get(&user, query, email)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return model.UserRecord{}, database.ErrKeyNotFound
+		}
+		return model.UserRecord{}, fmt.Errorf("error fetching user by email: %w", err)
+	}
+	return user, nil
+}
+
 func (postDB *UsersPostgresDB) CheckIfUsernameExists(username string) (bool, error) {
     var exists bool
     query := `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = LOWER($1))`

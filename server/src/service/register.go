@@ -2,15 +2,39 @@ package service
 
 import (
 	"fmt"
-	"net/http"
 	"log/slog"
-	"github.com/google/uuid"
-	"users-service/src/model"
-	"users-service/src/constants"
+	"net/http"
 	"users-service/src/app_errors"
+	"users-service/src/constants"
 	"users-service/src/database/register_options"
+	"users-service/src/model"
+
+	"github.com/google/uuid"
 )
 
+func (u *User) GetLocations() map[string]interface{} {
+	locations := []model.Location{}
+	for id, name := range register_options.GetAllLocationsAndIds() {
+		locations = append(locations, model.Location{Id: id, Name: name})
+	}
+		
+	slog.Info("locations retrieved successfully")
+	return map[string]interface{}{
+		"locations": locations,
+	}
+}
+func (u *User) GetInterests() map[string]interface{} {
+	
+	interests := []model.Interest{}
+	for id, interest := range register_options.GetAllInterestsAndIds() {
+		interests = append(interests, model.Interest{Id: id, Interest: interest})
+	}
+	
+	slog.Info("interests retrieved successfully")
+	return map[string]interface{}{
+		"interests": interests,
+	}
+}
 func (u *User) GetRegisterOptions() map[string]interface{} {
 	slog.Info("register options retrieved successfully")
 
@@ -58,7 +82,6 @@ func (u *User) validateRegistryStep(id uuid.UUID, step string) error {
 
 	return nil
 }
-
 
 func (u *User) SendVerificationEmail(id uuid.UUID) error {
 	slog.Info("sending verification email")
@@ -158,41 +181,40 @@ func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
 	return nil
 }
 
-func (u *User) createUserWithInterestsFromRegistry(registry model.RegistryEntry, interestsNames []string) (model.UserResponse, error) {
+func (u *User) createUserWithInterestsFromRegistry(registry model.RegistryEntry, interestsNames []string) (model.UserPrivateProfile, error) {
 	userRecord := generateUserRecordFromRegistryEntry(registry)
 	createdUser, err := u.userDb.CreateUser(userRecord)
 	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating user: %w", err))
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating user: %w", err))
 	}
 
 	err = u.interestDb.AssociateInterestsToUser(createdUser.Id, interestsNames)
 	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
 	}
 
-	return createUserResponseFromUserRecordAndInterests(createdUser, interestsNames), nil
+	return createUserPrivateProfileFromUserRecordAndInterests(createdUser, interestsNames), nil
 }
 
-
-func (u *User) CompleteRegistry(id uuid.UUID) (model.UserResponse, error) {
+func (u *User) CompleteRegistry(id uuid.UUID) (model.UserPrivateProfile, error) {
 	slog.Info("completing registry")
 
 	if err := u.validateRegistryStep(id, constants.CompleteStep); err != nil {
-		return model.UserResponse{}, err
+		return model.UserPrivateProfile{}, err
 	}
 
 	registry, err := u.registryDb.GetRegistryEntry(id)
 	if err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting registry entry: %w", err))
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting registry entry: %w", err))
 	}
 
 	if err := u.registryDb.DeleteRegistryEntry(id); err != nil {
-		return model.UserResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error deleting registry entry: %w", err))
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error deleting registry entry: %w", err))
 	}
 
 	userResponse, err := u.createUserWithInterestsFromRegistry(registry, registry.Interests)
 	if err != nil {
-		return model.UserResponse{}, err
+		return model.UserPrivateProfile{}, err
 	}
 
 	slog.Info("registry completed successfully", slog.String("registration id", id.String()))

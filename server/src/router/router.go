@@ -115,19 +115,24 @@ func CreateRouter() (*Router, error) {
 	userService := service.CreateUserService(userDb, interestDb, registryDb)
 	userController := controller.CreateUserController(userService)
 
-	r.Engine.GET("/users/register", userController.GetRegisterOptions)
-	
-    r.Engine.POST("/users/resolver", userController.ResolveUserEmail)
-    r.Engine.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
-    r.Engine.POST("/users/register/:id/verify-email", userController.VerifyEmail)
-    r.Engine.PUT("/users/register/:id/personal-info", userController.AddPersonalInfo)
-    r.Engine.PUT("/users/register/:id/interests", userController.AddInterests)
-    r.Engine.POST("/users/register/:id/complete", userController.CompleteRegistry)
+	public := r.Engine.Group("/")
+	{
+		public.GET("/users/register/locations", userController.GetLocations)
+		public.GET("/users/register/interests", userController.GetInterests)
+		public.POST("/users/resolver", userController.ResolveUserEmail)
+		public.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
+		public.POST("/users/register/:id/verify-email", userController.VerifyEmail)
+		public.PUT("/users/register/:id/personal-info", userController.AddPersonalInfo)
+		public.PUT("/users/register/:id/interests", userController.AddInterests)
+		public.POST("/users/register/:id/complete", userController.CompleteRegistry)
+		public.POST("/users/login", userController.Login)
+	}
 
-
-	r.Engine.GET("/users/:username", userController.GetUserByUsername)
-	r.Engine.POST("/users/login", userController.Login)
-
+	private := r.Engine.Group("/")
+	private.Use(middleware.AuthMiddleware())
+	{
+		private.GET("/users/:username", userController.GetUserProfile)
+	}
 	return r, nil
 }
 
