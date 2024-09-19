@@ -17,19 +17,19 @@ func (u *User) GetLocations() map[string]interface{} {
 	for id, name := range register_options.GetAllLocationsAndIds() {
 		locations = append(locations, model.Location{Id: id, Name: name})
 	}
-		
+
 	slog.Info("locations retrieved successfully")
 	return map[string]interface{}{
 		"locations": locations,
 	}
 }
 func (u *User) GetInterests() map[string]interface{} {
-	
+
 	interests := []model.Interest{}
 	for id, interest := range register_options.GetAllInterestsAndIds() {
 		interests = append(interests, model.Interest{Id: id, Interest: interest})
 	}
-	
+
 	slog.Info("interests retrieved successfully")
 	return map[string]interface{}{
 		"interests": interests,
@@ -193,7 +193,7 @@ func (u *User) createUserWithInterestsFromRegistry(registry model.RegistryEntry,
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
 	}
 
-	return createUserPrivateProfileFromUserRecordAndInterests(createdUser, interestsNames), nil
+	return createUserPrivateProfileFromUserRecordAndInterests(createdUser, interestsNames, 0, 0), nil
 }
 
 func (u *User) CompleteRegistry(id uuid.UUID) (model.UserPrivateProfile, error) {

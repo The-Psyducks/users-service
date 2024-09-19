@@ -190,8 +190,13 @@ func (u *User) Login(c *gin.Context) {
 }
 
 func (u *User) GetUserProfile(c *gin.Context) {
-	userId := c.Param("session_user_id")
 	username := c.Param("username")
+	userId := c.GetString("session_user_id")
+	if userId == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		_ = c.Error(err)
+		return
+	}
 
 	user, err := u.service.GetUserProfile(userId, username)
 
@@ -201,4 +206,31 @@ func (u *User) GetUserProfile(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (u *User) FollowUser(c *gin.Context) {
+	userId := c.GetString("session_user_id")
+	if userId == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		_ = c.Error(err)
+		return
+	}
+
+	var userToFollow struct {
+		Username string `json:"user_to_follow" validate:"required"`
+	}
+	if err := c.BindJSON(&userToFollow); err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+
+	fmt.Println("userToFollow", userToFollow)
+	err := u.service.FollowUser(userId, userToFollow.Username)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, gin.H{})
 }

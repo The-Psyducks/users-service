@@ -8,27 +8,86 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"golang.org/x/crypto/bcrypt"
 
 	"users-service/src/constants"
 	"users-service/src/database"
 	"users-service/src/model"
 )
 
+const (
+	usersTable = "users"
+	interestsTable = "user_interests"
+	followersTable = "followers"
+)
+
 type UsersPostgresDB struct {
 	db *sqlx.DB
 }
 
-func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
-	dropDatabase := fmt.Sprintf(`
-		DROP TABLE IF EXISTS %s CASCADE;
-		DROP TABLE IF EXISTS %s CASCADE;
-		`, "users", "user_interests")
-	if _, err := db.Exec(dropDatabase); err != nil {
-		return nil, fmt.Errorf("failed to drop database: %w", err)
+func hashPassword(password string) string {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println("error hashing password: ", err)
 	}
 
-	schema := fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS users (
+	return string(hashedPassword)
+}
+
+func (postDB *UsersPostgresDB) createTestUsers() {
+	users := []model.UserRecord{
+		{
+			UserName:  "Monke",
+			FirstName: "Test",
+			LastName:  "One",
+			Email:     "monke@gmail.com",
+			Password:  hashPassword("password"),
+			Location:  "Test Location",
+		},
+		{
+			UserName:  "Test",
+			FirstName: "Test",
+			LastName:  "Two",
+			Email:     "test@gmail.com",
+			Password:  hashPassword("password"),
+			Location:  "Test Location",
+		},
+	}
+
+	for _, user := range users {
+		_, err := postDB.CreateUser(user)
+		if err != nil {
+			fmt.Println("error creating test user: ", err)
+		}
+	}
+			
+}
+
+func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
+	if err := createTables(db); err != nil {
+		return nil, fmt.Errorf("failed to create tables: %w", err)
+	}
+
+	postgresDB := UsersPostgresDB{db}
+
+	postgresDB.createTestUsers()
+
+	return &postgresDB, nil
+}
+
+func createTables(db *sqlx.DB) error {
+	dropTables := fmt.Sprintf(`
+		DROP TABLE IF EXISTS %s CASCADE;
+		DROP TABLE IF EXISTS %s CASCADE;
+		DROP TABLE IF EXISTS %s CASCADE;
+		`, usersTable, interestsTable, followersTable)
+	
+	if _, err := db.Exec(dropTables); err != nil {
+		return fmt.Errorf("failed to drop database: %w", err)
+	}
+	
+	schemaUsers := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
 			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 			username VARCHAR(%d) NOT NULL UNIQUE,
 			first_name VARCHAR(%d) NOT NULL,
@@ -41,23 +100,38 @@ func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
 		
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
 		CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email ON users(email);
+		`, usersTable, constants.MaxUsernameLength, constants.MaxFirstNameLength, constants.MaxLastNameLength, constants.MaxEmailLength)
 
-		CREATE TABLE IF NOT EXISTS user_interests (
-		user_id UUID NOT NULL,
-		interest VARCHAR(255) NOT NULL,
-		PRIMARY KEY (user_id, interest),
-		FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-		);
-		`, constants.MaxUsernameLength, constants.MaxFirstNameLength, constants.MaxLastNameLength, constants.MaxEmailLength)
+	schemaInterests := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			user_id UUID NOT NULL,
+			interest VARCHAR(255) NOT NULL,
+			PRIMARY KEY (user_id, interest),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			);
+		`, interestsTable)
 	
+	schemaFollowers := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			follower_id UUID NOT NULL,
+			following_id UUID NOT NULL,
+			PRIMARY KEY (follower_id, following_id),
+			FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
+			);
+		`, followersTable)
 
-	if _, err := db.Exec(schema); err != nil {
-		return nil, fmt.Errorf("failed to create table: %w", err)
+	if _, err := db.Exec(schemaUsers); err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+	if _, err := db.Exec(schemaInterests); err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+	if _, err := db.Exec(schemaFollowers); err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
 	}
 
-	postgresDB := UsersPostgresDB{db}
-
-	return &postgresDB, nil
+	return nil
 }
 
 
@@ -196,3 +270,88 @@ func (postDB *UsersPostgresDB) GetInterestsForUserId(id uuid.UUID) ([]string, er
 
 	return interests, nil
 }
+
+func (postDB *UsersPostgresDB) FollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
+	query := `
+		INSERT INTO followers (follower_id, following_id)
+		VALUES ($1, $2)
+	`
+
+	_, err := postDB.db.Exec(query, followerId, followingId)
+	if err != nil {
+		return fmt.Errorf("error following user: %w", err)
+	}
+	return nil
+}
+
+func (postDB *UsersPostgresDB) UnfollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
+	query := `
+		DELETE FROM followers
+		WHERE follower_id = $1 AND following_id = $2
+	`
+
+	_, err := postDB.db.Exec(query, followerId, followingId)
+	if err != nil {
+		return fmt.Errorf("error unfollowing user: %w", err)
+	}
+	return nil
+}
+
+func (postDB *UsersPostgresDB) CheckIfUserFollows(followerId string, followingId string) (bool, error) {
+	var exists bool
+	fmt.Println("followerId: ", followerId)
+	fmt.Println("followingId: ", followingId)
+	query := `SELECT EXISTS(SELECT 1 FROM followers WHERE follower_id = $1 AND following_id = $2)`
+	err := postDB.db.QueryRow(query, followerId, followingId).Scan(&exists)
+
+	if err != nil {
+		return false, fmt.Errorf("error checking if user follows: %w", err)
+	}
+
+	return exists, nil
+}
+
+func (postDB *UsersPostgresDB) GetAmountOfFollowers(userId uuid.UUID) (int, error) {
+    var followers int
+    query := `SELECT COUNT(*) FROM followers WHERE following_id = $1`
+    
+    // Imprimir todas las filas antes de contar
+    rows, err := postDB.db.Queryx("SELECT * FROM followers WHERE following_id = $1", userId)
+    if err != nil {
+        return 0, fmt.Errorf("error querying followers: %w", err)
+    }
+    defer rows.Close()
+
+    fmt.Println("Rows in followers table for following_id:", userId)
+    for rows.Next() {
+        var follower struct {
+            FollowerID  uuid.UUID `db:"follower_id"`
+            FollowingID uuid.UUID `db:"following_id"`
+        }
+        if err := rows.StructScan(&follower); err != nil {
+            return 0, fmt.Errorf("error scanning row: %w", err)
+        }
+        fmt.Printf("FollowerID: %s, FollowingID: %s\n", follower.FollowerID, follower.FollowingID)
+    }
+
+    // Ahora obtener la cantidad de seguidores
+    err = postDB.db.Get(&followers, query, userId)
+    if err != nil {
+        return 0, fmt.Errorf("error getting amount of followers: %w", err)
+    }
+    return followers, nil
+}
+
+
+func (postDB *UsersPostgresDB) GetAmountOfFollowing(userId uuid.UUID) (int, error) {
+	var following int
+	query := `SELECT COUNT(*) FROM followers WHERE follower_id = $1`
+	err := postDB.db.Get(&following, query, userId)
+
+	if err != nil {
+		return 0, fmt.Errorf("error getting amount of following: %w", err)
+	}
+	return following, nil
+}
+
+	

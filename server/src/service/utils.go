@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord, interests []string) model.UserPrivateProfile {
+func createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord, interests []string, followers int, following int) model.UserPrivateProfile {
 	return model.UserPrivateProfile{
 		Id:        record.Id,
 		UserName:  record.UserName,
@@ -20,6 +20,8 @@ func createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord,
 		Email:     record.Email,
 		Location:  record.Location,
 		Interests: interests,
+		Followers: followers,
+		Following: following,
 	}
 }
 

@@ -126,6 +126,7 @@ func CreateRouter() (*Router, error) {
 	private.Use(middleware.AuthMiddleware())
 	{
 		private.GET("/users/:username", userController.GetUserProfile)
+		private.POST("/users/follow", userController.FollowUser)
 	}
 	return r, nil
 }

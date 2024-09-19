@@ -35,4 +35,20 @@ type UserDatabase interface {
 
 	// GetInterestsForUserId retrieves interests for a given user ID
 	GetInterestsForUserId(id uuid.UUID) ([]string, error)
+
+	// FollowUser associates a follower to a following user
+	FollowUser(followerId uuid.UUID, followingId uuid.UUID) error
+
+	// UnfollowUser removes a follower from a following user
+	UnfollowUser(followerId uuid.UUID, followingId uuid.UUID) error
+
+	// CheckIfUserFollows checks if a user follows another user
+	CheckIfUserFollows(followerId string, followingId string) (bool, error)
+
+	// GetAmountOfFollowers retrieves the amount of followers for a given user ID
+	GetAmountOfFollowers(userId uuid.UUID) (int, error)
+
+	// GetAmountOfFollowing retrieves the amount of following for a given user ID
+	GetAmountOfFollowing(userId uuid.UUID) (int, error)
 }
+
