@@ -3,7 +3,6 @@ package tests
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -279,7 +278,6 @@ func TestCreateUserWithUsernameThatExistsWithDifferentCase(t *testing.T) {
 
 	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
 
-	fmt.Println(response)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")

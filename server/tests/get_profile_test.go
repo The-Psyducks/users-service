@@ -36,15 +36,57 @@ func TestGetOwnUserProfile(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusOK)
 
-	code, userProfile, err := getExistingUser(router, user.UserName, response.AccessToken)
+	userProfile, err := getOwnProfile(router, user.UserName, response.AccessToken)
 	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
 	AssertUserPrivateProfileIsUser(t, email, user, location, interests, userProfile)
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusOK)
 }
 
-//get withoyut token
+func TestGetAnotherUserProfile(t *testing.T) {
+	router, err := router.CreateRouter()
+
+	assert.Equal(t, err, nil)
+
+	code, registerOptions, err := getRegisterOptions(router)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusOK)
+
+	email := "edwardo@elric.com"
+	locationId := 0
+	interestsIds := []int{0, 1}
+	user := UserPersonalInfo{
+		FirstName: "Edward",
+		LastName:  "Elric",
+		UserName:  "EdwardoElric",
+		Password:  "Edward$El1ric:)",
+		Location:  locationId,
+	}
+	_, err = CreateValidUser(router, email, user, interestsIds)
+	assert.Equal(t, err, nil)
+	
+	email = "MonkeCAapoo@elric.com"
+	locationId = 1
+	interestsIds = []int{0, 1}
+	user = UserPersonalInfo{
+		FirstName: "Monke",
+		LastName:  "Unga",
+		UserName:  "UngaUnga",
+		Password:  "Edward$Esl1ric:)",
+		Location:  locationId,
+	}
+
+	code, response2, err := createAndLoginUser(router, email, user, interestsIds)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusOK)
+
+	userProfile, err := getAnotherUserProfile(router, user.UserName, response2.AccessToken)
+	location, _ := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
+	AssertUserPublicProfileIsUser(t, user, location, userProfile)
+
+	assert.Equal(t, err, nil)
+}
+
 func TestGetUserProfileWithoutToken(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)

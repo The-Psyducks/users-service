@@ -30,7 +30,6 @@ func getUserRegistryForSignUp(router *router.Router, email string) (ResolverSign
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
 	res := ResolverSignUpResponse{}
-	fmt.Printf("recorder body: %s ", recorder.Body.String())
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
 	if err != nil {
 		return ResolverSignUpResponse{}, err
@@ -128,59 +127,59 @@ func putInterests(router *router.Router, id string, interests []int) (int, error
 	return recorder.Code, nil
 }
 
-func completeRegistry(router *router.Router, id string) (int, UserProfile, error) {
+func completeRegistry(router *router.Router, id string) (int, UserPrivateProfile, error) {
 	endpoint := fmt.Sprintf("/users/register/%s/complete", id)
 	req, err := http.NewRequest("POST", endpoint, &bytes.Reader{})
 	if err != nil {
-		return 0, UserProfile{}, err
+		return 0, UserPrivateProfile{}, err
 	}
 
 	req.Header.Add("content-type", "application/json")
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	result := UserProfile{}
+	result := UserPrivateProfile{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &result)
 
 	if err != nil {
-		return 0, UserProfile{}, err
+		return 0, UserPrivateProfile{}, err
 	}
 
 	return recorder.Code, result, nil
 }
 
-func CreateValidUser(router *router.Router, email string, personalInfo UserPersonalInfo, interests []int) (UserProfile, error) {
+func CreateValidUser(router *router.Router, email string, personalInfo UserPersonalInfo, interests []int) (UserPrivateProfile, error) {
 	res, err := getUserRegistryForSignUp(router, email)
 	if err != nil {
-		return UserProfile{}, err
+		return UserPrivateProfile{}, err
 	}
 
 	err = sendEmailVerificationAndVerificateIt(router, res.Metadata.RegistrationId)
 	if err != nil {
-		return UserProfile{}, err
+		return UserPrivateProfile{}, err
 	}
 
 	code, err := putUserPersonalInfo(router, res.Metadata.RegistrationId, personalInfo)
 	if err != nil {
-		return UserProfile{}, err
+		return UserPrivateProfile{}, err
 	}
 	if code != http.StatusNoContent {
-		return UserProfile{}, fmt.Errorf("error, status code adding personal info was %d", code)
+		return UserPrivateProfile{}, fmt.Errorf("error, status code adding personal info was %d", code)
 	}
 
 	code, err = putInterests(router, res.Metadata.RegistrationId, interests)
 	if err != nil {
-		return UserProfile{}, err
+		return UserPrivateProfile{}, err
 	}
 	if code != http.StatusNoContent {
-		return UserProfile{}, fmt.Errorf("error, status code adding interests was %d", code)
+		return UserPrivateProfile{}, fmt.Errorf("error, status code adding interests was %d", code)
 	}
 
 	code, result, err := completeRegistry(router, res.Metadata.RegistrationId)
 	if err != nil {
-		return UserProfile{}, err
+		return UserPrivateProfile{}, err
 	}
 	if code != http.StatusOK {
-		return UserProfile{}, fmt.Errorf("error, status code completing registry was %d", code)
+		return UserPrivateProfile{}, fmt.Errorf("error, status code completing registry was %d", code)
 	}
 
 	return result, nil
@@ -357,22 +356,68 @@ func createAndLoginUser(router *router.Router, email string, user UserPersonalIn
 	return LoginValidUser(router, login)
 }
 
-func getExistingUser(router *router.Router, username string, token string) (int, UserProfile, error) {
+func getValidUser(router *router.Router, username string, token string) (int, UserProfileResponse, error) {
 	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
 	if err != nil {
-		return 0, UserProfile{}, err
+		return 0, UserProfileResponse{}, err
 	}
 
 	req.Header.Add("Authorization", "Bearer "+token)
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	result := UserProfile{}
+	result := UserProfileResponse{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &result)
 
 	if err != nil {
-		return 0, UserProfile{}, err
+		return 0, UserProfileResponse{}, err
 	}
 	return recorder.Code, result, nil
+}
+
+func getOwnProfile(router *router.Router, username string, token string) (UserPrivateProfile, error) {
+	code, result, err := getValidUser(router, username, token)
+	if err != nil {
+		return UserPrivateProfile{}, err
+	}
+	if code != http.StatusOK {
+		return UserPrivateProfile{}, fmt.Errorf("error, status code getting own profile was %d", code)
+	}
+	if !result.OwnProfile {
+		return UserPrivateProfile{}, fmt.Errorf("error, own profile was false")
+	}
+	profile := UserPrivateProfile{}
+	jsonData, err := json.Marshal(result.Profile)
+	if err != nil {
+		return UserPrivateProfile{}, err
+	}
+	err = json.Unmarshal(jsonData, &profile)
+	if err != nil {
+		return UserPrivateProfile{}, err
+	}
+	return profile, nil
+}
+
+func getAnotherUserProfile(router *router.Router, username string, token string) (UserPublicProfile, error) {
+	code, result, err := getValidUser(router, username, token)
+	if err != nil {
+		return UserPublicProfile{}, err
+	}
+	if code != http.StatusOK {
+		return UserPublicProfile{}, fmt.Errorf("error, status code getting own profile was %d", code)
+	}
+	if !result.OwnProfile {
+		return UserPublicProfile{}, fmt.Errorf("error, own profile was false")
+	}
+	profile := UserPublicProfile{}
+	jsonData, err := json.Marshal(result.Profile)
+	if err != nil {
+		return UserPublicProfile{}, err
+	}
+	err = json.Unmarshal(jsonData, &profile)
+	if err != nil {
+		return UserPublicProfile{}, err
+	}
+	return profile, nil
 }
 
 func getNotExistingUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
@@ -449,7 +494,7 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 	return location, interests
 }
 
-func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersonalInfo, location string, interests []string, profile UserProfile) {
+func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersonalInfo, location string, interests []string, profile UserPrivateProfile) {
 	assert.Equal(t, user.FirstName, profile.FirstName)
 	assert.Equal(t, user.LastName, profile.LastName)
 	assert.Equal(t, user.UserName, profile.UserName)
@@ -469,6 +514,13 @@ func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersona
 			t.Errorf("Interest %s not found in profile interests", interest)
 		}
 	}
+}
+
+func AssertUserPublicProfileIsUser(t *testing.T, user UserPersonalInfo, location string, profile UserPublicProfile) {
+	assert.Equal(t, user.FirstName, profile.FirstName)
+	assert.Equal(t, user.LastName, profile.LastName)
+	assert.Equal(t, user.UserName, profile.UserName)
+	assert.Equal(t, location, profile.Location)
 }
 
 func assertRegisterInstancePattern(t *testing.T, finalUrl string, expected string) {

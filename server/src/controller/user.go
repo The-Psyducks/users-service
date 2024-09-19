@@ -44,12 +44,10 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 	user, err := u.service.ResolveUserEmail(data)
 
 	if err != nil {
-		fmt.Println("error", err)
 		_ = c.Error(err)
 		return
 	}
 
-	fmt.Println("user ", user)
 	c.JSON(http.StatusOK, user)
 }
 
@@ -225,7 +223,6 @@ func (u *User) FollowUser(c *gin.Context) {
 		return
 	}
 
-	fmt.Println("userToFollow", userToFollow)
 	err := u.service.FollowUser(userId, userToFollow.Username)
 	if err != nil {
 		_ = c.Error(err)

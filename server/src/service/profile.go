@@ -20,8 +20,6 @@ func (u *User) GetUserProfile(session_user_id string, username string) (model.Us
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	slog.Info("session user id vs user redord id", slog.String("session_user_id", session_user_id), slog.String("userRecord.Id", userRecord.Id.String()))
-
 	if strings.EqualFold(session_user_id, userRecord.Id.String()) {
 		return u.getPrivateProfile(userRecord)
 	}
@@ -69,7 +67,6 @@ func (u *User) getPublicProfile(user model.UserRecord, session_user_id string) (
 		return model.UserProfileResponse{}, err
 	}
 
-	slog.Info("user Public profile retrieved succesfully", slog.String("userId", user.Id.String()))
 	profile := model.UserPublicProfile{
 		Id:			user.Id,
 		FirstName:	user.FirstName,
@@ -79,12 +76,13 @@ func (u *User) getPublicProfile(user model.UserRecord, session_user_id string) (
 		Followers:	followers,
 		Following:	following,
 	}
-
+	
 	follows, err := u.userDb.CheckIfUserFollows(session_user_id, user.Id.String())
 	if err != nil {
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
 	}
-
+	
+	slog.Info("user Public profile retrieved succesfully", slog.String("userId", user.Id.String()))
 	return model.UserProfileResponse{
 		OwnProfile: false,
 		Follows:    follows,

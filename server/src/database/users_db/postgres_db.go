@@ -8,7 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
-	"golang.org/x/crypto/bcrypt"
+	// "golang.org/x/crypto/bcrypt" //testing purposes
 
 	"users-service/src/constants"
 	"users-service/src/database"
@@ -25,44 +25,6 @@ type UsersPostgresDB struct {
 	db *sqlx.DB
 }
 
-func hashPassword(password string) string {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		fmt.Println("error hashing password: ", err)
-	}
-
-	return string(hashedPassword)
-}
-
-func (postDB *UsersPostgresDB) createTestUsers() {
-	users := []model.UserRecord{
-		{
-			UserName:  "Monke",
-			FirstName: "Test",
-			LastName:  "One",
-			Email:     "monke@gmail.com",
-			Password:  hashPassword("password"),
-			Location:  "Test Location",
-		},
-		{
-			UserName:  "Test",
-			FirstName: "Test",
-			LastName:  "Two",
-			Email:     "test@gmail.com",
-			Password:  hashPassword("password"),
-			Location:  "Test Location",
-		},
-	}
-
-	for _, user := range users {
-		_, err := postDB.CreateUser(user)
-		if err != nil {
-			fmt.Println("error creating test user: ", err)
-		}
-	}
-			
-}
-
 func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
 	if err := createTables(db); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
@@ -70,7 +32,8 @@ func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
 
 	postgresDB := UsersPostgresDB{db}
 
-	postgresDB.createTestUsers()
+	// for testing purposes
+	// postgresDB.createTestUsers()
 
 	return &postgresDB, nil
 }
@@ -299,8 +262,6 @@ func (postDB *UsersPostgresDB) UnfollowUser(followerId uuid.UUID, followingId uu
 
 func (postDB *UsersPostgresDB) CheckIfUserFollows(followerId string, followingId string) (bool, error) {
 	var exists bool
-	fmt.Println("followerId: ", followerId)
-	fmt.Println("followingId: ", followingId)
 	query := `SELECT EXISTS(SELECT 1 FROM followers WHERE follower_id = $1 AND following_id = $2)`
 	err := postDB.db.QueryRow(query, followerId, followingId).Scan(&exists)
 
@@ -314,32 +275,12 @@ func (postDB *UsersPostgresDB) CheckIfUserFollows(followerId string, followingId
 func (postDB *UsersPostgresDB) GetAmountOfFollowers(userId uuid.UUID) (int, error) {
     var followers int
     query := `SELECT COUNT(*) FROM followers WHERE following_id = $1`
-    
-    // Imprimir todas las filas antes de contar
-    rows, err := postDB.db.Queryx("SELECT * FROM followers WHERE following_id = $1", userId)
-    if err != nil {
-        return 0, fmt.Errorf("error querying followers: %w", err)
-    }
-    defer rows.Close()
+    err := postDB.db.Get(&followers, query, userId)
 
-    fmt.Println("Rows in followers table for following_id:", userId)
-    for rows.Next() {
-        var follower struct {
-            FollowerID  uuid.UUID `db:"follower_id"`
-            FollowingID uuid.UUID `db:"following_id"`
-        }
-        if err := rows.StructScan(&follower); err != nil {
-            return 0, fmt.Errorf("error scanning row: %w", err)
-        }
-        fmt.Printf("FollowerID: %s, FollowingID: %s\n", follower.FollowerID, follower.FollowingID)
-    }
-
-    // Ahora obtener la cantidad de seguidores
-    err = postDB.db.Get(&followers, query, userId)
-    if err != nil {
-        return 0, fmt.Errorf("error getting amount of followers: %w", err)
-    }
-    return followers, nil
+	if err != nil {
+		return 0, fmt.Errorf("error getting amount of followers: %w", err)
+	}
+	return followers, nil
 }
 
 
@@ -354,4 +295,40 @@ func (postDB *UsersPostgresDB) GetAmountOfFollowing(userId uuid.UUID) (int, erro
 	return following, nil
 }
 
-	
+// For testing purposes
+// func hashPassword(password string) string {
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		fmt.Println("error hashing password: ", err)
+// 	}
+
+// 	return string(hashedPassword)
+// }
+
+// func (postDB *UsersPostgresDB) createTestUsers() {
+// 	users := []model.UserRecord{
+// 		{
+// 			UserName:  "Monke",
+// 			FirstName: "Test",
+// 			LastName:  "One",
+// 			Email:     "monke@gmail.com",
+// 			Password:  hashPassword("password"),
+// 			Location:  "Test Location",
+// 		},
+// 		{
+// 			UserName:  "Test",
+// 			FirstName: "Test",
+// 			LastName:  "Two",
+// 			Email:     "test@gmail.com",
+// 			Password:  hashPassword("password"),
+// 			Location:  "Test Location",
+// 		},
+// 	}
+
+// 	for _, user := range users {
+// 		_, err := postDB.CreateUser(user)
+// 		if err != nil {
+// 			fmt.Println("error creating test user: ", err)
+// 		}
+// 	}		
+// }
