@@ -231,3 +231,65 @@ func (u *User) FollowUser(c *gin.Context) {
 
 	c.JSON(http.StatusNoContent, gin.H{})
 }
+
+func (u *User) UnfollowUser(c *gin.Context) {
+	userId := c.GetString("session_user_id")
+	if userId == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		_ = c.Error(err)
+		return
+	}
+
+	var userToUnfollow struct {
+		Username string `json:"user_to_unfollow" validate:"required"`
+	}
+	if err := c.BindJSON(&userToUnfollow); err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+
+	err := u.service.UnfollowUser(userId, userToUnfollow.Username)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, gin.H{})
+}
+
+func (u *User) GetFollowers(c *gin.Context) {
+	username := c.Param("username")
+	userId := c.GetString("session_user_id")
+	if userId == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		_ = c.Error(err)
+		return
+	}
+
+	followers, err := u.service.GetFollowers(username)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, followers)
+}
+
+func (u *User) GetFollowing(c *gin.Context) {
+	username := c.Param("username")
+	userId := c.GetString("session_user_id")
+	if userId == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		_ = c.Error(err)
+		return
+	}
+
+	following, err := u.service.GetFollowing(username)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, following)
+}

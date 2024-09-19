@@ -295,6 +295,60 @@ func (postDB *UsersPostgresDB) GetAmountOfFollowing(userId uuid.UUID) (int, erro
 	return following, nil
 }
 
+func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID) ([]model.UserRecord, error) {
+	var followers []model.UserRecord
+	query := `
+		SELECT u.*
+		FROM users u
+		JOIN followers f ON u.id = f.follower_id
+		WHERE f.following_id = $1
+	`
+
+	rows, err := postDB.db.Queryx(query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting followers: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var follower model.UserRecord
+		err := rows.StructScan(&follower)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning follower: %w", err)
+		}
+		followers = append(followers, follower)
+	}
+
+	return followers, nil
+}
+
+func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID) ([]model.UserRecord, error) {
+	var following []model.UserRecord
+	query := `
+		SELECT u.*
+		FROM users u
+		JOIN followers f ON u.id = f.following_id
+		WHERE f.follower_id = $1
+	`
+
+	rows, err := postDB.db.Queryx(query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error getting following: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var follow model.UserRecord
+		err := rows.StructScan(&follow)
+		if err != nil {
+			return nil, fmt.Errorf("error scanning follow: %w", err)
+		}
+		following = append(following, follow)
+	}
+
+	return following, nil
+}
+
 // For testing purposes
 // func hashPassword(password string) string {
 // 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)

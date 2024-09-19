@@ -62,19 +62,9 @@ func (u *User) getPrivateProfile(user model.UserRecord) (model.UserProfileRespon
 }
 
 func (u *User) getPublicProfile(user model.UserRecord, session_user_id string) (model.UserProfileResponse, error) {
-	followers, following, err := u.getAmountOfFollowersAndFollowing(user)
+	profile, err := u.generateUserPublicProfileFromUserRecord(user)
 	if err != nil {
 		return model.UserProfileResponse{}, err
-	}
-
-	profile := model.UserPublicProfile{
-		Id:			user.Id,
-		FirstName:	user.FirstName,
-		LastName:	user.LastName,
-		UserName:	user.UserName,
-		Location:	user.Location,
-		Followers:	followers,
-		Following:	following,
 	}
 	
 	follows, err := u.userDb.CheckIfUserFollows(session_user_id, user.Id.String())

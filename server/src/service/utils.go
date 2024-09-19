@@ -51,6 +51,36 @@ func generateUserRecordFromRegistryEntry(registry model.RegistryEntry) model.Use
 	}
 }
 
+func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (model.UserPublicProfile, error) {
+	followers, following, err := u.getAmountOfFollowersAndFollowing(user)
+	if err != nil {
+		return model.UserPublicProfile{}, err
+	}
+
+	return model.UserPublicProfile{
+		Id:        user.Id,
+		UserName:  user.UserName,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Location:  user.Location,
+		Followers: followers,
+		Following: following,
+	}, nil
+}
+
+func (u *User) getPublicProfilesFromUserRecords(userRecords []model.UserRecord) ([]model.UserPublicProfile, error) {
+	profiles := make([]model.UserPublicProfile, 0, len(userRecords))
+	for _, user := range userRecords {
+		profile, err := u.generateUserPublicProfileFromUserRecord(user)
+		if err != nil {
+			return nil, err
+		}
+		profiles = append(profiles, profile)
+	}
+
+	return profiles, nil
+}
+
 func hashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
