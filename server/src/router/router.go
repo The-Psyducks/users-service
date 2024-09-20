@@ -132,6 +132,8 @@ func CreateRouter() (*Router, error) {
 		private.GET("/users/:username/followers", userController.GetFollowers)
 		private.GET("/users/:username/following", userController.GetFollowing)
 	}
+
+	r.Engine.NoRoute(userController.HandleNoRoute)
 	return r, nil
 }
 

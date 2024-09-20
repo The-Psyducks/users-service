@@ -20,6 +20,11 @@ func CreateUserController(service *service.User) *User {
 	return &User{service: service}
 }
 
+func (u *User) HandleNoRoute(c *gin.Context) {
+	err := app_errors.NewAppError(http.StatusMethodNotAllowed, "Method not found", fmt.Errorf("route not found"))
+	_ = c.Error(err)
+}
+
 func (u *User) GetLocations(c *gin.Context) {
 	data := u.service.GetLocations()
 
