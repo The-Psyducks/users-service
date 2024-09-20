@@ -11,20 +11,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord, interests []string, followers int, following int) model.UserPrivateProfile {
-	return model.UserPrivateProfile{
-		Id:        record.Id,
-		UserName:  record.UserName,
-		FirstName: record.FirstName,
-		LastName:  record.LastName,
-		Email:     record.Email,
-		Location:  record.Location,
-		Interests: interests,
-		Followers: followers,
-		Following: following,
-	}
-}
-
 func generateUserPersonalInfoRecordFromRequest(request model.UserPersonalInfoRequest) (*model.UserPersonalInfoRecord, error) {
 	password, err := hashPassword(request.Password)
 	if err != nil {
@@ -51,6 +37,25 @@ func generateUserRecordFromRegistryEntry(registry model.RegistryEntry) model.Use
 	}
 }
 
+func (u *User) createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord, interests []string) (model.UserPrivateProfile, error) {
+	followers, following, err := u.getAmountOfFollowersAndFollowing(record)
+	if err != nil {
+		return model.UserPrivateProfile{}, err
+	}
+
+	return model.UserPrivateProfile{
+		Id:        record.Id,
+		UserName:  record.UserName,
+		FirstName: record.FirstName,
+		LastName:  record.LastName,
+		Email:     record.Email,
+		Location:  record.Location,
+		Interests: interests,
+		Followers: followers,
+		Following: following,
+	}, nil
+}
+
 func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (model.UserPublicProfile, error) {
 	followers, following, err := u.getAmountOfFollowersAndFollowing(user)
 	if err != nil {
@@ -68,16 +73,24 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 	}, nil
 }
 
-func (u *User) getPublicProfilesFromUserRecords(userRecords []model.UserRecord) ([]model.UserPublicProfile, error) {
-	profiles := make([]model.UserPublicProfile, 0, len(userRecords))
+func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId string) ([]model.FollowUserPublicProfile, error) {
+	profiles := make([]model.FollowUserPublicProfile, 0, len(userRecords))
 	for _, user := range userRecords {
+		fmt.Println("user", user)
 		profile, err := u.generateUserPublicProfileFromUserRecord(user)
 		if err != nil {
 			return nil, err
 		}
-		profiles = append(profiles, profile)
+		follows, err := u.userDb.CheckIfUserFollows(sessionUserId, user.Id.String())
+		if err != nil {
+			return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if user follows: %w", err))
+		}
+		followProfile := model.FollowUserPublicProfile{
+			Follows: follows,
+			Profile: profile,
+		}
+		profiles = append(profiles, followProfile)
 	}
-
 	return profiles, nil
 }
 

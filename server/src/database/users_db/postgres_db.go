@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
-	_ "github.com/lib/pq"
+	"github.com/lib/pq"
 	// "golang.org/x/crypto/bcrypt" //testing purposes
 
 	"users-service/src/constants"
@@ -242,6 +242,11 @@ func (postDB *UsersPostgresDB) FollowUser(followerId uuid.UUID, followingId uuid
 
 	_, err := postDB.db.Exec(query, followerId, followingId)
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok {
+            if pqErr.Code == "23505" { // Código de error para violación de unicidad en PostgreSQL
+                return database.ErrKeyAlreadyExists
+            }
+        }
 		return fmt.Errorf("error following user: %w", err)
 	}
 	return nil
@@ -253,9 +258,18 @@ func (postDB *UsersPostgresDB) UnfollowUser(followerId uuid.UUID, followingId uu
 		WHERE follower_id = $1 AND following_id = $2
 	`
 
-	_, err := postDB.db.Exec(query, followerId, followingId)
+	res, err := postDB.db.Exec(query, followerId, followingId)
 	if err != nil {
 		return fmt.Errorf("error unfollowing user: %w", err)
+	}
+
+   rowsAffected, err := res.RowsAffected()
+    if err != nil {
+        return fmt.Errorf("error getting rows affected: %w", err)
+    }
+
+	if rowsAffected == 0 {
+		return database.ErrKeyNotFound
 	}
 	return nil
 }
@@ -349,7 +363,7 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID) ([]model.UserRecor
 	return following, nil
 }
 
-// For testing purposes
+// // For testing purposes
 // func hashPassword(password string) string {
 // 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 // 	if err != nil {

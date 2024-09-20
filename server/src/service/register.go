@@ -193,7 +193,7 @@ func (u *User) createUserWithInterestsFromRegistry(registry model.RegistryEntry,
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
 	}
 
-	return createUserPrivateProfileFromUserRecordAndInterests(createdUser, interestsNames, 0, 0), nil
+	return u.createUserPrivateProfileFromUserRecordAndInterests(createdUser, interestsNames)
 }
 
 func (u *User) CompleteRegistry(id uuid.UUID) (model.UserPrivateProfile, error) {

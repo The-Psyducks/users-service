@@ -6,6 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
+// UserProfileResponse is a struct that represents a user profile in the HTTP response
 type UserProfileResponse struct {
 	OwnProfile bool			`json:"own_profile" binding:"required"`
 	Follows    bool			`json:"follows" binding:"required"`

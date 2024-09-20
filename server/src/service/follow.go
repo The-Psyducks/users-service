@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"net/http"
 	"users-service/src/app_errors"
 	"users-service/src/database"
@@ -21,6 +22,10 @@ func (u *User) FollowUser(followerId string, followingUsername string) error {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
+	if strings.EqualFold(followerId, userRecord.Id.String()) {
+		return app_errors.NewAppError(http.StatusBadRequest, CantFollowYourself, fmt.Errorf("you can not following yourself"))
+	}
+
 	followerUUID, err := uuid.Parse(followerId)
 	if err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error parsing followerId: %w", err))
@@ -28,6 +33,9 @@ func (u *User) FollowUser(followerId string, followingUsername string) error {
 
 	err = u.userDb.FollowUser(followerUUID, userRecord.Id)
 	if err != nil {
+		if errors.Is(err, database.ErrKeyAlreadyExists) {
+			return app_errors.NewAppError(http.StatusBadRequest, AlreadyFollowing, err)
+		}
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error following user: %w", err))
 	}
 
@@ -51,6 +59,9 @@ func (u *User) UnfollowUser(followerId string, followingUsername string) error {
 
 	err = u.userDb.UnfollowUser(followerUUID, userRecord.Id)
 	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return app_errors.NewAppError(http.StatusBadRequest, NotFollowing, err)
+		}
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error unfollowing user: %w", err))
 	}
 
@@ -58,7 +69,7 @@ func (u *User) UnfollowUser(followerId string, followingUsername string) error {
 	return nil
 }
 
-func (u *User) GetFollowers(username string) ([]model.UserPublicProfile, error) {
+func (u *User) GetFollowers(username string, userSessionId string) ([]model.FollowUserPublicProfile, error) {
 	userRecord, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -66,21 +77,23 @@ func (u *User) GetFollowers(username string) ([]model.UserPublicProfile, error) 
 		}
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
-
+	fmt.Println("GetFollowers db")
 	followers, err := u.userDb.GetFollowers(userRecord.Id)
 	if err != nil {
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting followers: %w", err))
 	}
-
-	profiles, err := u.getPublicProfilesFromUserRecords(followers)
+	
+	fmt.Println("GetFollowersProfiles")
+	profiles, err := u.getFollowersPublicProfilesFromUserRecords(followers, userSessionId)
 	if err != nil {
 		return nil, err
 	}
 	
+	fmt.Println("Got theeeem")
 	return profiles, nil
 }
 
-func (u *User) GetFollowing(username string) ([]model.UserPublicProfile, error) {
+func (u *User) GetFollowing(username string, userSessionId string) ([]model.FollowUserPublicProfile, error) {
 	userRecord, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -94,7 +107,7 @@ func (u *User) GetFollowing(username string) ([]model.UserPublicProfile, error) 
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting following: %w", err))
 	}
 
-	profiles, err := u.getPublicProfilesFromUserRecords(following)
+	profiles, err := u.getFollowersPublicProfilesFromUserRecords(following, userSessionId)
 	if err != nil {
 		return nil, err
 	}

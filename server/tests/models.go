@@ -28,9 +28,9 @@ type UserPersonalInfo struct {
 }
 
 type UserProfileResponse struct {
-	OwnProfile bool			`json:"own_profile" binding:"required"`
-	Follows    bool			`json:"follows" binding:"required"`
-	Profile    interface{}	`json:"profile" binding:"required"`
+	OwnProfile bool        `json:"own_profile" binding:"required"`
+	Follows    bool        `json:"follows" binding:"required"`
+	Profile    interface{} `json:"profile" binding:"required"`
 }
 
 type UserPublicProfile struct {
@@ -93,10 +93,24 @@ type ValidationErrorResponse struct {
 }
 
 type LoginRequest struct {
-	Email 		string 	`json:"email"`
-	Password	string	`json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type LoginResponse struct {
 	AccessToken string `json:"access_token"`
 }
+
+type FollowUserProfile struct {
+	Follows bool `json:"follows"`
+	Profile UserPublicProfile `json:"profile"`
+}
+
+type FollowersResponse struct {
+	Followers []FollowUserProfile `json:"followers"`
+}
+
+type FollowingResponse struct {
+	Following []FollowUserProfile `json:"following"`
+}
+

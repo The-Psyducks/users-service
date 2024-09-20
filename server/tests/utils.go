@@ -2,9 +2,9 @@ package tests
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
-	"encoding/json"
 	"net/http/httptest"
 	"regexp"
 	"testing"
@@ -446,22 +446,22 @@ func getRegisterOptions(router *router.Router) (int, RegisterOptions, error) {
 
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	var locations  struct {
+	var locations struct {
 		Locations []Location `json:"locations"`
 	}
 	err = json.Unmarshal(recorder.Body.Bytes(), &locations)
 	if err != nil {
 		return 0, RegisterOptions{}, err
 	}
-	
+
 	req, err = http.NewRequest("GET", "/users/register/interests", &bytes.Reader{})
 	if err != nil {
 		return 0, RegisterOptions{}, err
 	}
-	
+
 	recorder = httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	var interests  struct {
+	var interests struct {
 		Interests []Interest `json:"interests"`
 	}
 	err = json.Unmarshal(recorder.Body.Bytes(), &interests)
@@ -492,6 +492,132 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 		}
 	}
 	return location, interests
+}
+
+func followValidUser(router *router.Router, username string, token string) (int, error) {
+	payload := map[string]string{
+		"username": username,
+	}
+	marshalledInfo, err := json.Marshal(payload)
+	if err != nil {
+		return 0, err
+	}
+	req, err := http.NewRequest("POST", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+
+	return recorder.Code, nil
+}
+
+func followInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
+	payload := map[string]string{
+		"username": username,
+	}
+	marshalledInfo, err := json.Marshal(payload)
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+	req, err := http.NewRequest("POST", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
+func unfollowValidUser(router *router.Router, username string, token string) (int, error) {
+	payload := map[string]string{
+		"username": username,
+	}
+	marshalledInfo, err := json.Marshal(payload)
+	if err != nil {
+		return 0, err
+	}
+	req, err := http.NewRequest("DELETE", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	if err != nil {
+		return 0, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+
+	return recorder.Code, nil
+}
+
+func unfollowInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
+	payload := map[string]string{
+		"username": username,
+	}
+	marshalledInfo, err := json.Marshal(payload)
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+	req, err := http.NewRequest("DELETE", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return 0, ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
+func getFollowers(router *router.Router, username string, token string) (int, FollowersResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+username+"/followers", &bytes.Reader{})
+	if err != nil {
+		return 0, FollowersResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := FollowersResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return 0, FollowersResponse{}, err
+	}
+	return recorder.Code, result, nil
+}
+
+func getFollowing(router *router.Router, username string, token string) (int, FollowingResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+username+"/following", &bytes.Reader{})
+	if err != nil {
+		return 0, FollowingResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := FollowingResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return 0, FollowingResponse{}, err
+	}
+	return recorder.Code, result, nil
 }
 
 func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersonalInfo, location string, interests []string, profile UserPrivateProfile) {
@@ -528,4 +654,31 @@ func assertRegisterInstancePattern(t *testing.T, finalUrl string, expected strin
 	matched, err := regexp.MatchString(instancePattern, expected)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, matched, true)
+}
+
+func assertListsAreEqual(t *testing.T, expected []FollowUserProfile, actual []FollowUserProfile) {
+	assert.Equal(t, len(expected), len(actual))
+
+	for _, e := range expected {
+		found := false
+		for _, a := range actual {
+			if e.Profile.Id.String() == a.Profile.Id.String() {
+				found = true
+				break
+			}
+		}
+		assert.Equal(t, found, true)
+	}
+}
+
+func privateUserToPublic(user UserPrivateProfile) UserPublicProfile {
+	return UserPublicProfile{
+		Id:        user.Id,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		UserName:  user.UserName,
+		Location:  user.Location,
+		Followers: user.Followers,
+		Following: user.Following,
+	}
 }

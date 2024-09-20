@@ -11,7 +11,7 @@ import (
 	"users-service/src/model"
 )
 
-func (u *User) GetUserProfile(session_user_id string, username string) (model.UserProfileResponse, error) {
+func (u *User) GetUserProfile(userSessionId string, username string) (model.UserProfileResponse, error) {
 	userRecord, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -20,10 +20,10 @@ func (u *User) GetUserProfile(session_user_id string, username string) (model.Us
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	if strings.EqualFold(session_user_id, userRecord.Id.String()) {
+	if strings.EqualFold(userSessionId, userRecord.Id.String()) {
 		return u.getPrivateProfile(userRecord)
 	}
-	return u.getPublicProfile(userRecord, session_user_id)
+	return u.getPublicProfile(userRecord, userSessionId)
 }
 
 func (u *User) getAmountOfFollowersAndFollowing(user model.UserRecord) (int, int, error) {
@@ -46,12 +46,10 @@ func (u *User) getPrivateProfile(user model.UserRecord) (model.UserProfileRespon
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting interests from user: %w", err))
 	}
 	
-	followers, following, err := u.getAmountOfFollowersAndFollowing(user)
+	privateProfile, err := u.createUserPrivateProfileFromUserRecordAndInterests(user, interests)
 	if err != nil {
 		return model.UserProfileResponse{}, err
 	}
-	
-	privateProfile := createUserPrivateProfileFromUserRecordAndInterests(user, interests, followers, following)
 	
 	slog.Info("user Private profile retrieved succesfully", slog.String("userId", user.Id.String()))
 	return model.UserProfileResponse{
