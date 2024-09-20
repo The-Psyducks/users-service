@@ -16,9 +16,8 @@ func TestCreateUser(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	code, registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := getRegisterOptions(router)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusOK)
 
 	email := "edwardelric@yahoo.com"
 	locationId := 0
@@ -110,9 +109,8 @@ func TestCreateUserWithInvalidLocation(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	code, registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := getRegisterOptions(router)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusOK)
 
 	email := "capo@gmail.com"
 	locationIndex := len(registerOptions.Locations) //invalid
@@ -138,9 +136,8 @@ func TestCreateUserWithNotExistingInterests(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	code, registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := getRegisterOptions(router)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusOK)
 
 	email := "capo@gmail.com"
 	interstsIds := []int{len(registerOptions.Interests) - 1, len(registerOptions.Interests)}

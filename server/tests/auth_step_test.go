@@ -1,7 +1,6 @@
 package tests
 
 import (
-	"net/http"
 	"testing"
 
 	"github.com/go-playground/assert/v2"
@@ -63,9 +62,8 @@ func TestGetUserAuthStepWhenItsInterests(t *testing.T) {
 		Location:  0,
 	}
 
-	code, err := putUserPersonalInfo(router, id, personalInfo)
+	err = putValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusNoContent)
 
 	res, err = getUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
@@ -73,7 +71,7 @@ func TestGetUserAuthStepWhenItsInterests(t *testing.T) {
 	assert.Equal(t, res.Metadata.OnboardingStep, InterestsStep)
 }
 
-func TestGetUserAuthStepWhenItsComplete (t *testing.T) {
+func TestGetUserAuthStepWhenItsComplete(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -95,14 +93,12 @@ func TestGetUserAuthStepWhenItsComplete (t *testing.T) {
 		Location:  0,
 	}
 
-	code, err := putUserPersonalInfo(router, id, personalInfo)
+	err = putValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusNoContent)
 
 	intetestsIds := []int{0}
-	code, err = putInterests(router, id, intetestsIds)
+	err = putValidInterests(router, id, intetestsIds)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusNoContent)
 
 	res, err = getUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
@@ -123,9 +119,8 @@ func AddPersonalInfoToNotExistingRegistry(t *testing.T) {
 	}
 
 	id := "0f246321-2921-41ad-8168-2b905b77a93c"
-	code, err := putUserPersonalInfo(router, id, personalInfo)
+	err = putValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusNotFound)
 }
 
 func AddInterestsInfoToNotExistingRegistry(t *testing.T) {
@@ -135,7 +130,6 @@ func AddInterestsInfoToNotExistingRegistry(t *testing.T) {
 	intetestsIds := []int{0}
 
 	id := "0f246321-2921-41ad-8168-2b905b77a93c"
-	code, err := putInterests(router, id, intetestsIds)
+	err = putValidInterests(router, id, intetestsIds)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusNotFound)
 }
