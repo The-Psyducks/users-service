@@ -60,7 +60,7 @@ func TestFollowUser(t *testing.T) {
 	}
 	resp, err := LoginValidUser(testRouter, loginRequest)
 	assert.Equal(t, err, nil)
-
+    
 	err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
 	assert.Equal(t, err, nil)
 
@@ -123,18 +123,25 @@ func TestFollowNonExistentUser(t *testing.T) {
 }
 
 func TestUnfollowUser(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, user2, user2Password := setUpTest()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
     }
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
-
+    
     err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-
+    
     err = unfollowValidUser(testRouter, user2.UserName, resp.AccessToken)
+    assert.Equal(t, err, nil)
+    
+    loginRequest = LoginRequest{
+        Email: user2.Email,
+        Password: user2Password, 
+    }
+    resp, err = LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
     followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
@@ -175,7 +182,7 @@ func TestUnfollowNonExistentUser(t *testing.T) {
 }
 
 func TestGetFollowersWhenEmpty(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, _, _ := setUpTest()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -183,7 +190,7 @@ func TestGetFollowersWhenEmpty(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
+    followers, err := getFollowers(testRouter, user1.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(followers.Followers), 0)
 }
@@ -201,9 +208,8 @@ func TestGetFollowers(t *testing.T) {
         Location:  locationId,
     }
     user3, err := CreateValidUser(testRouter, email, userPersonalInfo, interestsIds)
-    if err != nil {
-        panic("Failed to create user1: " + err.Error())
-    }
+    assert.Equal(t, err, nil)
+
     loginRequest := LoginRequest{
         Email: user3.Email,
         Password: userPersonalInfo.Password,
@@ -261,9 +267,8 @@ func GetFollowing(t *testing.T) {
         Location:  locationId,
     }
     user3, err := CreateValidUser(testRouter, email, userPersonalInfo, interestsIds)
-    if err != nil {
-        panic("Failed to create user1: " + err.Error())
-    }
+    assert.Equal(t, err, nil)
+    
     loginRequest := LoginRequest{
         Email: user3.Email,
         Password: userPersonalInfo.Password,
@@ -286,4 +291,72 @@ func GetFollowing(t *testing.T) {
     assertListsAreEqual(t, following.Following, profiles)
 }
 
-// TestGetFollowerForMutualFollowingUsers
+func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
+    testRouter, user1, user1Password, user2, _ := setUpTest()
+    
+    loginRequest := LoginRequest{
+        Email: user1.Email,
+        Password: user1Password,
+    }
+    resp, err := LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    response, err := getFollowersForInvalidUser(testRouter, user2.UserName, resp.AccessToken)
+    
+    assert.Equal(t, err, nil)
+    assert.Equal(t, response.Title, "The user is not following this user")
+}
+
+func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
+    testRouter, user1, user1Password, user2, user2Password := setUpTest()
+    email := "asjid@elric.com"
+    locationId := 0
+    interestsIds := []int{0, 1}
+    userPersonalInfo := UserPersonalInfo{
+        FirstName: "Edward",
+        LastName:  "Elric",
+        UserName:  "Easokp",
+        Password:  "sdaji@34fdasD",
+        Location:  locationId,
+    }
+    user3, err := CreateValidUser(testRouter, email, userPersonalInfo, interestsIds)
+    assert.Equal(t, err, nil)
+
+    loginRequest := LoginRequest{
+        Email: user1.Email,
+        Password: user1Password, 
+    }
+    resp, err := LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    assert.Equal(t, err, nil)
+    err = followValidUser(testRouter, user3.UserName, resp.AccessToken)
+    assert.Equal(t, err, nil)
+
+    loginRequest = LoginRequest{
+        Email: user2.Email,
+        Password: user2Password, 
+    }
+    resp, err = LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    err = followValidUser(testRouter, user1.UserName, resp.AccessToken)
+    assert.Equal(t, err, nil)
+    err = followValidUser(testRouter, user3.UserName, resp.AccessToken)
+    assert.Equal(t, err, nil)
+
+    followers, err := getFollowers(testRouter, user3.UserName, resp.AccessToken)
+    assert.Equal(t, err, nil)
+    assert.Equal(t, len(followers.Followers), 2)
+    for _, follower := range followers.Followers {
+        if follower.Profile.UserName == user1.UserName {
+            assert.Equal(t, follower.Follows, true)
+        } else if follower.Profile.UserName == user2.UserName {
+            assert.Equal(t, follower.Follows, false)
+        } else {
+            t.Errorf("Unexpected follower: %s", follower.Profile.UserName)
+        }
+    }
+}
+//como Monke pido los followers de Edwardo

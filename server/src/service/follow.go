@@ -70,26 +70,35 @@ func (u *User) UnfollowUser(followerId string, followingUsername string) error {
 }
 
 func (u *User) GetFollowers(username string, userSessionId string) ([]model.FollowUserPublicProfile, error) {
-	userRecord, err := u.userDb.GetUserByUsername(username)
+	userRequested, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
 			return nil, app_errors.NewAppError(http.StatusNotFound, UsernameNotFound, err)
 		}
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
-	fmt.Println("GetFollowers db")
-	followers, err := u.userDb.GetFollowers(userRecord.Id)
+
+	if userRequested.Id.String() != userSessionId {
+		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRequested.Id.String())
+		if err != nil {
+			return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
+		}
+
+		if !follows {
+			return nil, app_errors.NewAppError(http.StatusForbidden, NotFollowing, fmt.Errorf("user does not follow the user"))
+		}
+	}
+
+	followers, err := u.userDb.GetFollowers(userRequested.Id)
 	if err != nil {
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting followers: %w", err))
 	}
 	
-	fmt.Println("GetFollowersProfiles")
 	profiles, err := u.getFollowersPublicProfilesFromUserRecords(followers, userSessionId)
 	if err != nil {
 		return nil, err
 	}
 	
-	fmt.Println("Got theeeem")
 	return profiles, nil
 }
 
@@ -100,6 +109,17 @@ func (u *User) GetFollowing(username string, userSessionId string) ([]model.Foll
 			return nil, app_errors.NewAppError(http.StatusNotFound, UsernameNotFound, err)
 		}
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
+	}
+
+	if userRecord.Id.String() != userSessionId {
+		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRecord.Id.String())
+		if err != nil {
+			return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
+		}
+
+		if !follows {
+			return nil, app_errors.NewAppError(http.StatusForbidden, NotFollowing, fmt.Errorf("user does not follow the user"))
+		}
 	}
 
 	following, err := u.userDb.GetFollowing(userRecord.Id)

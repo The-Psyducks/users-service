@@ -76,7 +76,6 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId string) ([]model.FollowUserPublicProfile, error) {
 	profiles := make([]model.FollowUserPublicProfile, 0, len(userRecords))
 	for _, user := range userRecords {
-		fmt.Println("user", user)
 		profile, err := u.generateUserPublicProfileFromUserRecord(user)
 		if err != nil {
 			return nil, err

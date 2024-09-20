@@ -589,6 +589,27 @@ func getFollowers(router *router.Router, username string, token string) (Followe
 	return result, nil
 }
 
+func getFollowersForInvalidUser(router *router.Router, username string, token string) (ErrorResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+username+"/followers", &bytes.Reader{})
+	if err != nil {
+		return ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return ErrorResponse{}, err
+	}
+	if recorder.Code != http.StatusForbidden {
+		return ErrorResponse{}, fmt.Errorf("error, status code getting followers was %d, expected: %d", recorder.Code, http.StatusOK)
+	}
+	return result, nil
+}
+
 func getFollowing(router *router.Router, username string, token string) (FollowingResponse, error) {
 	req, err := http.NewRequest("GET", "/users/"+username+"/following", &bytes.Reader{})
 	if err != nil {

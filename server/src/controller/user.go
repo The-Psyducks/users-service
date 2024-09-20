@@ -266,9 +266,7 @@ func (u *User) GetFollowers(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	fmt.Println("GetFollowers")
 	followers, err := u.service.GetFollowers(username, userSessionId)
-	fmt.Println("followers", followers)
 	if err != nil {
 		_ = c.Error(err)
 		return
