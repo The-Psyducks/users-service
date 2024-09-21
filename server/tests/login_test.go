@@ -29,27 +29,26 @@ func TestLoginUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
-		Email: email,
+		Email:    email,
 		Password: user.Password,
 	}
 
-	code, _, err := LoginValidUser(router, login)
+	_, err = LoginValidUser(router, login)
 
 	assert.Equal(t, err, nil)
-	assert.Equal(t, code, http.StatusOK)
 }
 
 func TestLoginNotExistingUser(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
-	
+
 	login := LoginRequest{
-		Email: "AtsumuMiya@GOAT.com",
+		Email:    "AtsumuMiya@GOAT.com",
 		Password: "InarizakiGOAT",
 	}
-	
+
 	code, resp, err := LoginInvalidUser(router, login)
-	
+
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusNotFound)
 	assert.Equal(t, resp.Title, "Incorrect username or password")
@@ -76,7 +75,7 @@ func TestLoginUserWithInvalidPassword(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
-		Email: email,
+		Email:    email,
 		Password: "Edward$Elri3c:",
 	}
 
@@ -97,7 +96,7 @@ func TestLoginUserStillInRegistry(t *testing.T) {
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
-		Password: "Edward$Elri3c:)",
+		Password:  "Edward$Elri3c:)",
 		Location:  0,
 	}
 
@@ -109,14 +108,14 @@ func TestLoginUserStillInRegistry(t *testing.T) {
 	err = sendEmailVerificationAndVerificateIt(router, id)
 	assert.Equal(t, err, nil)
 
-	_, err = putUserPersonalInfo(router, id, personalInfo)
+	err = putValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
 
-	_, err = putInterests(router, id, interestsIds)
+	err = putValidInterests(router, id, interestsIds)
 	assert.Equal(t, err, nil)
 
 	login := LoginRequest{
-		Email: email,
+		Email:    email,
 		Password: personalInfo.Password,
 	}
 
@@ -124,5 +123,5 @@ func TestLoginUserStillInRegistry(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusNotFound)
-	
+
 }

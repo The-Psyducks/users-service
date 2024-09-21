@@ -15,5 +15,8 @@ const (
 	UsernameNotFound            = "User not found"
 	RegistryNotFound            = "Registry not found"
 	InvalidRegistryStep			= "Invalid registry step"
-	InvalidInterest			= "Invalid interest"
+	InvalidInterest				= "Invalid interest"
+	CantFollowYourself			= "Can't follow yourself"
+	AlreadyFollowing			= "The user already follows this user"
+	NotFollowing				= "The user is not following this user"
 )
