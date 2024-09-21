@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"strings"
 	"net/http"
+	"strings"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
@@ -69,7 +69,7 @@ func (u *User) UnfollowUser(followerId string, followingUsername string) error {
 	return nil
 }
 
-func (u *User) GetFollowers(username string, userSessionId string) ([]model.FollowUserPublicProfile, error) {
+func (u *User) GetFollowers(username, userSessionId, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, error) {
 	userRequested, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -89,11 +89,11 @@ func (u *User) GetFollowers(username string, userSessionId string) ([]model.Foll
 		}
 	}
 
-	followers, err := u.userDb.GetFollowers(userRequested.Id)
+	followers, err := u.userDb.GetFollowers(userRequested.Id, timestamp, skip, limit)
 	if err != nil {
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting followers: %w", err))
 	}
-	
+
 	profiles, err := u.getFollowersPublicProfilesFromUserRecords(followers, userSessionId)
 	if err != nil {
 		return nil, err
@@ -102,7 +102,7 @@ func (u *User) GetFollowers(username string, userSessionId string) ([]model.Foll
 	return profiles, nil
 }
 
-func (u *User) GetFollowing(username string, userSessionId string) ([]model.FollowUserPublicProfile, error) {
+func (u *User) GetFollowing(username, userSessionId, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, error) {
 	userRecord, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -122,7 +122,7 @@ func (u *User) GetFollowing(username string, userSessionId string) ([]model.Foll
 		}
 	}
 
-	following, err := u.userDb.GetFollowing(userRecord.Id)
+	following, err := u.userDb.GetFollowing(userRecord.Id, timestamp, skip, limit)
 	if err != nil {
 		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting following: %w", err))
 	}

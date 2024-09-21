@@ -66,9 +66,9 @@ func TestFollowUser(t *testing.T) {
 
     followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(followers.Followers), 1)
-    assert.Equal(t, followers.Followers[0].Follows, false)
-    assert.Equal(t, followers.Followers[0].Profile.UserName, user1.UserName)
+    assert.Equal(t, len(followers), 1)
+    assert.Equal(t, followers[0].Follows, false)
+    assert.Equal(t, followers[0].Profile.UserName, user1.UserName)
 }
 
 func TestFollowUserTwice(t *testing.T) {
@@ -146,7 +146,7 @@ func TestUnfollowUser(t *testing.T) {
 
     followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(followers.Followers), 0)
+    assert.Equal(t, len(followers), 0)
 }
 
 func TestUnfollowNonFollowingUser(t *testing.T) {
@@ -192,7 +192,7 @@ func TestGetFollowersWhenEmpty(t *testing.T) {
 
     followers, err := getFollowers(testRouter, user1.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(followers.Followers), 0)
+    assert.Equal(t, len(followers), 0)
 }
 
 func TestGetFollowers(t *testing.T) {
@@ -230,17 +230,16 @@ func TestGetFollowers(t *testing.T) {
     err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
 
-
     followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(followers.Followers), 2)
-    assert.Equal(t, followers.Followers[0].Follows, false)
-    assert.Equal(t, followers.Followers[1].Follows, false)
+    assert.Equal(t, len(followers), 2)
+    assert.Equal(t, followers[0].Follows, false)
+    assert.Equal(t, followers[1].Follows, false)
     profiles := []FollowUserProfile{{Follows: false, Profile: privateUserToPublic(user1)}, {Follows: false, Profile: privateUserToPublic(user3)}}
-    assertListsAreEqual(t, followers.Followers, profiles)
+    assertListsAreEqual(t, followers, profiles)
 }
 
-func GetFollowingWhenEmpty(t *testing.T) {
+func TestGetFollowingWhenEmpty(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpTest()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -251,10 +250,10 @@ func GetFollowingWhenEmpty(t *testing.T) {
 
     following, err := getFollowing(testRouter, user1.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(following.Following), 0)
+    assert.Equal(t, len(following), 0)
 }
 
-func GetFollowing(t *testing.T) {
+func TestGetFollowing(t *testing.T) {
     testRouter, user1, _, user2, _ := setUpTest()
     email := "asjid@elric.com"
     locationId := 0
@@ -275,20 +274,20 @@ func GetFollowing(t *testing.T) {
     }
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
-
+    
     err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    err = followValidUser(testRouter, user3.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user1.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    following, err := getFollowing(testRouter, user1.UserName, resp.AccessToken)
+    following, err := getFollowing(testRouter, user3.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(following.Following), 2)
-    assert.Equal(t, following.Following[0].Follows, false)
-    assert.Equal(t, following.Following[1].Follows, false)
-    profiles := []FollowUserProfile{{Follows: false, Profile: privateUserToPublic(user2)}, {Follows: false, Profile: privateUserToPublic(user3)}}
-    assertListsAreEqual(t, following.Following, profiles)
+    assert.Equal(t, len(following), 2)
+    assert.Equal(t, following[0].Follows, true)
+    assert.Equal(t, following[1].Follows, true)
+    profiles := []FollowUserProfile{{Follows: true, Profile: privateUserToPublic(user2)}, {Follows: true, Profile: privateUserToPublic(user1)}}
+    assertListsAreEqual(t, following, profiles)
 }
 
 func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
@@ -348,8 +347,8 @@ func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
 
     followers, err := getFollowers(testRouter, user3.UserName, resp.AccessToken)
     assert.Equal(t, err, nil)
-    assert.Equal(t, len(followers.Followers), 2)
-    for _, follower := range followers.Followers {
+    assert.Equal(t, len(followers), 2)
+    for _, follower := range followers {
         if follower.Profile.UserName == user1.UserName {
             assert.Equal(t, follower.Follows, true)
         } else if follower.Profile.UserName == user2.UserName {
@@ -359,4 +358,3 @@ func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
         }
     }
 }
-//como Monke pido los followers de Edwardo

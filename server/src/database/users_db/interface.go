@@ -52,9 +52,9 @@ type UserDatabase interface {
 	GetAmountOfFollowing(userId uuid.UUID) (int, error)
 
 	// GetFollowers retrieves the followers for a given user ID
-	GetFollowers(userId uuid.UUID) ([]model.UserRecord, error)
+	GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error)
 
 	// GetFollowing retrieves the following for a given user ID
-	GetFollowing(userId uuid.UUID) ([]model.UserRecord, error)
+	GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error)
 }
 

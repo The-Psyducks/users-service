@@ -78,6 +78,7 @@ func createTables(db *sqlx.DB) error {
 		CREATE TABLE IF NOT EXISTS %s (
 			follower_id UUID NOT NULL,
 			following_id UUID NOT NULL,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			PRIMARY KEY (follower_id, following_id),
 			FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
 			FOREIGN KEY (following_id) REFERENCES users(id) ON DELETE CASCADE
@@ -309,57 +310,64 @@ func (postDB *UsersPostgresDB) GetAmountOfFollowing(userId uuid.UUID) (int, erro
 	return following, nil
 }
 
-func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID) ([]model.UserRecord, error) {
+func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error) {
 	var followers []model.UserRecord
 	query := `
 		SELECT u.*
 		FROM users u
 		JOIN followers f ON u.id = f.follower_id
 		WHERE f.following_id = $1
+		AND f.created_at < $2
+		ORDER BY f.created_at DESC
+		OFFSET $3
+		LIMIT $4
 	`
 
-	rows, err := postDB.db.Queryx(query, userId)
+	err := postDB.db.Select(&followers, query, userId, timestamp, skip, limit)
 	if err != nil {
 		return nil, fmt.Errorf("error getting followers: %w", err)
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var follower model.UserRecord
-		err := rows.StructScan(&follower)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning follower: %w", err)
-		}
-		followers = append(followers, follower)
-	}
+	// // select all followers of userIDfrom the followers table and print them
+	// query = `SELECT follower_id, created_at FROM followers WHERE following_id = $1`
+	// rows, err := postDB.db.Query(query, userId)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error getting followers: %w", err)
+	// }
+	// defer rows.Close()
+
+	// for rows.Next() {
+	// 	var follower struct {
+	// 		FollowerID	uuid.UUID `db:"follower_id"`
+	// 		Timestamp	string	`db:"created_at"`
+	// 	}
+	// 	err := rows.Scan(&follower.FollowerID, &follower.Timestamp)
+	// 	if err != nil {
+	// 		return nil, fmt.Errorf("error scanning follower: %w", err)
+	// 	}
+	// 	fmt.Println("follower: ", follower)
+	// }
 
 	return followers, nil
 }
 
-func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID) ([]model.UserRecord, error) {
+func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error) {
 	var following []model.UserRecord
 	query := `
 		SELECT u.*
 		FROM users u
 		JOIN followers f ON u.id = f.following_id
 		WHERE f.follower_id = $1
+		AND f.created_at < $2
+		ORDER BY f.created_at DESC
+		OFFSET $3
+		LIMIT $4
 	`
 
-	rows, err := postDB.db.Queryx(query, userId)
+	err := postDB.db.Select(&following, query, userId, timestamp, skip, limit)
 	if err != nil {
 		return nil, fmt.Errorf("error getting following: %w", err)
 	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var follow model.UserRecord
-		err := rows.StructScan(&follow)
-		if err != nil {
-			return nil, fmt.Errorf("error scanning follow: %w", err)
-		}
-		following = append(following, follow)
-	}
-
 	return following, nil
 }
 
