@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"regexp"
 	"testing"
+	"time"
 	"users-service/src/router"
 
 	"github.com/go-playground/assert/v2"
@@ -46,7 +47,7 @@ func getUserRegistryForSignUp(router *router.Router, email string) (ResolverSign
 
 func sendEmailVerificationAndVerificateIt(router *router.Router, id string) error {
 	endpoint := fmt.Sprintf("/users/register/%s/send-email", id)
-	req, err := http.NewRequest("POST", endpoint, &bytes.Reader{})
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return err
 	}
@@ -135,7 +136,7 @@ func putValidInterests(router *router.Router, id string, interests []int) error 
 
 func completeValidRegistry(router *router.Router, id string) (UserPrivateProfile, error) {
 	endpoint := fmt.Sprintf("/users/register/%s/complete", id)
-	req, err := http.NewRequest("POST", endpoint, &bytes.Reader{})
+	req, err := http.NewRequest("POST", endpoint, nil)
 	if err != nil {
 		return UserPrivateProfile{}, err
 	}
@@ -330,7 +331,7 @@ func createAndLoginUser(router *router.Router, email string, user UserPersonalIn
 }
 
 func getValidUser(router *router.Router, username string, token string) (UserProfileResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
+	req, err := http.NewRequest("GET", "/users/"+username, nil)
 	if err != nil {
 		return UserProfileResponse{}, err
 	}
@@ -392,7 +393,7 @@ func getAnotherUserProfile(router *router.Router, username string, token string)
 }
 
 func getNotExistingUser(router *router.Router, username string, token string) (ErrorResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username, &bytes.Reader{})
+	req, err := http.NewRequest("GET", "/users/"+username, nil)
 	if err != nil {
 		return ErrorResponse{}, err
 	}
@@ -413,7 +414,7 @@ func getNotExistingUser(router *router.Router, username string, token string) (E
 }
 
 func getRegisterOptions(router *router.Router) (RegisterOptions, error) {
-	req, err := http.NewRequest("GET", "/users/register/locations", &bytes.Reader{})
+	req, err := http.NewRequest("GET", "/users/register/locations", nil)
 	if err != nil {
 		return RegisterOptions{}, err
 	}
@@ -428,7 +429,7 @@ func getRegisterOptions(router *router.Router) (RegisterOptions, error) {
 		return RegisterOptions{}, err
 	}
 
-	req, err = http.NewRequest("GET", "/users/register/interests", &bytes.Reader{})
+	req, err = http.NewRequest("GET", "/users/register/interests", nil)
 	if err != nil {
 		return RegisterOptions{}, err
 	}
@@ -473,14 +474,7 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 }
 
 func followValidUser(router *router.Router, username string, token string) error {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("POST", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("POST", "/users/" + username + "/follow", nil)
 	if err != nil {
 		return err
 	}
@@ -496,14 +490,7 @@ func followValidUser(router *router.Router, username string, token string) error
 }
 
 func followInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return 0, ErrorResponse{}, err
-	}
-	req, err := http.NewRequest("POST", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("POST", "/users/" + username + "/follow", nil)
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}
@@ -521,14 +508,7 @@ func followInvalidUser(router *router.Router, username string, token string) (in
 }
 
 func unfollowValidUser(router *router.Router, username string, token string) error {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("DELETE", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("DELETE", "/users/" + username + "/follow", nil)
 	if err != nil {
 		return err
 	}
@@ -544,14 +524,7 @@ func unfollowValidUser(router *router.Router, username string, token string) err
 }
 
 func unfollowInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return 0, ErrorResponse{}, err
-	}
-	req, err := http.NewRequest("DELETE", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("DELETE", "/users/" + username + "/follow", nil)
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}
@@ -568,29 +541,51 @@ func unfollowInvalidUser(router *router.Router, username string, token string) (
 	return recorder.Code, result, nil
 }
 
-func getFollowers(router *router.Router, username string, token string) (FollowersResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username+"/followers", &bytes.Reader{})
-	if err != nil {
-		return FollowersResponse{}, err
+func getFollowers(router *router.Router, username string, token string) ([]FollowUserProfile, error) {
+	var result []FollowUserProfile
+	var currPagination Pagination
+
+	fetchFollowers := func(skip int) error {
+		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+		url := fmt.Sprintf("/users/%s/followers?timestamp=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+
+		req.Header.Add("Authorization", "Bearer "+token)
+		recorder := httptest.NewRecorder()
+		router.Engine.ServeHTTP(recorder, req)
+
+		if recorder.Code != http.StatusOK {
+			return fmt.Errorf("error, status code getting followers was %d, expected: %d", recorder.Code, http.StatusOK)
+		}
+
+		newResult := FollowersResponse{}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &newResult); err != nil {
+			return err
+		}
+		result = append(result, newResult.Followers...)
+		currPagination = newResult.Pagination
+		return nil
 	}
 
-	req.Header.Add("Authorization", "Bearer "+token)
-	recorder := httptest.NewRecorder()
-	router.Engine.ServeHTTP(recorder, req)
-	result := FollowersResponse{}
-	err = json.Unmarshal(recorder.Body.Bytes(), &result)
-
-	if err != nil {
-		return FollowersResponse{}, err
+	if err := fetchFollowers(0); err != nil {
+		return nil, err
 	}
-	if recorder.Code != http.StatusOK {
-		return FollowersResponse{}, fmt.Errorf("error, status code getting followers was %d, expected: %d", recorder.Code, http.StatusOK)
+
+	for currPagination.NextOffset != 0 {
+		if err := fetchFollowers(currPagination.NextOffset); err != nil {
+			return nil, err
+		}
 	}
 	return result, nil
 }
 
 func getFollowersForInvalidUser(router *router.Router, username string, token string) (ErrorResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username+"/followers", &bytes.Reader{})
+	timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+	url := fmt.Sprintf("/users/%s/following?timestamp=%s&skip=%d&limit=%d", username, timestamp, 0, 20)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return ErrorResponse{}, err
 	}
@@ -610,24 +605,46 @@ func getFollowersForInvalidUser(router *router.Router, username string, token st
 	return result, nil
 }
 
-func getFollowing(router *router.Router, username string, token string) (FollowingResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username+"/following", &bytes.Reader{})
-	if err != nil {
-		return FollowingResponse{}, err
+func getFollowing(router *router.Router, username string, token string) ([]FollowUserProfile, error) {
+	var result []FollowUserProfile
+	var currPagination Pagination
+
+	fetchFollowing := func(skip int) error {
+		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+		url := fmt.Sprintf("/users/%s/following?timestamp=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+
+		req.Header.Add("Authorization", "Bearer "+token)
+		recorder := httptest.NewRecorder()
+		router.Engine.ServeHTTP(recorder, req)
+
+		if recorder.Code != http.StatusOK {
+			return fmt.Errorf("error, status code getting following was %d, expected: %d", recorder.Code, http.StatusOK)
+		}
+
+		newResult := FollowingResponse{}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &newResult); err != nil {
+			return err
+		}
+
+		result = append(result, newResult.Following...)
+		currPagination = newResult.Pagination
+		return nil
 	}
 
-	req.Header.Add("Authorization", "Bearer "+token)
-	recorder := httptest.NewRecorder()
-	router.Engine.ServeHTTP(recorder, req)
-	result := FollowingResponse{}
-	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err := fetchFollowing(0); err != nil {
+		return nil, err
+	}
 
-	if err != nil {
-		return FollowingResponse{}, err
+	for currPagination.NextOffset != 0 {
+		if err := fetchFollowing(currPagination.NextOffset); err != nil {
+			return nil, err
+		}
 	}
-	if recorder.Code != http.StatusOK {
-		return FollowingResponse{}, fmt.Errorf("error, status code getting followers was %d, expected: %d", recorder.Code, http.StatusOK)
-	}
+
 	return result, nil
 }
 

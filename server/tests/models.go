@@ -106,11 +106,18 @@ type FollowUserProfile struct {
 	Profile UserPublicProfile `json:"profile"`
 }
 
+type Pagination struct {
+	NextOffset int `json:"next_offset"`
+	Limit      int `json:"limit"`
+}
+
 type FollowersResponse struct {
-	Followers []FollowUserProfile `json:"followers"`
+	Followers []FollowUserProfile	`json:"data"`
+	Pagination Pagination 			`json:"pagination"`
 }
 
 type FollowingResponse struct {
-	Following []FollowUserProfile `json:"following"`
+	Following []FollowUserProfile	`json:"data"`
+	Pagination Pagination			`json:"pagination"`
 }
 

@@ -27,3 +27,5 @@ const (
 	InterestsStep = "INTERESTS"
 	CompleteStep = "COMPLETE"
 )
+
+const MaxPaginationLimit = 20

@@ -111,14 +111,16 @@ func CreateRouter() (*Router, error) {
 
 	public := r.Engine.Group("/")
 	{
+		public.POST("/users/resolver", userController.ResolveUserEmail)
+		
 		public.GET("/users/register/locations", userController.GetLocations)
 		public.GET("/users/register/interests", userController.GetInterests)
-		public.POST("/users/resolver", userController.ResolveUserEmail)
 		public.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
 		public.POST("/users/register/:id/verify-email", userController.VerifyEmail)
 		public.PUT("/users/register/:id/personal-info", userController.AddPersonalInfo)
 		public.PUT("/users/register/:id/interests", userController.AddInterests)
 		public.POST("/users/register/:id/complete", userController.CompleteRegistry)
+
 		public.POST("/users/login", userController.Login)
 	}
 
@@ -127,8 +129,8 @@ func CreateRouter() (*Router, error) {
 	{
 		private.GET("/users/:username", userController.GetUserProfile)
 		
-		private.POST("/users/follow", userController.FollowUser)
-		private.DELETE("/users/follow", userController.UnfollowUser)
+		private.POST("/users/:username/follow", userController.FollowUser)
+		private.DELETE("/users/:username/follow", userController.UnfollowUser)
 		private.GET("/users/:username/followers", userController.GetFollowers)
 		private.GET("/users/:username/following", userController.GetFollowing)
 	}

@@ -111,7 +111,7 @@ func TestGetUserProfileWithoutToken(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, recorder.Code, http.StatusUnauthorized)
-	assert.Equal(t, result.Title, "Authorization header is required")
+	assert.Equal(t, result.Title, "Unauthorized")
 }
 
 func TestGetNotExistingUserProfile(t *testing.T) {

@@ -3,11 +3,15 @@ package controller
 import (
 	"fmt"
 	"net/http"
+	"log/slog"
+	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"users-service/src/app_errors"
+	"users-service/src/constants"
 	"users-service/src/model"
 	"users-service/src/service"
 )
@@ -67,8 +71,8 @@ func (u *User) SendVerificationEmail(c *gin.Context) {
 	err = u.service.SendVerificationEmail(registrationId)
 
 	if err != nil {
-	_ = c.Error(err)
-	return
+		_ = c.Error(err)
+		return
 	}
 
 	c.JSON(http.StatusNoContent, gin.H{})
@@ -94,8 +98,8 @@ func (u *User) VerifyEmail(c *gin.Context) {
 
 	err = u.service.VerifyEmail(registrationId, verificationRequest.Pin)
 	if err != nil {
-	_ = c.Error(err)
-	return
+		_ = c.Error(err)
+		return
 	}
 
 	c.JSON(http.StatusNoContent, gin.H{})
@@ -103,13 +107,13 @@ func (u *User) VerifyEmail(c *gin.Context) {
 
 func (u *User) AddPersonalInfo(c *gin.Context) {
 	var data model.UserPersonalInfoRequest
-	
+
 	if err := c.BindJSON(&data); err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
-	
+
 	registrationId, err := uuid.Parse(c.Param("id"))
 
 	if err != nil {
@@ -121,8 +125,8 @@ func (u *User) AddPersonalInfo(c *gin.Context) {
 	err = u.service.AddPersonalInfo(registrationId, data)
 
 	if err != nil {
-	_ = c.Error(err)
-	return
+		_ = c.Error(err)
+		return
 	}
 
 	c.JSON(http.StatusNoContent, gin.H{})
@@ -132,13 +136,13 @@ func (u *User) AddInterests(c *gin.Context) {
 	var interests struct {
 		InterestsIds []int `json:"interests" validate:"required"`
 	}
-	
+
 	if err := c.BindJSON(&interests); err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
-	
+
 	registrationId, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
@@ -149,8 +153,8 @@ func (u *User) AddInterests(c *gin.Context) {
 	err = u.service.AddInterests(registrationId, interests.InterestsIds)
 
 	if err != nil {
-	_ = c.Error(err)
-	return
+		_ = c.Error(err)
+		return
 	}
 
 	c.JSON(http.StatusNoContent, gin.H{})
@@ -163,11 +167,11 @@ func (u *User) CompleteRegistry(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	
+
 	userResponse, err := u.service.CompleteRegistry(registrationId)
 	if err != nil {
-	_ = c.Error(err)
-	return
+		_ = c.Error(err)
+		return
 	}
 
 	c.JSON(http.StatusOK, userResponse)
@@ -212,6 +216,7 @@ func (u *User) GetUserProfile(c *gin.Context) {
 }
 
 func (u *User) FollowUser(c *gin.Context) {
+	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
 		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
@@ -219,16 +224,7 @@ func (u *User) FollowUser(c *gin.Context) {
 		return
 	}
 
-	var userToFollow struct {
-		Username string `json:"username" validate:"required"`
-	}
-	if err := c.BindJSON(&userToFollow); err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-		_ = c.Error(err)
-		return
-	}
-
-	err := u.service.FollowUser(userSessionId, userToFollow.Username)
+	err := u.service.FollowUser(userSessionId, username)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -238,6 +234,7 @@ func (u *User) FollowUser(c *gin.Context) {
 }
 
 func (u *User) UnfollowUser(c *gin.Context) {
+	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
 		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
@@ -245,16 +242,7 @@ func (u *User) UnfollowUser(c *gin.Context) {
 		return
 	}
 
-	var userToUnfollow struct {
-		Username string `json:"username" validate:"required"`
-	}
-	if err := c.BindJSON(&userToUnfollow); err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-		_ = c.Error(err)
-		return
-	}
-
-	err := u.service.UnfollowUser(userSessionId, userToUnfollow.Username)
+	err := u.service.UnfollowUser(userSessionId, username)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -263,7 +251,43 @@ func (u *User) UnfollowUser(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
+func getPaginationParams(c *gin.Context) (string, int, int, error) {
+	timestampStr := c.DefaultQuery("timestamp", time.Now().UTC().Format(time.RFC3339))
+	_, err := time.Parse(time.RFC3339, timestampStr)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'timestamp' value in request. Must be in RFC3339 format.", err)
+		return "", 0, 0, err
+	}
+
+	skipStr := c.DefaultQuery("skip", "0")
+	skipInt, err := strconv.Atoi(skipStr)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'skip' value in request", err)
+		return "", 0, 0, err
+	}
+
+	limitStr := c.DefaultQuery("limit", "20")
+	limitInt, err := strconv.Atoi(limitStr)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'limit' value in request", err)
+		return "", 0, 0, err
+	}
+
+	if limitInt > constants.MaxPaginationLimit {
+		slog.Warn("limit is higher than the max pagination limit, using default", 
+			slog.Int("limit", limitInt), slog.Int("max", constants.MaxPaginationLimit))
+		limitInt = constants.MaxPaginationLimit
+	}
+	return timestampStr, skipInt, limitInt, nil
+}
+
 func (u *User) GetFollowers(c *gin.Context) {
+	timestamp, skip, limit, err := getPaginationParams(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
 	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
@@ -271,16 +295,31 @@ func (u *User) GetFollowers(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	followers, err := u.service.GetFollowers(username, userSessionId)
+	followers, err := u.service.GetFollowers(username, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusOK, model.FollowersResponse{Followers: followers})
+	response := model.FollowersPaginationResponse{
+		Followers: followers,
+		Pagination: model.Pagination{
+			Limit: limit,
+		},
+	}
+	if len(followers) == limit {
+		response.Pagination.NextOffset = skip + limit
+	}
+	c.JSON(http.StatusOK, response)
 }
 
 func (u *User) GetFollowing(c *gin.Context) {
+	timestamp, skip, limit, err := getPaginationParams(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
 	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
@@ -289,11 +328,20 @@ func (u *User) GetFollowing(c *gin.Context) {
 		return
 	}
 
-	following, err := u.service.GetFollowing(username, userSessionId)
+	following, err := u.service.GetFollowing(username, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusOK, model.FollowingResponse{Following: following})
+	response := model.FollowingPaginationResponse{
+		Following: following,
+		Pagination: model.Pagination{
+			Limit: limit,
+		},
+	}
+	if len(following) == limit {
+		response.Pagination.NextOffset = skip + limit
+	}
+	c.JSON(http.StatusOK, response)
 }
