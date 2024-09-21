@@ -17,7 +17,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		authHeader := c.GetHeader("Authorization")
 		if authHeader == "" {
 			slog.Error("Authorization header is required")
-			err := app_errors.NewAppError(http.StatusUnauthorized, "Authorization header is required", fmt.Errorf("authorization header is required"))
+			err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("authorization header is required"))
 			_ = c.AbortWithError(err.Code,err)
 			c.Next()
 			return
@@ -26,7 +26,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		bearerToken := strings.Split(authHeader, " ")
 		if len(bearerToken) != 2 || strings.ToLower(bearerToken[0]) != "bearer" {
 			slog.Error("Invalid authorization header")
-			err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid authorization header", fmt.Errorf("invalid authorization header"))
+			err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("invalid authorization header"))
 			_ = c.AbortWithError(err.Code, err)
 			c.Next()
 			return
@@ -36,7 +36,7 @@ func AuthMiddleware() gin.HandlerFunc {
 		claims, err := auth.ValidateToken(tokenString)
 		if err != nil {
 			slog.Error("Invalid token")
-			err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", err)
+			err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", err)
 			_ = c.AbortWithError(err.Code, err)
 			return
 		}
