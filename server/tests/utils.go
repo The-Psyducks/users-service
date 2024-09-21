@@ -473,14 +473,7 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 }
 
 func followValidUser(router *router.Router, username string, token string) error {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("POST", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("POST", "/users/" + username + "/follow", &bytes.Reader{})
 	if err != nil {
 		return err
 	}
@@ -496,14 +489,7 @@ func followValidUser(router *router.Router, username string, token string) error
 }
 
 func followInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return 0, ErrorResponse{}, err
-	}
-	req, err := http.NewRequest("POST", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("POST", "/users/" + username + "/follow", &bytes.Reader{})
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}
@@ -521,14 +507,7 @@ func followInvalidUser(router *router.Router, username string, token string) (in
 }
 
 func unfollowValidUser(router *router.Router, username string, token string) error {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return err
-	}
-	req, err := http.NewRequest("DELETE", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("DELETE", "/users/" + username + "/follow", &bytes.Reader{})
 	if err != nil {
 		return err
 	}
@@ -544,14 +523,7 @@ func unfollowValidUser(router *router.Router, username string, token string) err
 }
 
 func unfollowInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
-	payload := map[string]string{
-		"username": username,
-	}
-	marshalledInfo, err := json.Marshal(payload)
-	if err != nil {
-		return 0, ErrorResponse{}, err
-	}
-	req, err := http.NewRequest("DELETE", "/users/follow", bytes.NewBuffer(marshalledInfo))
+	req, err := http.NewRequest("DELETE", "/users/" + username + "/follow", &bytes.Reader{})
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}

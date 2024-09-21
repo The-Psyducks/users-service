@@ -129,8 +129,8 @@ func CreateRouter() (*Router, error) {
 	{
 		private.GET("/users/:username", userController.GetUserProfile)
 		
-		private.POST("/users/follow", userController.FollowUser)
-		private.DELETE("/users/follow", userController.UnfollowUser)
+		private.POST("/users/:username/follow", userController.FollowUser)
+		private.DELETE("/users/:username/follow", userController.UnfollowUser)
 		private.GET("/users/:username/followers", userController.GetFollowers)
 		private.GET("/users/:username/following", userController.GetFollowing)
 	}

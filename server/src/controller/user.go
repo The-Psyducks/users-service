@@ -212,6 +212,7 @@ func (u *User) GetUserProfile(c *gin.Context) {
 }
 
 func (u *User) FollowUser(c *gin.Context) {
+	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
 		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
@@ -219,16 +220,7 @@ func (u *User) FollowUser(c *gin.Context) {
 		return
 	}
 
-	var userToFollow struct {
-		Username string `json:"username" validate:"required"`
-	}
-	if err := c.BindJSON(&userToFollow); err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-		_ = c.Error(err)
-		return
-	}
-
-	err := u.service.FollowUser(userSessionId, userToFollow.Username)
+	err := u.service.FollowUser(userSessionId, username)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -238,6 +230,7 @@ func (u *User) FollowUser(c *gin.Context) {
 }
 
 func (u *User) UnfollowUser(c *gin.Context) {
+	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
 		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
@@ -245,16 +238,7 @@ func (u *User) UnfollowUser(c *gin.Context) {
 		return
 	}
 
-	var userToUnfollow struct {
-		Username string `json:"username" validate:"required"`
-	}
-	if err := c.BindJSON(&userToUnfollow); err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-		_ = c.Error(err)
-		return
-	}
-
-	err := u.service.UnfollowUser(userSessionId, userToUnfollow.Username)
+	err := u.service.UnfollowUser(userSessionId, username)
 	if err != nil {
 		_ = c.Error(err)
 		return
