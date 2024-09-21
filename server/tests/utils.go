@@ -574,7 +574,7 @@ func getFollowers(router *router.Router, username string, token string) ([]Follo
 		return nil, err
 	}
 
-	for currPagination.NextOffset != -1 {
+	for currPagination.NextOffset != 0 {
 		if err := fetchFollowers(currPagination.NextOffset); err != nil {
 			return nil, err
 		}
@@ -639,7 +639,7 @@ func getFollowing(router *router.Router, username string, token string) ([]Follo
 		return nil, err
 	}
 
-	for currPagination.NextOffset != -1 {
+	for currPagination.NextOffset != 0 {
 		if err := fetchFollowing(currPagination.NextOffset); err != nil {
 			return nil, err
 		}

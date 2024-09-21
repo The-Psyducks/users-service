@@ -6,7 +6,7 @@ type FollowUserPublicProfile struct {
 }
 
 type Pagination struct {
-	NextOffset	int	`json:"next_offset" binding:"required"`
+	NextOffset	int	`json:"next_offset,omitempty"`
 	Limit		int	`json:"limit" binding:"required"`
 }
 

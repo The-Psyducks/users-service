@@ -301,16 +301,14 @@ func (u *User) GetFollowers(c *gin.Context) {
 		return
 	}
 
-	nextOffset := skip + limit
-	if len(followers) < limit {
-		nextOffset = -1
-	}
 	response := model.FollowersPaginationResponse{
 		Followers: followers,
 		Pagination: model.Pagination{
-			NextOffset: nextOffset,
-			Limit:      limit,
+			Limit: limit,
 		},
+	}
+	if len(followers) == limit {
+		response.Pagination.NextOffset = skip + limit
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -336,16 +334,14 @@ func (u *User) GetFollowing(c *gin.Context) {
 		return
 	}
 
-	nextOffset := skip + limit
-	if len(following) < limit {
-		nextOffset = -1
-	}
 	response := model.FollowingPaginationResponse{
 		Following: following,
 		Pagination: model.Pagination{
-			NextOffset: nextOffset,
-			Limit:      limit,
+			Limit: limit,
 		},
+	}
+	if len(following) == limit {
+		response.Pagination.NextOffset = skip + limit
 	}
 	c.JSON(http.StatusOK, response)
 }
