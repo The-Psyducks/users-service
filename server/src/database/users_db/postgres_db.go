@@ -310,7 +310,7 @@ func (postDB *UsersPostgresDB) GetAmountOfFollowing(userId uuid.UUID) (int, erro
 	return following, nil
 }
 
-func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error) {
+func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
 	var followers []model.UserRecord
 	query := `
 		SELECT u.*
@@ -323,35 +323,19 @@ func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID, timestamp string, 
 		LIMIT $4
 	`
 
-	err := postDB.db.Select(&followers, query, userId, timestamp, skip, limit)
+	err := postDB.db.Select(&followers, query, userId, timestamp, skip, limit+1)
 	if err != nil {
-		return nil, fmt.Errorf("error getting followers: %w", err)
+		return nil, false, fmt.Errorf("error getting followers: %w", err)
 	}
 
-	// // select all followers of userIDfrom the followers table and print them
-	// query = `SELECT follower_id, created_at FROM followers WHERE following_id = $1`
-	// rows, err := postDB.db.Query(query, userId)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error getting followers: %w", err)
-	// }
-	// defer rows.Close()
+	if len(followers) == limit+1 {
+		return followers[:limit], true, nil
+	}
 
-	// for rows.Next() {
-	// 	var follower struct {
-	// 		FollowerID	uuid.UUID `db:"follower_id"`
-	// 		Timestamp	string	`db:"created_at"`
-	// 	}
-	// 	err := rows.Scan(&follower.FollowerID, &follower.Timestamp)
-	// 	if err != nil {
-	// 		return nil, fmt.Errorf("error scanning follower: %w", err)
-	// 	}
-	// 	fmt.Println("follower: ", follower)
-	// }
-
-	return followers, nil
+	return followers, false, nil
 }
 
-func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error) {
+func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
 	var following []model.UserRecord
 	query := `
 		SELECT u.*
@@ -364,11 +348,16 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 		LIMIT $4
 	`
 
-	err := postDB.db.Select(&following, query, userId, timestamp, skip, limit)
+	err := postDB.db.Select(&following, query, userId, timestamp, skip, limit+1)
 	if err != nil {
-		return nil, fmt.Errorf("error getting following: %w", err)
+		return nil, false, fmt.Errorf("error getting following: %w", err)
 	}
-	return following, nil
+
+	if len(following) == limit+1 {
+		return following[:limit], true, nil
+	}
+
+	return following, false, nil
 }
 
 // // For testing purposes

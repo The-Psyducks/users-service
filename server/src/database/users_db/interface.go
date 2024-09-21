@@ -51,10 +51,13 @@ type UserDatabase interface {
 	// GetAmountOfFollowing retrieves the amount of following for a given user ID
 	GetAmountOfFollowing(userId uuid.UUID) (int, error)
 
-	// GetFollowers retrieves the followers for a given user ID
-	GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error)
-
-	// GetFollowing retrieves the following for a given user ID
-	GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, error)
+	// GetFollowers returns the followers for a given user ID and if there are more followers to retrieve
+	// it also receives a timestamp, skip and limit to paginate the results
+	GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+	
+	// GetFollowing returns the users that a user is following for a given user ID
+	// and if there are more followers to retrieve.
+	// It also receives a timestamp, skip and limit to paginate the results
+	GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
 }
 

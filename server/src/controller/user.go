@@ -295,7 +295,7 @@ func (u *User) GetFollowers(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	followers, err := u.service.GetFollowers(username, userSessionId, timestamp, skip, limit)
+	followers, hasMore, err := u.service.GetFollowers(username, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -307,7 +307,7 @@ func (u *User) GetFollowers(c *gin.Context) {
 			Limit: limit,
 		},
 	}
-	if len(followers) == limit {
+	if hasMore {
 		response.Pagination.NextOffset = skip + limit
 	}
 	c.JSON(http.StatusOK, response)
@@ -328,7 +328,7 @@ func (u *User) GetFollowing(c *gin.Context) {
 		return
 	}
 
-	following, err := u.service.GetFollowing(username, userSessionId, timestamp, skip, limit)
+	following, hasMore, err := u.service.GetFollowing(username, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -340,7 +340,7 @@ func (u *User) GetFollowing(c *gin.Context) {
 			Limit: limit,
 		},
 	}
-	if len(following) == limit {
+	if hasMore {
 		response.Pagination.NextOffset = skip + limit
 	}
 	c.JSON(http.StatusOK, response)
