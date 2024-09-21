@@ -34,7 +34,9 @@ func CreateRegistryPostgresDB(db *sqlx.DB) (*RegistryPostgresDB, error) {
         last_name VARCHAR(%d),
         username VARCHAR(%d) UNIQUE,
         password TEXT,
-        location VARCHAR(255)
+        location VARCHAR(255),
+		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+		deleted_at TIMESTAMPTZ
     );
 
     CREATE TABLE IF NOT EXISTS registry_interests (
@@ -62,7 +64,7 @@ func (db *RegistryPostgresDB) CreateRegistryEntry(email string) (uuid.UUID, erro
 
 func (db *RegistryPostgresDB) CheckIfRegistryEntryExistsByEmail(email string) (bool, error) {
 	var exists bool
-	err := db.db.QueryRow("SELECT EXISTS(SELECT 1 FROM registry_entries WHERE email = $1)", email).Scan(&exists)
+	err := db.db.QueryRow("SELECT EXISTS(SELECT 1 FROM registry_entries WHERE email = $1 AND deleted_at IS NULL)", email).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if registry entry exists: %w", err)
 	}
@@ -71,7 +73,7 @@ func (db *RegistryPostgresDB) CheckIfRegistryEntryExistsByEmail(email string) (b
 
 func (db *RegistryPostgresDB) CheckIfRegistryEntryExists(id uuid.UUID) (bool, error) {
 	var exists bool
-	err := db.db.QueryRow("SELECT EXISTS(SELECT 1 FROM registry_entries WHERE id = $1)", id).Scan(&exists)
+	err := db.db.QueryRow("SELECT EXISTS(SELECT 1 FROM registry_entries WHERE id = $1 AND deleted_at IS NULL)", id).Scan(&exists)
 	if err != nil {
 		return false, fmt.Errorf("failed to check if registry entry exists: %w", err)
 	}
@@ -210,9 +212,9 @@ func (db *RegistryPostgresDB) VerifyEmail(id uuid.UUID) error {
 }
 
 func (db *RegistryPostgresDB) DeleteRegistryEntry(id uuid.UUID) error {
-	_, err := db.db.Exec("DELETE FROM registry_entries WHERE id = $1", id)
+	_, err := db.db.Exec("UPDATE registry_entries SET deleted_at = now() WHERE id = $1", id)
 	if err != nil {
-		return fmt.Errorf("failed to delete registry entry: %w", err)
+		return fmt.Errorf("failed to mark registry entry as deleted: %w", err)
 	}
 	return nil
 }
