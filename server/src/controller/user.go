@@ -196,7 +196,7 @@ func (u *User) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": token})
 }
 
-func (u *User) GetUserProfile(c *gin.Context) {
+func (u *User) GetUserProfileByUsername(c *gin.Context) {
 	username := c.Param("username")
 	userSessionId := c.GetString("session_user_id")
 	if userSessionId == "" {
@@ -205,7 +205,33 @@ func (u *User) GetUserProfile(c *gin.Context) {
 		return
 	}
 
-	user, err := u.service.GetUserProfile(userSessionId, username)
+	user, err := u.service.GetUserProfileByUsername(userSessionId, username)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+func (u *User) GetUserProfileById(c *gin.Context) {
+	idString := c.Param("id")
+	userSessionId := c.GetString("session_user_id")
+	if userSessionId == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		_ = c.Error(err)
+		return
+	}
+
+	id, err := uuid.Parse(idString)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+
+	user, err := u.service.GetUserProfileById(userSessionId, id)
 
 	if err != nil {
 		_ = c.Error(err)
