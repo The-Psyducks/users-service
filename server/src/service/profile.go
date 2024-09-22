@@ -9,9 +9,26 @@ import (
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
+
+	"github.com/google/uuid"
 )
 
-func (u *User) GetUserProfile(userSessionId string, username string) (model.UserProfileResponse, error) {
+func (u *User) GetUserProfileById(userSessionId string, id uuid.UUID) (model.UserProfileResponse, error) {
+	userRecord, err := u.userDb.GetUserById(id)
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusNotFound, UsernameNotFound, err)
+		}
+		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
+	}
+
+	if strings.EqualFold(userSessionId, id.String()) {
+		return u.getPrivateProfile(userRecord)
+	}
+	return u.getPublicProfile(userRecord, userSessionId)
+}
+
+func (u *User) GetUserProfileByUsername(userSessionId string, username string) (model.UserProfileResponse, error) {
 	userRecord, err := u.userDb.GetUserByUsername(username)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
