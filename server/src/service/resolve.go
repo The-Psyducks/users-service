@@ -56,13 +56,15 @@ func (u *User) resolveExistingRegistry(email string) (model.ResolveResponse, err
 func (u *User) ResolveUserEmail(data model.ResolveRequest) (model.ResolveResponse, error) {
 	slog.Info("resolving user email")
 
-	// chequeo de provider y verificacion del token
-
 	if valErrs, err := u.userValidator.ValidateEmail(data.Email); err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating mail: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.ResolveResponse{}, app_errors.NewAppValidationError(valErrs)
 	}
+
+	// chequeo de provider y verificacion del token
+	
+
 
 	hasAccount, err := u.checkIfEmailHasAccount(data.Email)
 	if err != nil {
