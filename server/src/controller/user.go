@@ -278,7 +278,7 @@ func (u *User) UnfollowUser(c *gin.Context) {
 }
 
 func getPaginationParams(c *gin.Context) (string, int, int, error) {
-	timestampStr := c.DefaultQuery("timestamp", time.Now().UTC().Format(time.RFC3339))
+	timestampStr := c.DefaultQuery("time", time.Now().UTC().Format(time.RFC3339))
 	_, err := time.Parse(time.RFC3339, timestampStr)
 	if err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'timestamp' value in request. Must be in RFC3339 format.", err)

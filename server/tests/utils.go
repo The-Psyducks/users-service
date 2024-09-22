@@ -547,7 +547,7 @@ func getFollowers(router *router.Router, username string, token string) ([]Follo
 
 	fetchFollowers := func(skip int) error {
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
-		url := fmt.Sprintf("/users/%s/followers?timestamp=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
+		url := fmt.Sprintf("/users/%s/followers?time=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return err
@@ -611,7 +611,7 @@ func getFollowing(router *router.Router, username string, token string) ([]Follo
 
 	fetchFollowing := func(skip int) error {
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
-		url := fmt.Sprintf("/users/%s/following?timestamp=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
+		url := fmt.Sprintf("/users/%s/following?time=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return err
