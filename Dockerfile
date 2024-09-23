@@ -13,7 +13,8 @@ RUN go build -o twitsnap ./main.go
 # Test stage
 FROM builder AS twitsnap-test-stage
 
-CMD ["go", "test", "-v", "./tests"]
+# CMD ["go", "test", "-v", "./tests"]
+CMD ["go", "test", "./tests"]
 
 # Run stage
 FROM alpine:3.20

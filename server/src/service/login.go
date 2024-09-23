@@ -1,38 +1,44 @@
 package service
 
 import (
-	"fmt"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"users-service/src/auth"
-	"users-service/src/model"
-	"users-service/src/database"
 	"users-service/src/app_errors"
+	"users-service/src/auth"
+	"users-service/src/database"
+	"users-service/src/model"
 )
 
-func (u *User) CheckLoginCredentials(data model.UserLoginRequest) (string, error) {
+func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivateProfile, error) {
 	slog.Info("checking login information")
 
 	userRecord, err := u.userDb.GetUserByEmail(data.Email)
 
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
-			return "", app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid username"))
+			return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid username"))
 		}
-		return "", app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
+		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
 	if !checkPasswordHash(data.Password, userRecord.Password) {
-		return "", app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
+		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
 	authToken, err := auth.GenerateToken(userRecord.Id.String(), userRecord.UserName, true)
 
 	if err != nil {
-		return "", app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating token: %w", err))
+		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating token: %w", err))
+	}
+
+	privateProfile, err := u.createUserPrivateProfileFromUserRecord(userRecord)
+
+	if err != nil {
+		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating private profile: %w", err))
 	}
 
 	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
-	return authToken, nil
+	return authToken, privateProfile, nil
 }

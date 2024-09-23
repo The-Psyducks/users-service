@@ -58,12 +58,7 @@ func (u *User) getAmountOfFollowersAndFollowing(user model.UserRecord) (int, int
 }
 
 func (u *User) getPrivateProfile(user model.UserRecord) (model.UserProfileResponse, error) {
-	interests, err := u.userDb.GetInterestsForUserId(user.Id)
-	if err != nil {
-		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting interests from user: %w", err))
-	}
-	
-	privateProfile, err := u.createUserPrivateProfileFromUserRecordAndInterests(user, interests)
+	privateProfile, err := u.createUserPrivateProfileFromUserRecord(user)
 	if err != nil {
 		return model.UserProfileResponse{}, err
 	}

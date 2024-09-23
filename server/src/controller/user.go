@@ -2,8 +2,8 @@ package controller
 
 import (
 	"fmt"
-	"net/http"
 	"log/slog"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -186,14 +186,14 @@ func (u *User) Login(c *gin.Context) {
 		return
 	}
 
-	token, err := u.service.CheckLoginCredentials(data)
+	token, profile, err := u.service.LoginUser(data)
 
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"access_token": token})
+	c.JSON(http.StatusOK, gin.H{"access_token": token, "profile": profile})
 }
 
 func (u *User) GetUserProfileByUsername(c *gin.Context) {
@@ -300,7 +300,7 @@ func getPaginationParams(c *gin.Context) (string, int, int, error) {
 	}
 
 	if limitInt > constants.MaxPaginationLimit {
-		slog.Warn("limit is higher than the max pagination limit, using default", 
+		slog.Warn("limit is higher than the max pagination limit, using default",
 			slog.Int("limit", limitInt), slog.Int("max", constants.MaxPaginationLimit))
 		limitInt = constants.MaxPaginationLimit
 	}
