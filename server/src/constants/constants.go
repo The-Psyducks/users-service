@@ -28,4 +28,8 @@ const (
 	CompleteStep = "COMPLETE"
 )
 
+const (
+	GoogleProvider = "GOOGLE"
+)
+
 const MaxPaginationLimit = 20

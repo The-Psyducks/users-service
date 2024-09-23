@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"strconv"
 	"time"
-
+	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
@@ -43,15 +43,34 @@ func (u *User) GetInterests(c *gin.Context) {
 
 func (u *User) ResolveUserEmail(c *gin.Context) {
 	var data model.ResolveRequest
-
 	if err := c.BindJSON(&data); err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
 
-	user, err := u.service.ResolveUserEmail(data)
+	switch data.ProviderData.Name {
+		case constants.GoogleProvider:
+			var googleMetadata model.GoogleAuthMetadata
+			if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
+				err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+				_ = c.Error(err)
+				return
+			}
+			slog.Info("Google provider data found", slog.String("email", data.Email))
+			if err := u.service.ResolveGoogleUserEmail(data.Email, googleMetadata.FirebaseTokenId); err != nil {
+				_ = c.Error(err)
+				return
+			}
+		case "":
+			slog.Info("No provider data, only email provided")
+		default:
+			err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
+			_ = c.Error(err)
+			return
+	}
 
+	user, err := u.service.ResolveUserEmail(data)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -59,6 +78,7 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 
 	c.JSON(http.StatusOK, user)
 }
+
 
 func (u *User) SendVerificationEmail(c *gin.Context) {
 	registrationId, err := uuid.Parse(c.Param("id"))

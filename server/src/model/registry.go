@@ -20,10 +20,6 @@ type GoogleAuthMetadata struct {
 	FirebaseTokenId	string	`json:"firebase_token_id" validate:"required"`
 }
 
-type ProviderBase struct {
-	Type string `json:"type" validate:"required"`
-}
-
 type ResolveResponse struct {
 	NextAuthStep string      `json:"next_auth_step" validate:"required"`
 	Metadata     interface{} `json:"metadata" validate:"required"`
