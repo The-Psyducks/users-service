@@ -37,7 +37,12 @@ func generateUserRecordFromRegistryEntry(registry model.RegistryEntry) model.Use
 	}
 }
 
-func (u *User) createUserPrivateProfileFromUserRecordAndInterests(record model.UserRecord, interests []string) (model.UserPrivateProfile, error) {
+func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (model.UserPrivateProfile, error) {
+	interests, err := u.userDb.GetInterestsForUserId(record.Id)
+	if err != nil {
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving interests: %w", err))
+	}
+	
 	followers, following, err := u.getAmountOfFollowersAndFollowing(record)
 	if err != nil {
 		return model.UserPrivateProfile{}, err
