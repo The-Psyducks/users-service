@@ -1,16 +1,18 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
-	"encoding/json"
+
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 
 	"users-service/src/app_errors"
+	"users-service/src/auth"
 	"users-service/src/constants"
 	"users-service/src/model"
 	"users-service/src/service"
@@ -50,27 +52,31 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 	}
 
 	switch data.ProviderData.Name {
-		case constants.GoogleProvider:
-			var googleMetadata model.GoogleAuthMetadata
-			if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
-				err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-				_ = c.Error(err)
-				return
-			}
-			slog.Info("Google provider data found", slog.String("email", data.Email))
-			if err := u.service.ResolveGoogleUserEmail(data.Email, googleMetadata.FirebaseTokenId); err != nil {
-				_ = c.Error(err)
-				return
-			}
-		case "":
-			slog.Info("No provider data, only email provided")
-		default:
-			err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
+	case constants.GoogleProvider:
+		var googleMetadata model.GoogleAuthMetadata
+		if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
+			err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 			_ = c.Error(err)
 			return
+		}
+		slog.Info("authenticating Google provider")
+		if isValid, err := auth.IsGoogleTokenValid(googleMetadata.FirebaseTokenId); err != nil {
+			err = app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating google token: %w", err))
+			_ = c.Error(err)
+			return
+		} else if !isValid {
+			err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", fmt.Errorf("google token is invalid: %s", googleMetadata.FirebaseTokenId))
+			_ = c.Error(err)
+			return
+		}
+	case "":
+	default:
+		err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
+		_ = c.Error(err)
+		return
 	}
 
-	user, err := u.service.ResolveUserEmail(data)
+	user, err := u.service.ResolveUserEmail(data.Email)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -78,7 +84,6 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 
 	c.JSON(http.StatusOK, user)
 }
-
 
 func (u *User) SendVerificationEmail(c *gin.Context) {
 	registrationId, err := uuid.Parse(c.Param("id"))
