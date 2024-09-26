@@ -1,6 +1,8 @@
 /database/postgres
 
+/server/service-account.json
+/server/.env
+
 # For dev Dockerfile and docker-compose
-/bdd
 docker-compose.dev.yaml
 Dockerfile.dev

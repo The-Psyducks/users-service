@@ -23,4 +23,7 @@ WORKDIR /home/app
 
 COPY --from=builder /home/app/twitsnap ./
 
+# Create a service account file if it doesn't exist
+RUN test -f /home/app/service-account.json || echo '{}' > /home/app/service-account.json
+
 CMD ["./twitsnap"]

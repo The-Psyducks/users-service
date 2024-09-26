@@ -1,17 +1,23 @@
 package model
 
 import (
+	"encoding/json"
+
 	"github.com/google/uuid"
 )
-
-type Provider struct {
-	Name     string      `json:"type" validate:"required"`
-	Metadata interface{} `json:"metadata" validate:"required"`
-}
 
 type ResolveRequest struct {
 	Email        string   `json:"email" validate:"required"`
 	ProviderData Provider `json:"provider"`
+}
+
+type Provider struct {
+	Name     string      `json:"type" validate:"required"`
+	Metadata json.RawMessage `json:"metadata" validate:"required"`
+}
+
+type GoogleAuthMetadata struct {
+	FirebaseTokenId	string	`json:"firebase_token_id" validate:"required"`
 }
 
 type ResolveResponse struct {

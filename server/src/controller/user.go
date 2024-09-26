@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"github.com/google/uuid"
 
 	"users-service/src/app_errors"
+	"users-service/src/auth"
 	"users-service/src/constants"
 	"users-service/src/model"
 	"users-service/src/service"
@@ -43,15 +45,38 @@ func (u *User) GetInterests(c *gin.Context) {
 
 func (u *User) ResolveUserEmail(c *gin.Context) {
 	var data model.ResolveRequest
-
 	if err := c.BindJSON(&data); err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
 
-	user, err := u.service.ResolveUserEmail(data)
+	switch data.ProviderData.Name {
+	case constants.GoogleProvider:
+		var googleMetadata model.GoogleAuthMetadata
+		if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
+			err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+			_ = c.Error(err)
+			return
+		}
+		slog.Info("authenticating Google provider")
+		if isValid, err := auth.IsGoogleTokenValid(googleMetadata.FirebaseTokenId); err != nil {
+			err = app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating google token: %w", err))
+			_ = c.Error(err)
+			return
+		} else if !isValid {
+			err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", fmt.Errorf("google token is invalid: %s", googleMetadata.FirebaseTokenId))
+			_ = c.Error(err)
+			return
+		}
+	case "":
+	default:
+		err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
+		_ = c.Error(err)
+		return
+	}
 
+	user, err := u.service.ResolveUserEmail(data.Email)
 	if err != nil {
 		_ = c.Error(err)
 		return

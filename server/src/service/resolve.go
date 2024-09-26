@@ -53,40 +53,36 @@ func (u *User) resolveExistingRegistry(email string) (model.ResolveResponse, err
 	}, nil
 }
 
-func (u *User) ResolveUserEmail(data model.ResolveRequest) (model.ResolveResponse, error) {
-	slog.Info("resolving user email")
-
-	// chequeo de provider y verificacion del token
-
-	if valErrs, err := u.userValidator.ValidateEmail(data.Email); err != nil {
+func (u *User) ResolveUserEmail(email string) (model.ResolveResponse, error) {
+	if valErrs, err := u.userValidator.ValidateEmail(email); err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating mail: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.ResolveResponse{}, app_errors.NewAppValidationError(valErrs)
 	}
 
-	hasAccount, err := u.checkIfEmailHasAccount(data.Email)
+	hasAccount, err := u.checkIfEmailHasAccount(email)
 	if err != nil {
 		return model.ResolveResponse{}, err
 	}
 
 	if hasAccount {
-		slog.Info("user email resolved successfully: it has account", slog.String("email", data.Email))
+		slog.Info("user email resolved successfully: it has account", slog.String("email", email))
 		return model.ResolveResponse{
 			NextAuthStep: constants.LoginStep,
 			Metadata:     nil,
 		}, nil
 	}
 
-	exists, err := u.registryDb.CheckIfRegistryEntryExistsByEmail(data.Email)
+	exists, err := u.registryDb.CheckIfRegistryEntryExistsByEmail(email)
 	if err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if registry entry exists: %w", err))
 	}
 
 	if exists {
-		slog.Info("user email resolved successfully: it has registry entry", slog.String("email", data.Email))
-		return u.resolveExistingRegistry(data.Email)
+		slog.Info("user email resolved successfully: it has registry entry", slog.String("email", email))
+		return u.resolveExistingRegistry(email)
 	}
 
-	slog.Info("user email resolved successfully: it doesnt have account", slog.String("email", data.Email))
-	return u.createNewRegistry(data.Email)
+	slog.Info("user email resolved successfully: it doesnt have account", slog.String("email", email))
+	return u.createNewRegistry(email)
 }
