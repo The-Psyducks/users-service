@@ -53,6 +53,7 @@ func createTables(db *sqlx.DB) error {
 		CREATE TABLE IF NOT EXISTS %s (
 			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 			username VARCHAR(%d) NOT NULL UNIQUE,
+			picture_path TEXT DEFAULT '',
 			first_name VARCHAR(%d) NOT NULL,
 			last_name VARCHAR(%d) NOT NULL,
 			email VARCHAR(%d) NOT NULL UNIQUE,

@@ -16,9 +16,10 @@ type UserProfileResponse struct {
 // UserPrivateProfile is a struct that represents a user in the HTTP response
 type UserPrivateProfile struct {
 	Id        uuid.UUID `json:"id" binding:"required"`
+	UserName  string    `json:"username" binding:"required"`
+	PicturePath  string	`json:"picture_path" db:"picture_path"`
 	FirstName string    `json:"first_name" binding:"required"`
 	LastName  string    `json:"last_name" binding:"required"`
-	UserName  string    `json:"username" binding:"required"`
 	Email     string    `json:"email" binding:"required"`
 	Location  string    `json:"location" binding:"required"`
 	Interests []string  `json:"interests" binding:"required"`
@@ -29,9 +30,10 @@ type UserPrivateProfile struct {
 // UserPrivateProfile is a struct that represents a user in the HTTP response
 type UserPublicProfile struct {
 	Id        uuid.UUID `json:"id" binding:"required"`
+	UserName  string    `json:"username" binding:"required"`
+	PicturePath  string	`json:"picture_path" db:"picture_path"`
 	FirstName string    `json:"first_name" binding:"required"`
 	LastName  string    `json:"last_name" binding:"required"`
-	UserName  string    `json:"username" binding:"required"`
 	Location  string    `json:"location" binding:"required"`
 	Followers int       `json:"followers" binding:"required"`
 	Following int       `json:"following" binding:"required"`
@@ -41,6 +43,7 @@ type UserPublicProfile struct {
 type UserRecord struct {
 	Id        uuid.UUID `json:"id" db:"id"`
 	UserName  string    `json:"username" db:"username"`
+	PicturePath  string	`json:"picture_path" db:"picture_path"`
 	FirstName string    `json:"first_name" db:"first_name"`
 	LastName  string    `json:"last_name" db:"last_name"`
 	Email     string    `json:"email" db:"email"`
