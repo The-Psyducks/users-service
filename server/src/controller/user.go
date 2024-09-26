@@ -221,7 +221,7 @@ func (u *User) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": token, "profile": profile})
 }
 
-func getIdAndSessionUserId(c *gin.Context) (uuid.UUID, string, error) {
+func getUrlIdAndSessionUserId(c *gin.Context) (uuid.UUID, string, error) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
@@ -238,7 +238,7 @@ func getIdAndSessionUserId(c *gin.Context) (uuid.UUID, string, error) {
 }
 
 func (u *User) GetUserProfileById(c *gin.Context) {
-	id, userSessionId, err := getIdAndSessionUserId(c)
+	id, userSessionId, err := getUrlIdAndSessionUserId(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -255,13 +255,13 @@ func (u *User) GetUserProfileById(c *gin.Context) {
 }
 
 func (u *User) FollowUser(c *gin.Context) {
-	id, userSessionId, err := getIdAndSessionUserId(c)
+	userToFollowId, userSessionId, err := getUrlIdAndSessionUserId(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	err = u.service.FollowUser(userSessionId, id)
+	err = u.service.FollowUser(userSessionId, userToFollowId)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -271,13 +271,13 @@ func (u *User) FollowUser(c *gin.Context) {
 }
 
 func (u *User) UnfollowUser(c *gin.Context) {
-	id, userSessionId, err := getIdAndSessionUserId(c)
+	userToUnfollowId, userSessionId, err := getUrlIdAndSessionUserId(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	err = u.service.UnfollowUser(userSessionId, id)
+	err = u.service.UnfollowUser(userSessionId, userToUnfollowId)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -317,7 +317,7 @@ func getPaginationParams(c *gin.Context) (string, int, int, error) {
 }
 
 func (u *User) GetFollowers(c *gin.Context) {
-	id, userSessionId, err := getIdAndSessionUserId(c)
+	userToGetFollowersId, userSessionId, err := getUrlIdAndSessionUserId(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -328,7 +328,7 @@ func (u *User) GetFollowers(c *gin.Context) {
 		return
 	}
 
-	followers, hasMore, err := u.service.GetFollowers(id, userSessionId, timestamp, skip, limit)
+	followers, hasMore, err := u.service.GetFollowers(userToGetFollowersId, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -347,7 +347,7 @@ func (u *User) GetFollowers(c *gin.Context) {
 }
 
 func (u *User) GetFollowing(c *gin.Context) {
-	id, userSessionId, err := getIdAndSessionUserId(c)
+	userToGetFollowingId, userSessionId, err := getUrlIdAndSessionUserId(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -358,7 +358,7 @@ func (u *User) GetFollowing(c *gin.Context) {
 		return
 	}
 
-	following, hasMore, err := u.service.GetFollowing(id, userSessionId, timestamp, skip, limit)
+	following, hasMore, err := u.service.GetFollowing(userToGetFollowingId, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
