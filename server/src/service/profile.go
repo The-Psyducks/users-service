@@ -28,21 +28,6 @@ func (u *User) GetUserProfileById(userSessionId string, id uuid.UUID) (model.Use
 	return u.getPublicProfile(userRecord, userSessionId)
 }
 
-func (u *User) GetUserProfileByUsername(userSessionId string, username string) (model.UserProfileResponse, error) {
-	userRecord, err := u.userDb.GetUserByUsername(username)
-	if err != nil {
-		if errors.Is(err, database.ErrKeyNotFound) {
-			return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusNotFound, UsernameNotFound, err)
-		}
-		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
-	}
-
-	if strings.EqualFold(userSessionId, userRecord.Id.String()) {
-		return u.getPrivateProfile(userRecord)
-	}
-	return u.getPublicProfile(userRecord, userSessionId)
-}
-
 func (u *User) getAmountOfFollowersAndFollowing(user model.UserRecord) (int, int, error) {
 	followers, err := u.userDb.GetAmountOfFollowers(user.Id)
 	if err != nil {

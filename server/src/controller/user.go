@@ -221,37 +221,25 @@ func (u *User) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": token, "profile": profile})
 }
 
-func (u *User) GetUserProfileByUsername(c *gin.Context) {
-	username := c.Param("username")
-	userSessionId := c.GetString("session_user_id")
-	if userSessionId == "" {
-		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
-		_ = c.Error(err)
-		return
-	}
-
-	user, err := u.service.GetUserProfileByUsername(userSessionId, username)
-
+func getIdAndSessionUserId(c *gin.Context) (uuid.UUID, string, error) {
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
-		_ = c.Error(err)
-		return
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		return uuid.Nil, "", err
 	}
 
-	c.JSON(http.StatusOK, user)
+	sessionUserId := c.GetString("session_user_id")
+	if sessionUserId == "" {
+		err = app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		return uuid.Nil, "", err
+	}
+
+	return id, sessionUserId, nil
 }
 
 func (u *User) GetUserProfileById(c *gin.Context) {
-	idString := c.Param("id")
-	userSessionId := c.GetString("session_user_id")
-	if userSessionId == "" {
-		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
-		_ = c.Error(err)
-		return
-	}
-
-	id, err := uuid.Parse(idString)
+	id, userSessionId, err := getIdAndSessionUserId(c)
 	if err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
@@ -267,15 +255,13 @@ func (u *User) GetUserProfileById(c *gin.Context) {
 }
 
 func (u *User) FollowUser(c *gin.Context) {
-	username := c.Param("username")
-	userSessionId := c.GetString("session_user_id")
-	if userSessionId == "" {
-		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+	id, userSessionId, err := getIdAndSessionUserId(c)
+	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	err := u.service.FollowUser(userSessionId, username)
+	err = u.service.FollowUser(userSessionId, id)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -285,15 +271,13 @@ func (u *User) FollowUser(c *gin.Context) {
 }
 
 func (u *User) UnfollowUser(c *gin.Context) {
-	username := c.Param("username")
-	userSessionId := c.GetString("session_user_id")
-	if userSessionId == "" {
-		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+	id, userSessionId, err := getIdAndSessionUserId(c)
+	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	err := u.service.UnfollowUser(userSessionId, username)
+	err = u.service.UnfollowUser(userSessionId, id)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -333,20 +317,18 @@ func getPaginationParams(c *gin.Context) (string, int, int, error) {
 }
 
 func (u *User) GetFollowers(c *gin.Context) {
+	id, userSessionId, err := getIdAndSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
 	timestamp, skip, limit, err := getPaginationParams(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	username := c.Param("username")
-	userSessionId := c.GetString("session_user_id")
-	if userSessionId == "" {
-		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
-		_ = c.Error(err)
-		return
-	}
-	followers, hasMore, err := u.service.GetFollowers(username, userSessionId, timestamp, skip, limit)
+	followers, hasMore, err := u.service.GetFollowers(id, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -365,21 +347,18 @@ func (u *User) GetFollowers(c *gin.Context) {
 }
 
 func (u *User) GetFollowing(c *gin.Context) {
+	id, userSessionId, err := getIdAndSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
 	timestamp, skip, limit, err := getPaginationParams(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	username := c.Param("username")
-	userSessionId := c.GetString("session_user_id")
-	if userSessionId == "" {
-		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
-		_ = c.Error(err)
-		return
-	}
-
-	following, hasMore, err := u.service.GetFollowing(username, userSessionId, timestamp, skip, limit)
+	following, hasMore, err := u.service.GetFollowing(id, userSessionId, timestamp, skip, limit)
 	if err != nil {
 		_ = c.Error(err)
 		return

@@ -99,6 +99,7 @@ type LoginRequest struct {
 
 type LoginResponse struct {
 	AccessToken string `json:"access_token"`
+	Profile	 UserPrivateProfile `json:"profile"`
 }
 
 type FollowUserProfile struct {
