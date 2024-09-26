@@ -330,8 +330,8 @@ func createAndLoginUser(router *router.Router, email string, user UserPersonalIn
 	return LoginValidUser(router, login)
 }
 
-func getValidUser(router *router.Router, username string, token string) (UserProfileResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username, nil)
+func getValidUser(router *router.Router, id string, token string) (UserProfileResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+id, nil)
 	if err != nil {
 		return UserProfileResponse{}, err
 	}
@@ -352,8 +352,8 @@ func getValidUser(router *router.Router, username string, token string) (UserPro
 	return result, nil
 }
 
-func getOwnProfile(router *router.Router, username string, token string) (UserPrivateProfile, error) {
-	result, err := getValidUser(router, username, token)
+func getOwnProfile(router *router.Router, id string, token string) (UserPrivateProfile, error) {
+	result, err := getValidUser(router, id, token)
 	if err != nil {
 		return UserPrivateProfile{}, err
 	}
@@ -372,8 +372,8 @@ func getOwnProfile(router *router.Router, username string, token string) (UserPr
 	return profile, nil
 }
 
-func getAnotherUserProfile(router *router.Router, username string, token string) (UserPublicProfile, error) {
-	result, err := getValidUser(router, username, token)
+func getAnotherUserProfile(router *router.Router, id string, token string) (UserPublicProfile, error) {
+	result, err := getValidUser(router, id, token)
 	if err != nil {
 		return UserPublicProfile{}, err
 	}
@@ -392,8 +392,8 @@ func getAnotherUserProfile(router *router.Router, username string, token string)
 	return profile, nil
 }
 
-func getNotExistingUser(router *router.Router, username string, token string) (ErrorResponse, error) {
-	req, err := http.NewRequest("GET", "/users/"+username, nil)
+func getNotExistingUser(router *router.Router, id string, token string) (ErrorResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+id, nil)
 	if err != nil {
 		return ErrorResponse{}, err
 	}
@@ -473,8 +473,8 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 	return location, interests
 }
 
-func followValidUser(router *router.Router, username string, token string) error {
-	req, err := http.NewRequest("POST", "/users/" + username + "/follow", nil)
+func followValidUser(router *router.Router, id string, token string) error {
+	req, err := http.NewRequest("POST", "/users/" + id + "/follow", nil)
 	if err != nil {
 		return err
 	}
@@ -489,8 +489,8 @@ func followValidUser(router *router.Router, username string, token string) error
 	return nil
 }
 
-func followInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
-	req, err := http.NewRequest("POST", "/users/" + username + "/follow", nil)
+func followInvalidUser(router *router.Router, id string, token string) (int, ErrorResponse, error) {
+	req, err := http.NewRequest("POST", "/users/" + id + "/follow", nil)
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}
@@ -507,8 +507,8 @@ func followInvalidUser(router *router.Router, username string, token string) (in
 	return recorder.Code, result, nil
 }
 
-func unfollowValidUser(router *router.Router, username string, token string) error {
-	req, err := http.NewRequest("DELETE", "/users/" + username + "/follow", nil)
+func unfollowValidUser(router *router.Router, id string, token string) error {
+	req, err := http.NewRequest("DELETE", "/users/" + id + "/follow", nil)
 	if err != nil {
 		return err
 	}
@@ -523,8 +523,8 @@ func unfollowValidUser(router *router.Router, username string, token string) err
 	return nil
 }
 
-func unfollowInvalidUser(router *router.Router, username string, token string) (int, ErrorResponse, error) {
-	req, err := http.NewRequest("DELETE", "/users/" + username + "/follow", nil)
+func unfollowInvalidUser(router *router.Router, id string, token string) (int, ErrorResponse, error) {
+	req, err := http.NewRequest("DELETE", "/users/" + id + "/follow", nil)
 	if err != nil {
 		return 0, ErrorResponse{}, err
 	}
@@ -541,13 +541,13 @@ func unfollowInvalidUser(router *router.Router, username string, token string) (
 	return recorder.Code, result, nil
 }
 
-func getFollowers(router *router.Router, username string, token string) ([]FollowUserProfile, error) {
+func getFollowers(router *router.Router, id string, token string) ([]FollowUserProfile, error) {
 	var result []FollowUserProfile
 	var currPagination Pagination
 
 	fetchFollowers := func(skip int) error {
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
-		url := fmt.Sprintf("/users/%s/followers?time=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
+		url := fmt.Sprintf("/users/%s/followers?time=%s&skip=%d&limit=%d", id, timestamp, skip, 20)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return err
@@ -582,9 +582,9 @@ func getFollowers(router *router.Router, username string, token string) ([]Follo
 	return result, nil
 }
 
-func getFollowersForInvalidUser(router *router.Router, username string, token string) (ErrorResponse, error) {
+func getFollowersForInvalidUser(router *router.Router, id string, token string) (ErrorResponse, error) {
 	timestamp := time.Now().UTC().Format(time.RFC3339Nano)
-	url := fmt.Sprintf("/users/%s/following?timestamp=%s&skip=%d&limit=%d", username, timestamp, 0, 20)
+	url := fmt.Sprintf("/users/%s/following?timestamp=%s&skip=%d&limit=%d", id, timestamp, 0, 20)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return ErrorResponse{}, err
@@ -605,13 +605,13 @@ func getFollowersForInvalidUser(router *router.Router, username string, token st
 	return result, nil
 }
 
-func getFollowing(router *router.Router, username string, token string) ([]FollowUserProfile, error) {
+func getFollowing(router *router.Router, id string, token string) ([]FollowUserProfile, error) {
 	var result []FollowUserProfile
 	var currPagination Pagination
 
 	fetchFollowing := func(skip int) error {
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
-		url := fmt.Sprintf("/users/%s/following?time=%s&skip=%d&limit=%d", username, timestamp, skip, 20)
+		url := fmt.Sprintf("/users/%s/following?time=%s&skip=%d&limit=%d", id, timestamp, skip, 20)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return err

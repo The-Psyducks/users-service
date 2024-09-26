@@ -127,13 +127,12 @@ func CreateRouter() (*Router, error) {
 	private := r.Engine.Group("/")
 	private.Use(middleware.AuthMiddleware())
 	{
-		private.GET("/users/:username", userController.GetUserProfileByUsername)
-		private.GET("/users/profile/:id", userController.GetUserProfileById)
+		private.GET("/users/:id", userController.GetUserProfileById)
 		
-		private.POST("/users/:username/follow", userController.FollowUser)
-		private.DELETE("/users/:username/follow", userController.UnfollowUser)
-		private.GET("/users/:username/followers", userController.GetFollowers)
-		private.GET("/users/:username/following", userController.GetFollowing)
+		private.POST("/users/:id/follow", userController.FollowUser)
+		private.DELETE("/users/:id/follow", userController.UnfollowUser)
+		private.GET("/users/:id/followers", userController.GetFollowers)
+		private.GET("/users/:id/following", userController.GetFollowing)
 	}
 
 	r.Engine.NoRoute(userController.HandleNoRoute)

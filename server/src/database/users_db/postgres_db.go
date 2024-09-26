@@ -124,6 +124,26 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 	return user, nil
 }
 
+// For testing purposes
+// func (postDB *UsersPostgresDB) PrintAllUsers() error {
+//     var users []model.UserRecord
+//     query := `SELECT * FROM users`
+    
+//     err := postDB.db.Select(&users, query)
+//     if err != nil {
+//         return fmt.Errorf("error fetching users: %w", err)
+//     }
+
+//     // Imprimir cada usuario
+//     fmt.Println("All users in the database:")
+//     for _, user := range users {
+//         fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n", 
+//             user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.Location, user.CreatedAt)
+//     }
+
+//     return nil
+// }
+
 func (postDB *UsersPostgresDB) GetUserById(id uuid.UUID) (model.UserRecord, error) {
 	var user model.UserRecord
 	query := `SELECT * FROM users WHERE id = $1`

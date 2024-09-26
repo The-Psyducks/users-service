@@ -61,10 +61,10 @@ func TestFollowUser(t *testing.T) {
 	resp, err := LoginValidUser(testRouter, loginRequest)
 	assert.Equal(t, err, nil)
     
-	err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+	err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
 	assert.Equal(t, err, nil)
 
-    followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
+    followers, err := getFollowers(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(followers), 1)
     assert.Equal(t, followers[0].Follows, false)
@@ -80,10 +80,10 @@ func TestFollowUserTwice(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    code, response, err := followInvalidUser(testRouter, user2.UserName, resp.AccessToken)
+    code, response, err := followInvalidUser(testRouter, user2.Id.String(), resp.AccessToken)
     
     assert.Equal(t, err, nil)
     assert.Equal(t, code, http.StatusBadRequest)
@@ -99,7 +99,7 @@ func TestFollowMyself(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    code, response, err := followInvalidUser(testRouter, user1.UserName, resp.AccessToken)
+    code, response, err := followInvalidUser(testRouter, user1.Id.String(), resp.AccessToken)
     
     assert.Equal(t, err, nil)
     assert.Equal(t, code, http.StatusBadRequest)
@@ -115,7 +115,7 @@ func TestFollowNonExistentUser(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    code, response, err := followInvalidUser(testRouter, "nonExistentUser", resp.AccessToken)
+    code, response, err := followInvalidUser(testRouter, "4a28ea57-854b-4ee4-af34-61c998d8493e", resp.AccessToken)
     
     assert.Equal(t, err, nil)
     assert.Equal(t, code, http.StatusNotFound)
@@ -131,10 +131,10 @@ func TestUnfollowUser(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
     
-    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     
-    err = unfollowValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = unfollowValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     
     loginRequest = LoginRequest{
@@ -144,7 +144,7 @@ func TestUnfollowUser(t *testing.T) {
     resp, err = LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
+    followers, err := getFollowers(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(followers), 0)
 }
@@ -158,7 +158,7 @@ func TestUnfollowNonFollowingUser(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    code, response, err := unfollowInvalidUser(testRouter, user2.UserName, resp.AccessToken)
+    code, response, err := unfollowInvalidUser(testRouter, user2.Id.String(), resp.AccessToken)
     
     assert.Equal(t, err, nil)
     assert.Equal(t, code, http.StatusBadRequest)
@@ -174,7 +174,7 @@ func TestUnfollowNonExistentUser(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    code, response, err := unfollowInvalidUser(testRouter, "nonExistentUser", resp.AccessToken)
+    code, response, err := unfollowInvalidUser(testRouter, "4a28ea57-854b-4ee4-af34-61c998d8493e", resp.AccessToken)
     
     assert.Equal(t, err, nil)
     assert.Equal(t, code, http.StatusNotFound)
@@ -190,7 +190,7 @@ func TestGetFollowersWhenEmpty(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    followers, err := getFollowers(testRouter, user1.UserName, resp.AccessToken)
+    followers, err := getFollowers(testRouter, user1.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(followers), 0)
 }
@@ -217,7 +217,7 @@ func TestGetFollowers(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
     loginRequest = LoginRequest{
@@ -227,10 +227,10 @@ func TestGetFollowers(t *testing.T) {
     resp, err = LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    followers, err := getFollowers(testRouter, user2.UserName, resp.AccessToken)
+    followers, err := getFollowers(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(followers), 2)
     assert.Equal(t, followers[0].Follows, false)
@@ -248,7 +248,7 @@ func TestGetFollowingWhenEmpty(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
 
-    following, err := getFollowing(testRouter, user1.UserName, resp.AccessToken)
+    following, err := getFollowing(testRouter, user1.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(following), 0)
 }
@@ -275,13 +275,13 @@ func TestGetFollowing(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
     
-    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    err = followValidUser(testRouter, user1.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user1.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    following, err := getFollowing(testRouter, user3.UserName, resp.AccessToken)
+    following, err := getFollowing(testRouter, user3.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(following), 2)
     assert.Equal(t, following[0].Follows, true)
@@ -300,7 +300,7 @@ func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
     
-    response, err := getFollowersForInvalidUser(testRouter, user2.UserName, resp.AccessToken)
+    response, err := getFollowersForInvalidUser(testRouter, user2.Id.String(), resp.AccessToken)
     
     assert.Equal(t, err, nil)
     assert.Equal(t, response.Title, "The user is not following this user")
@@ -328,9 +328,9 @@ func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
     resp, err := LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
     
-    err = followValidUser(testRouter, user2.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user2.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
-    err = followValidUser(testRouter, user3.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user3.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
     loginRequest = LoginRequest{
@@ -340,12 +340,12 @@ func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
     resp, err = LoginValidUser(testRouter, loginRequest)
     assert.Equal(t, err, nil)
     
-    err = followValidUser(testRouter, user1.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user1.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
-    err = followValidUser(testRouter, user3.UserName, resp.AccessToken)
+    err = followValidUser(testRouter, user3.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
 
-    followers, err := getFollowers(testRouter, user3.UserName, resp.AccessToken)
+    followers, err := getFollowers(testRouter, user3.Id.String(), resp.AccessToken)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(followers), 2)
     for _, follower := range followers {

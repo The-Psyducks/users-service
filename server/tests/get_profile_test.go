@@ -34,7 +34,7 @@ func TestGetOwnUserProfile(t *testing.T) {
 	response, err := createAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
-	userProfile, err := getOwnProfile(router, user.UserName, response.AccessToken)
+	userProfile, err := getOwnProfile(router, response.Profile.Id.String(), response.AccessToken)
 	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
 	AssertUserPrivateProfileIsUser(t, email, user, location, interests, userProfile)
 
@@ -76,7 +76,7 @@ func TestGetAnotherUserProfile(t *testing.T) {
 	response2, err := createAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
-	userProfile, err := getAnotherUserProfile(router, user.UserName, response2.AccessToken)
+	userProfile, err := getAnotherUserProfile(router, response2.Profile.Id.String(), response2.AccessToken)
 	location, _ := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
 	AssertUserPublicProfileIsUser(t, user, location, userProfile)
 
@@ -131,8 +131,8 @@ func TestGetNotExistingUserProfile(t *testing.T) {
 	response, err := createAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
-	username := "monkeCrack"
-	result, err := getNotExistingUser(router, username, response.AccessToken)
+	id := "4a28ea57-854b-4ee4-af34-61c998d8493e"
+	result, err := getNotExistingUser(router, id, response.AccessToken)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result.Title, "User not found")
@@ -179,7 +179,7 @@ func TestGetUserThatIsInRegistry(t *testing.T) {
 	err = putValidInterests(router, id, interestsIds)
 	assert.Equal(t, err, nil)
 
-	result, err := getNotExistingUser(router, user.UserName, response.AccessToken)
+	result, err := getNotExistingUser(router, res.Metadata.RegistrationId, response.AccessToken)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result.Title, "User not found")
