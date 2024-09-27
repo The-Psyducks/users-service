@@ -34,17 +34,18 @@ type UserPersonalInfoRequest struct {
 }
 
 type UserPersonalInfoRecord struct {
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	UserName  string `json:"username" validate:"required"`
-	Password  string `json:"password" validate:"required"`
-	Location  string `json:"location" validate:"required"`
+	FirstName string `json:"first_name" db:"first_name" validate:"required"`
+	LastName  string `json:"last_name" db:"last_name" validate:"required"`
+	UserName  string `json:"username" db:"username" validate:"required"`
+	Password  string `json:"password" db:"password" validate:"required"`
+	Location  string `json:"location" db:"location" validate:"required"`
 }
 
 type RegistryEntry struct {
-	Id            uuid.UUID              `json:"id" validate:"required"`
-	Email         string                 `json:"email" validate:"required"`
-	EmailVerified bool                   `json:"email_verified" validate:"required"`
-	PersonalInfo  UserPersonalInfoRecord `json:"personal_info" validate:"required"`
-	Interests     []string               `json:"interests" validate:"required"`
+	Id            uuid.UUID              `json:"id" db:"id" validate:"required"`
+	Email         string                 `json:"email" db:"email" validate:"required"`
+	EmailVerified bool                   `json:"email_verified" db:"email_verified" validate:"required"`
+	PersonalInfo  UserPersonalInfoRecord `json:"personal_info" db:"personal_info" validate:"required"`
+	Interests     []string               `json:"interests" db:"interests" validate:"required"`
 }
+
