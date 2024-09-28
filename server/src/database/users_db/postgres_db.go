@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+
 	// "golang.org/x/crypto/bcrypt" //testing purposes
 
 	"users-service/src/constants"
@@ -16,7 +17,7 @@ import (
 )
 
 const (
-	usersTable = "users"
+	usersTable     = "users"
 	interestsTable = "user_interests"
 	followersTable = "followers"
 )
@@ -44,11 +45,11 @@ func createTables(db *sqlx.DB) error {
 		DROP TABLE IF EXISTS %s CASCADE;
 		DROP TABLE IF EXISTS %s CASCADE;
 		`, usersTable, interestsTable, followersTable)
-	
+
 	if _, err := db.Exec(dropTables); err != nil {
 		return fmt.Errorf("failed to drop database: %w", err)
 	}
-	
+
 	schemaUsers := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -74,7 +75,7 @@ func createTables(db *sqlx.DB) error {
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 			);
 		`, interestsTable)
-	
+
 	schemaFollowers := fmt.Sprintf(`
 		CREATE TABLE IF NOT EXISTS %s (
 			follower_id UUID NOT NULL,
@@ -99,10 +100,9 @@ func createTables(db *sqlx.DB) error {
 	return nil
 }
 
-
 func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserRecord, error) {
 	var user model.UserRecord
-    query := `
+	query := `
         INSERT INTO users (username, first_name, last_name, email, password, location)
         VALUES (:username, :first_name, :last_name, :email, :password, :location)
         RETURNING id, username, first_name, last_name, email, password, location, created_at
@@ -114,13 +114,49 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 	}
 	defer rows.Close()
 
-    if rows.Next() {
-        if err := rows.StructScan(&user); err != nil {
-            return model.UserRecord{}, fmt.Errorf("error scanning user data: %w", err)
-        }
-    } else {
-        return model.UserRecord{}, fmt.Errorf("error: no user created")
-    }
+	if rows.Next() {
+		if err := rows.StructScan(&user); err != nil {
+			return model.UserRecord{}, fmt.Errorf("error scanning user data: %w", err)
+		}
+	} else {
+		return model.UserRecord{}, fmt.Errorf("error: no user created")
+	}
+
+	return user, nil
+}
+
+func (postDB *UsersPostgresDB) ModifyUser(id uuid.UUID, data model.UpdateUserPrivateProfile) (model.UserRecord, error) {
+	var user model.UserRecord
+	query := `
+		UPDATE users
+		SET username = :username, first_name = :first_name, last_name = :last_name, location = :location
+		WHERE id = :id
+		RETURNING id, username, first_name, last_name, email, location
+	`
+
+	rows, err := postDB.db.NamedQuery(query, map[string]interface{}{
+		"id":         id,
+		"username":   data.UserName,
+		"first_name": data.FirstName,
+		"last_name":  data.LastName,
+		"location":   data.Location,
+	})
+	if err != nil {
+		return model.UserRecord{}, err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		if err := rows.StructScan(&user); err != nil {
+			return model.UserRecord{}, fmt.Errorf("error scanning user data: %w", err)
+		}
+	} else {
+		return model.UserRecord{}, fmt.Errorf("error: no user updated")
+	}
+
+	if err := postDB.updateUserInterests(id, data.Interests); err != nil {
+		return model.UserRecord{}, fmt.Errorf("error updating user interests: %w", err)
+	}
 
 	return user, nil
 }
@@ -129,7 +165,7 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 // func (postDB *UsersPostgresDB) PrintAllUsers() error {
 //     var users []model.UserRecord
 //     query := `SELECT * FROM users`
-    
+
 //     err := postDB.db.Select(&users, query)
 //     if err != nil {
 //         return fmt.Errorf("error fetching users: %w", err)
@@ -138,7 +174,7 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 //     // Imprimir cada usuario
 //     fmt.Println("All users in the database:")
 //     for _, user := range users {
-//         fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n", 
+//         fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n",
 //             user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.Location, user.CreatedAt)
 //     }
 
@@ -159,20 +195,6 @@ func (postDB *UsersPostgresDB) GetUserById(id uuid.UUID) (model.UserRecord, erro
 	return user, nil
 }
 
-func (postDB *UsersPostgresDB) GetUserByUsername(username string) (model.UserRecord, error) {
-	var user model.UserRecord
-	query := `SELECT * FROM users WHERE username = $1 LIMIT 1`
-	err := postDB.db.Get(&user, query, username)
-
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return model.UserRecord{}, database.ErrKeyNotFound
-		}
-		return model.UserRecord{}, fmt.Errorf("error fetching user by username: %w", err)
-	}
-	return user, nil
-}
-
 func (postDB *UsersPostgresDB) GetUserByEmail(email string) (model.UserRecord, error) {
 	var user model.UserRecord
 	query := `SELECT * FROM users WHERE email = $1 LIMIT 1`
@@ -188,27 +210,37 @@ func (postDB *UsersPostgresDB) GetUserByEmail(email string) (model.UserRecord, e
 }
 
 func (postDB *UsersPostgresDB) CheckIfUsernameExists(username string) (bool, error) {
-    var exists bool
-    query := `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = LOWER($1))`
-    err := postDB.db.QueryRow(query, username).Scan(&exists)
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE LOWER(username) = LOWER($1))`
+	err := postDB.db.QueryRow(query, username).Scan(&exists)
 
-    if err != nil {
-        return false, fmt.Errorf("error checking username existence: %w", err)
-    }
+	if err != nil {
+		return false, fmt.Errorf("error checking username existence: %w", err)
+	}
 
-    return exists, nil
+	return exists, nil
 }
 
 func (postDB *UsersPostgresDB) CheckIfEmailExists(email string) (bool, error) {
-    var exists bool
-    query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
-    err := postDB.db.QueryRow(query, email).Scan(&exists)
+	var exists bool
+	query := `SELECT EXISTS(SELECT 1 FROM users WHERE email = $1)`
+	err := postDB.db.QueryRow(query, email).Scan(&exists)
 
-    if err != nil {
-        return false, fmt.Errorf("error checking email existence: %w", err)
-    }
+	if err != nil {
+		return false, fmt.Errorf("error checking email existence: %w", err)
+	}
 
-    return exists, nil
+	return exists, nil
+}
+
+func (postDB *UsersPostgresDB) updateUserInterests(userId uuid.UUID, interests []string) error {
+	query := `DELETE FROM user_interests WHERE user_id = $1`
+	_, err := postDB.db.Exec(query, userId)
+	if err != nil {
+		return fmt.Errorf("error deleting user interests: %w", err)
+	}
+
+	return postDB.AssociateInterestsToUser(userId, interests)
 }
 
 func (postDB *UsersPostgresDB) AssociateInterestsToUser(userId uuid.UUID, interests []string) error {
@@ -265,10 +297,10 @@ func (postDB *UsersPostgresDB) FollowUser(followerId uuid.UUID, followingId uuid
 	_, err := postDB.db.Exec(query, followerId, followingId)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok {
-            if pqErr.Code == "23505" { // Código de error para violación de unicidad en PostgreSQL
-                return database.ErrKeyAlreadyExists
-            }
-        }
+			if pqErr.Code == "23505" { // Código de error para violación de unicidad en PostgreSQL
+				return database.ErrKeyAlreadyExists
+			}
+		}
 		return fmt.Errorf("error following user: %w", err)
 	}
 	return nil
@@ -285,10 +317,10 @@ func (postDB *UsersPostgresDB) UnfollowUser(followerId uuid.UUID, followingId uu
 		return fmt.Errorf("error unfollowing user: %w", err)
 	}
 
-   rowsAffected, err := res.RowsAffected()
-    if err != nil {
-        return fmt.Errorf("error getting rows affected: %w", err)
-    }
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("error getting rows affected: %w", err)
+	}
 
 	if rowsAffected == 0 {
 		return database.ErrKeyNotFound
@@ -309,16 +341,15 @@ func (postDB *UsersPostgresDB) CheckIfUserFollows(followerId string, followingId
 }
 
 func (postDB *UsersPostgresDB) GetAmountOfFollowers(userId uuid.UUID) (int, error) {
-    var followers int
-    query := `SELECT COUNT(*) FROM followers WHERE following_id = $1`
-    err := postDB.db.Get(&followers, query, userId)
+	var followers int
+	query := `SELECT COUNT(*) FROM followers WHERE following_id = $1`
+	err := postDB.db.Get(&followers, query, userId)
 
 	if err != nil {
 		return 0, fmt.Errorf("error getting amount of followers: %w", err)
 	}
 	return followers, nil
 }
-
 
 func (postDB *UsersPostgresDB) GetAmountOfFollowing(userId uuid.UUID) (int, error) {
 	var following int
@@ -416,5 +447,5 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 // 		if err != nil {
 // 			fmt.Println("error creating test user: ", err)
 // 		}
-// 	}		
+// 	}
 // }

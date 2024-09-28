@@ -23,6 +23,38 @@ func NewUserCreationValidator(usersDb users_db.UserDatabase) *UserCreationValida
 	}
 }
 
+func (u *UserCreationValidator) ValidateUpdatedPrivateProfile(updatedProfile model.UpdateUserPrivateProfileRequest) ([]model.ValidationError, error) {
+	u.clearValidationErrors()
+
+	validate := validator.New()
+
+	customValidators := map[string]validator.Func{
+		"firstnamevalidator": u.firstnamevalidator,
+		"lastnamevalidator":  u.lastnamevalidator,
+		"usernamevalidator":  u.usernameValidator,
+		"locationvalidator":  u.locationValidator,
+		"interestsvalidator": u.interestsValidator,
+	}
+
+	for name, validatorFunc := range customValidators {
+		if err := validate.RegisterValidation(name, validatorFunc); err != nil {
+			slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
+			return []model.ValidationError{}, err
+		}
+	}
+
+	err := validate.Struct(updatedProfile)
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			if _, isCustom := customValidators[err.ActualTag()]; !isCustom {
+				u.addValidationError(err.Field(), err.Tag())
+			}
+		}
+	}
+
+	return u.validationErrors, nil
+}
+
 func (u *UserCreationValidator) ValidateEmail(email string) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 

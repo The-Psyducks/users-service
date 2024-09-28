@@ -8,6 +8,7 @@ import (
 	"strings"
 	"users-service/src/app_errors"
 	"users-service/src/database"
+	"users-service/src/database/register_options"
 	"users-service/src/model"
 
 	"github.com/google/uuid"
@@ -47,7 +48,7 @@ func (u *User) getPrivateProfile(user model.UserRecord) (model.UserProfileRespon
 	if err != nil {
 		return model.UserProfileResponse{}, err
 	}
-	
+
 	slog.Info("user Private profile retrieved succesfully", slog.String("userId", user.Id.String()))
 	return model.UserProfileResponse{
 		OwnProfile: true,
@@ -61,16 +62,47 @@ func (u *User) getPublicProfile(user model.UserRecord, session_user_id string) (
 	if err != nil {
 		return model.UserProfileResponse{}, err
 	}
-	
+
 	follows, err := u.userDb.CheckIfUserFollows(session_user_id, user.Id.String())
 	if err != nil {
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
 	}
-	
+
 	slog.Info("user Public profile retrieved succesfully", slog.String("userId", user.Id.String()))
 	return model.UserProfileResponse{
 		OwnProfile: false,
 		Follows:    follows,
 		Profile:    profile,
 	}, nil
+}
+
+func (u *User) ModifyUserProfile(userSessionId uuid.UUID, data model.UpdateUserPrivateProfileRequest) (model.UserPrivateProfile, error) {
+	if valErrs, err := u.userValidator.ValidateUpdatedPrivateProfile(data); err != nil {
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
+	} else if len(valErrs) > 0 {
+		return model.UserPrivateProfile{}, app_errors.NewAppValidationError(valErrs)
+	}
+
+	location := register_options.GetLocationName(data.Location)
+	interests := extractInterestNamesFromValidIds(data.Interests)
+	updateData := model.UpdateUserPrivateProfile{
+		UserName:    data.UserName,
+		PicturePath: data.PicturePath,
+		FirstName:   data.FirstName,
+		LastName:    data.LastName,
+		Location:    location,
+		Interests:   interests,
+	}
+
+	updatedUser, err := u.userDb.ModifyUser(userSessionId, updateData)
+	if err != nil {
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error updating user profile: %w", err))
+	}
+	privateProfile, err := u.createUserPrivateProfileFromUserRecord(updatedUser)
+	if err != nil {
+		return model.UserPrivateProfile{}, err
+	}
+
+	slog.Info("user profile updated succesfully", slog.String("userId", userSessionId.String()))
+	return privateProfile, nil
 }

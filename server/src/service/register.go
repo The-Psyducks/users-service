@@ -168,11 +168,7 @@ func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
 		return err
 	}
 
-	interestsNames, err := extractInterestNames(interestsIds)
-	if err != nil {
-		return app_errors.NewAppError(http.StatusBadRequest, InvalidInterest, fmt.Errorf("error extracting interest names: %w", err))
-	}
-
+	interestsNames := extractInterestNamesFromValidIds(interestsIds)
 	if err := u.registryDb.AddInterestsToRegistryEntry(id, interestsNames); err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error adding interests to registry entry: %w", err))
 	}

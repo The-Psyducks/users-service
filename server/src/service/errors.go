@@ -19,4 +19,5 @@ const (
 	CantFollowYourself			= "Can't follow yourself"
 	AlreadyFollowing			= "The user already follows this user"
 	NotFollowing				= "The user is not following this user"
+	UserShouldModifyItself		= "The user should modify its own profile"
 )

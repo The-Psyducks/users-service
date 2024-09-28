@@ -42,7 +42,7 @@ func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (
 	if err != nil {
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving interests: %w", err))
 	}
-	
+
 	followers, following, err := u.getAmountOfFollowersAndFollowing(record)
 	if err != nil {
 		return model.UserPrivateProfile{}, err
@@ -112,17 +112,14 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func extractInterestNames(interests []int) ([]string, error) {
+func extractInterestNamesFromValidIds(interests []int) []string {
 	interestsNames := make([]string, len(interests))
 	for i, interest := range interests {
 		if name := register_options.GetInterestName(interest); name != "" {
 			interestsNames[i] = name
-		} else {
-			return nil, fmt.Errorf("invalid interest: %d", interest)
 		}
-
 	}
-	return interestsNames, nil
+	return interestsNames
 }
 
 func getStepForRegistryEntry(entry model.RegistryEntry) string {
