@@ -26,10 +26,10 @@ type ResolveResponse struct {
 }
 
 type UserPersonalInfoRequest struct {
-    FirstName  string `json:"first_name" validate:"required,firstnamevalidator"`
-    LastName   string `json:"last_name" validate:"required,lastnamevalidator"`
-    UserName   string `json:"username" validate:"required,usernamevalidator"`
-    Password   string `json:"password" validate:"required,passwordvalidator"`
+    FirstName  string `json:"first_name" validate:"firstnamevalidator"`
+    LastName   string `json:"last_name" validate:"lastnamevalidator"`
+    UserName   string `json:"username" validate:"usernamevalidator"`
+    Password   string `json:"password" validate:"passwordvalidator"`
     LocationId int    `json:"location" validate:"locationvalidator"`
 }
 
