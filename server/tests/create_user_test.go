@@ -210,7 +210,7 @@ func TestCreateUserWithInvalidMail(t *testing.T) {
 	assert.Equal(t, res.Instance, "/users/resolver")
 }
 
-func TestCreateUserWithMailThatExists(t *testing.T) {
+func TestResolveUserWithMailThatExists(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
