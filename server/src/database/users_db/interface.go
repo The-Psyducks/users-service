@@ -43,7 +43,7 @@ type UserDatabase interface {
 	UnfollowUser(followerId uuid.UUID, followingId uuid.UUID) error
 
 	// CheckIfUserFollows checks if followerID follows followingId
-	CheckIfUserFollows(followerId string, followingId string) (bool, error)
+	CheckIfUserFollows(followerId uuid.UUID, followingId uuid.UUID) (bool, error)
 
 	// GetAmountOfFollowers retrieves the amount of followers for a given user ID
 	GetAmountOfFollowers(userId uuid.UUID) (int, error)

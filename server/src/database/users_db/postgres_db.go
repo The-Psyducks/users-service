@@ -328,7 +328,7 @@ func (postDB *UsersPostgresDB) UnfollowUser(followerId uuid.UUID, followingId uu
 	return nil
 }
 
-func (postDB *UsersPostgresDB) CheckIfUserFollows(followerId string, followingId string) (bool, error) {
+func (postDB *UsersPostgresDB) CheckIfUserFollows(followerId uuid.UUID, followingId uuid.UUID) (bool, error) {
 	var exists bool
 	query := `SELECT EXISTS(SELECT 1 FROM followers WHERE follower_id = $1 AND following_id = $2)`
 	err := postDB.db.QueryRow(query, followerId, followingId).Scan(&exists)

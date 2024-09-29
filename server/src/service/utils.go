@@ -8,6 +8,7 @@ import (
 	"users-service/src/database/register_options"
 	"users-service/src/model"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -78,14 +79,14 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 	}, nil
 }
 
-func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId string) ([]model.FollowUserPublicProfile, error) {
+func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId uuid.UUID) ([]model.FollowUserPublicProfile, error) {
 	profiles := make([]model.FollowUserPublicProfile, 0, len(userRecords))
 	for _, user := range userRecords {
 		profile, err := u.generateUserPublicProfileFromUserRecord(user)
 		if err != nil {
 			return nil, err
 		}
-		follows, err := u.userDb.CheckIfUserFollows(sessionUserId, user.Id.String())
+		follows, err := u.userDb.CheckIfUserFollows(sessionUserId, user.Id)
 		if err != nil {
 			return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if user follows: %w", err))
 		}

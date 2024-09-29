@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/database/register_options"
@@ -14,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *User) GetUserProfileById(userSessionId string, id uuid.UUID) (model.UserProfileResponse, error) {
+func (u *User) GetUserProfileById(userSessionId uuid.UUID, id uuid.UUID) (model.UserProfileResponse, error) {
 	userRecord, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -23,7 +22,7 @@ func (u *User) GetUserProfileById(userSessionId string, id uuid.UUID) (model.Use
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	if strings.EqualFold(userSessionId, id.String()) {
+	if userSessionId == id {
 		return u.getPrivateProfile(userRecord)
 	}
 	return u.getPublicProfile(userRecord, userSessionId)
@@ -57,13 +56,13 @@ func (u *User) getPrivateProfile(user model.UserRecord) (model.UserProfileRespon
 	}, nil
 }
 
-func (u *User) getPublicProfile(user model.UserRecord, session_user_id string) (model.UserProfileResponse, error) {
+func (u *User) getPublicProfile(user model.UserRecord, session_user_id uuid.UUID) (model.UserProfileResponse, error) {
 	profile, err := u.generateUserPublicProfileFromUserRecord(user)
 	if err != nil {
 		return model.UserProfileResponse{}, err
 	}
 
-	follows, err := u.userDb.CheckIfUserFollows(session_user_id, user.Id.String())
+	follows, err := u.userDb.CheckIfUserFollows(session_user_id, user.Id)
 	if err != nil {
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
 	}
