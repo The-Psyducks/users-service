@@ -177,16 +177,11 @@ func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
 	return nil
 }
 
-func (u *User) createUserWithInterestsFromRegistry(registry model.RegistryEntry, interestsNames []string) (model.UserPrivateProfile, error) {
+func (u *User) createUserFromRegistry(registry model.RegistryEntry) (model.UserPrivateProfile, error) {
 	userRecord := generateUserRecordFromRegistryEntry(registry)
 	createdUser, err := u.userDb.CreateUser(userRecord)
 	if err != nil {
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating user: %w", err))
-	}
-
-	err = u.userDb.AssociateInterestsToUser(createdUser.Id, interestsNames)
-	if err != nil {
-		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error associating interest to user: %w", err))
 	}
 
 	return u.createUserPrivateProfileFromUserRecord(createdUser)
@@ -208,7 +203,7 @@ func (u *User) CompleteRegistry(id uuid.UUID) (model.UserPrivateProfile, error) 
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error deleting registry entry: %w", err))
 	}
 
-	userResponse, err := u.createUserWithInterestsFromRegistry(registry, registry.Interests)
+	userResponse, err := u.createUserFromRegistry(registry)
 	if err != nil {
 		return model.UserPrivateProfile{}, err
 	}

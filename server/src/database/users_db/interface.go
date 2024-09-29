@@ -30,12 +30,6 @@ type UserDatabase interface {
 	// it is case insensitive
 	CheckIfEmailExists(email string) (bool, error)
 
-	// AssociateInterestsToUser associates interests to a user
-	AssociateInterestsToUser(userId uuid.UUID, interests []string) error
-
-	// GetInterestsForUserId retrieves interests for a given user ID
-	GetInterestsForUserId(id uuid.UUID) ([]string, error)
-
 	// FollowUser associates a follower to a following user
 	FollowUser(followerId uuid.UUID, followingId uuid.UUID) error
 

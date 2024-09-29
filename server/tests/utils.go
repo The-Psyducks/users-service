@@ -727,9 +727,20 @@ func assertPrivateUsersAreEqual(t *testing.T, expected UserPrivateProfile, actua
 	assert.Equal(t, expected.UserName, actual.UserName)
 	assert.Equal(t, expected.Email, actual.Email)
 	assert.Equal(t, expected.Location, actual.Location)
-	assert.Equal(t, expected.Interests, actual.Interests)
 	assert.Equal(t, expected.Followers, actual.Followers)
 	assert.Equal(t, expected.Following, actual.Following)
+
+	assert.Equal(t, len(expected.Interests), len(actual.Interests))
+	for _, interest := range expected.Interests {
+		found := false
+		for _, actualInterest := range actual.Interests {
+			if interest == actualInterest {
+				found = true
+				break
+			}
+		}
+		assert.Equal(t, found, true)
+	}
 }
 
 func AssertUserPublicProfileIsUser(t *testing.T, user UserPersonalInfo, location string, profile UserPublicProfile) {

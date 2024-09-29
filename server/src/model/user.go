@@ -68,6 +68,7 @@ type UserRecord struct {
 	Email       string    `json:"email" db:"email"`
 	Password    string    `json:"password" db:"password"`
 	Location    string    `json:"location" db:"location"`
+	Interests	[]string  `json:"interests" db:"interests"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
 }
 

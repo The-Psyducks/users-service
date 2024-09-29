@@ -100,12 +100,46 @@ func createTables(db *sqlx.DB) error {
 	return nil
 }
 
+func (postDB *UsersPostgresDB) associateInterestsToUser(userId uuid.UUID, interests []string) ([]string, error) {
+	var insertedInterests []string
+	query := `
+		INSERT INTO user_interests (user_id, interest)
+		VALUES ($1, $2)
+		RETURNING interest;
+	`
+
+	for _, interest := range interests {
+		var interestRecord string
+		err := postDB.db.QueryRow(query, userId, interest).Scan(&interestRecord)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				continue
+			}
+			return nil, fmt.Errorf("error inserting interest record: %w", err)
+		}
+		insertedInterests = append(insertedInterests, interestRecord)
+	}
+
+	return insertedInterests, nil
+}
+
+
+func (postDB *UsersPostgresDB) updateUserInterests(userId uuid.UUID, interests []string) ([]string, error) {
+	query := `DELETE FROM user_interests WHERE user_id = $1`
+	_, err := postDB.db.Exec(query, userId)
+	if err != nil {
+		return nil, fmt.Errorf("error deleting user interests: %w", err)
+	}
+
+	return postDB.associateInterestsToUser(userId, interests)
+}
+
 func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserRecord, error) {
 	var user model.UserRecord
 	query := `
         INSERT INTO users (username, first_name, last_name, email, password, location)
         VALUES (:username, :first_name, :last_name, :email, :password, :location)
-        RETURNING id, username, first_name, last_name, email, password, location, created_at
+        RETURNING id, username, first_name, last_name, email, password, location, created_at;
     `
 
 	rows, err := postDB.db.NamedQuery(query, data)
@@ -122,6 +156,10 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 		return model.UserRecord{}, fmt.Errorf("error: no user created")
 	}
 
+	user.Interests, err = postDB.associateInterestsToUser(user.Id, data.Interests)
+	if err != nil {
+		return model.UserRecord{}, fmt.Errorf("error associating interests to user: %w", err)
+	}
 	return user, nil
 }
 
@@ -154,10 +192,10 @@ func (postDB *UsersPostgresDB) ModifyUser(id uuid.UUID, data model.UpdateUserPri
 		return model.UserRecord{}, fmt.Errorf("error: no user updated")
 	}
 
-	if err := postDB.updateUserInterests(id, data.Interests); err != nil {
+	user.Interests, err = postDB.updateUserInterests(id, data.Interests)
+	if err != nil {
 		return model.UserRecord{}, fmt.Errorf("error updating user interests: %w", err)
 	}
-
 	return user, nil
 }
 
@@ -192,6 +230,12 @@ func (postDB *UsersPostgresDB) GetUserById(id uuid.UUID) (model.UserRecord, erro
 		}
 		return model.UserRecord{}, fmt.Errorf("error fetching user by Id: %w", err)
 	}
+
+	user.Interests, err = postDB.getInterestsForUserId(id)
+	if err != nil {
+		return model.UserRecord{}, fmt.Errorf("error getting interests for user: %w", err)
+	}
+	fmt.Println("user in db: ", user)
 	return user, nil
 }
 
@@ -205,6 +249,11 @@ func (postDB *UsersPostgresDB) GetUserByEmail(email string) (model.UserRecord, e
 			return model.UserRecord{}, database.ErrKeyNotFound
 		}
 		return model.UserRecord{}, fmt.Errorf("error fetching user by email: %w", err)
+	}
+
+	user.Interests, err = postDB.getInterestsForUserId(user.Id)
+	if err != nil {
+		return model.UserRecord{}, fmt.Errorf("error getting interests for user: %w", err)
 	}
 	return user, nil
 }
@@ -233,36 +282,7 @@ func (postDB *UsersPostgresDB) CheckIfEmailExists(email string) (bool, error) {
 	return exists, nil
 }
 
-func (postDB *UsersPostgresDB) updateUserInterests(userId uuid.UUID, interests []string) error {
-	query := `DELETE FROM user_interests WHERE user_id = $1`
-	_, err := postDB.db.Exec(query, userId)
-	if err != nil {
-		return fmt.Errorf("error deleting user interests: %w", err)
-	}
-
-	return postDB.AssociateInterestsToUser(userId, interests)
-}
-
-func (postDB *UsersPostgresDB) AssociateInterestsToUser(userId uuid.UUID, interests []string) error {
-	var interestRecord model.Interest
-	query := `
-		INSERT INTO user_interests (user_id, interest)
-		VALUES ($1, $2)
-	`
-
-	for _, interest := range interests {
-		err := postDB.db.QueryRow(query, userId, interest).Scan(&interestRecord.Id, &interestRecord.Interest)
-		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				continue
-			}
-			return fmt.Errorf("error inserting interest record: %w", err)
-		}
-	}
-	return nil
-}
-
-func (postDB *UsersPostgresDB) GetInterestsForUserId(id uuid.UUID) ([]string, error) {
+func (postDB *UsersPostgresDB) getInterestsForUserId(id uuid.UUID) ([]string, error) {
 	var interests []string
 	query := `
 		SELECT interest
@@ -382,6 +402,13 @@ func (postDB *UsersPostgresDB) GetFollowers(userId uuid.UUID, timestamp string, 
 
 	if len(followers) == limit+1 {
 		return followers[:limit], true, nil
+	}
+
+	for i := range followers {
+		followers[i].Interests, err = postDB.getInterestsForUserId(followers[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
 	}
 
 	return followers, false, nil

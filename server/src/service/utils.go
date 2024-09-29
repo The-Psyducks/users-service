@@ -35,15 +35,11 @@ func generateUserRecordFromRegistryEntry(registry model.RegistryEntry) model.Use
 		Email:     registry.Email,
 		Password:  registry.PersonalInfo.Password,
 		Location:  registry.PersonalInfo.Location,
+		Interests: registry.Interests,
 	}
 }
 
 func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (model.UserPrivateProfile, error) {
-	interests, err := u.userDb.GetInterestsForUserId(record.Id)
-	if err != nil {
-		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving interests: %w", err))
-	}
-
 	followers, following, err := u.getAmountOfFollowersAndFollowing(record)
 	if err != nil {
 		return model.UserPrivateProfile{}, err
@@ -56,7 +52,7 @@ func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (
 		LastName:  record.LastName,
 		Email:     record.Email,
 		Location:  record.Location,
-		Interests: interests,
+		Interests: record.Interests,
 		Followers: followers,
 		Following: following,
 	}, nil
