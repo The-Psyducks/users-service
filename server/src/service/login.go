@@ -27,7 +27,7 @@ func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivate
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
-	authToken, err := auth.GenerateToken(userRecord.Id.String(), userRecord.UserName, true)
+	authToken, err := auth.GenerateToken(userRecord.Id.String(), false)
 
 	if err != nil {
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating token: %w", err))
