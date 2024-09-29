@@ -67,15 +67,6 @@ func (m *UserMemoryDB) CheckIfEmailExists(email string) (bool, error) {
 	return false, nil
 }
 
-func (m *UserMemoryDB) GetUserByUsername(username string) (model.UserRecord, error) {
-	for _, user := range m.data {
-		if user.UserName == username {
-			return user, nil
-		}
-	}
-	return model.UserRecord{}, database.ErrKeyNotFound
-}
-
 func (m *UserMemoryDB) GetUserByEmail(email string) (model.UserRecord, error) {
 	for _, user := range m.data {
 		if user.Email == email {

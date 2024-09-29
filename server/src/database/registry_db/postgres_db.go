@@ -30,11 +30,11 @@ func CreateRegistryPostgresDB(db *sqlx.DB) (*RegistryPostgresDB, error) {
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email VARCHAR(%d) NOT NULL UNIQUE,
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
-        first_name VARCHAR(%d),
-        last_name VARCHAR(%d),
-        username VARCHAR(%d) UNIQUE,
-        password TEXT,
-        location VARCHAR(255),
+        first_name VARCHAR(%d) DEFAULT '',
+        last_name VARCHAR(%d) DEFAULT '',
+        username VARCHAR(%d) UNIQUE DEFAULT '',
+        password TEXT DEFAULT '',
+        location VARCHAR(255) DEFAULT '',
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 		deleted_at TIMESTAMPTZ
     );
@@ -82,13 +82,7 @@ func (db *RegistryPostgresDB) CheckIfRegistryEntryExists(id uuid.UUID) (bool, er
 
 func (db *RegistryPostgresDB) GetRegistryEntry(id uuid.UUID) (model.RegistryEntry, error) {
 	var entry model.RegistryEntry
-	var personalInfo struct {
-		FirstName sql.NullString
-		LastName  sql.NullString
-		UserName  sql.NullString
-		Password  sql.NullString
-		Location  sql.NullString
-	}
+	var personalInfo model.UserPersonalInfoRecord
 
 	err := db.db.QueryRow(`
         SELECT id, email, email_verified, first_name, last_name, username, password, location 
@@ -106,13 +100,7 @@ func (db *RegistryPostgresDB) GetRegistryEntry(id uuid.UUID) (model.RegistryEntr
 		return model.RegistryEntry{}, fmt.Errorf("failed to get registry entry: %w", err)
 	}
 
-	entry.PersonalInfo = model.UserPersonalInfoRecord{
-		FirstName: personalInfo.FirstName.String,
-		LastName:  personalInfo.LastName.String,
-		UserName:  personalInfo.UserName.String,
-		Password:  personalInfo.Password.String,
-		Location:  personalInfo.Location.String,
-	}
+	entry.PersonalInfo = personalInfo
 
 	interests, err := db.getInterests(id)
 	if err != nil {
@@ -123,15 +111,10 @@ func (db *RegistryPostgresDB) GetRegistryEntry(id uuid.UUID) (model.RegistryEntr
 	return entry, nil
 }
 
+
 func (db *RegistryPostgresDB) GetRegistryEntryByEmail(email string) (model.RegistryEntry, error) {
 	var entry model.RegistryEntry
-	var personalInfo struct {
-		FirstName sql.NullString
-		LastName  sql.NullString
-		UserName  sql.NullString
-		Password  sql.NullString
-		Location  sql.NullString
-	}
+	var personalInfo model.UserPersonalInfoRecord
 
 	err := db.db.QueryRow(`
         SELECT id, email, email_verified, first_name, last_name, username, password, location 
@@ -149,13 +132,7 @@ func (db *RegistryPostgresDB) GetRegistryEntryByEmail(email string) (model.Regis
 		return model.RegistryEntry{}, fmt.Errorf("failed to get registry entry: %w", err)
 	}
 
-	entry.PersonalInfo = model.UserPersonalInfoRecord{
-		FirstName: personalInfo.FirstName.String,
-		LastName:  personalInfo.LastName.String,
-		UserName:  personalInfo.UserName.String,
-		Password:  personalInfo.Password.String,
-		Location:  personalInfo.Location.String,
-	}
+	entry.PersonalInfo = personalInfo
 
 	interests, err := db.getInterests(entry.Id)
 	if err != nil {

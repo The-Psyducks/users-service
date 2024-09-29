@@ -221,19 +221,31 @@ func (u *User) Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"access_token": token, "profile": profile})
 }
 
-func getUrlIdAndSessionUserId(c *gin.Context) (uuid.UUID, string, error) {
+func getSessionUserId(c *gin.Context) (uuid.UUID, error) {
+	sessionUserIdString := c.GetString("session_user_id")
+	if sessionUserIdString == "" {
+		err := app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
+		return uuid.Nil, err
+	}
+	sessionUserId, err := uuid.Parse(sessionUserIdString)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		return uuid.Nil, err
+	}
+	return sessionUserId, nil
+}
+
+func getUrlIdAndSessionUserId(c *gin.Context) (uuid.UUID, uuid.UUID, error) {
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-		return uuid.Nil, "", err
+		return uuid.Nil, uuid.Nil, err
 	}
 
-	sessionUserId := c.GetString("session_user_id")
-	if sessionUserId == "" {
-		err = app_errors.NewAppError(http.StatusUnauthorized, "Unauthorized", fmt.Errorf("session_user_id not found in context"))
-		return uuid.Nil, "", err
+	sessionUserId, err := getSessionUserId(c)
+	if err != nil {
+		return uuid.Nil, uuid.Nil, err
 	}
-
 	return id, sessionUserId, nil
 }
 
@@ -252,6 +264,30 @@ func (u *User) GetUserProfileById(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, user)
+}
+
+func (u *User) ModifyUserProfile(c *gin.Context) {
+	sessionUserId, err := getSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	var data model.UpdateUserPrivateProfileRequest
+	if err := c.BindJSON(&data); err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+
+	userProfile, err := u.service.ModifyUserProfile(sessionUserId, data)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, userProfile)
 }
 
 func (u *User) FollowUser(c *gin.Context) {

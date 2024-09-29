@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"strings"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
@@ -13,7 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *User) FollowUser(followerId string, followingId uuid.UUID) error {
+func (u *User) FollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
 	userRecord, err := u.userDb.GetUserById(followingId)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -22,16 +21,11 @@ func (u *User) FollowUser(followerId string, followingId uuid.UUID) error {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	if strings.EqualFold(followerId, userRecord.Id.String()) {
+	if followerId == userRecord.Id {
 		return app_errors.NewAppError(http.StatusBadRequest, CantFollowYourself, fmt.Errorf("you can not following yourself"))
 	}
 
-	followerUUID, err := uuid.Parse(followerId)
-	if err != nil {
-		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error parsing followerId: %w", err))
-	}
-
-	err = u.userDb.FollowUser(followerUUID, userRecord.Id)
+	err = u.userDb.FollowUser(followerId, userRecord.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyAlreadyExists) {
 			return app_errors.NewAppError(http.StatusBadRequest, AlreadyFollowing, err)
@@ -39,11 +33,11 @@ func (u *User) FollowUser(followerId string, followingId uuid.UUID) error {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error following user: %w", err))
 	}
 
-	slog.Info("user followed succesfully", slog.String("followerId", followerId), slog.String("followingId", userRecord.Id.String()))
+	slog.Info("user followed succesfully", slog.String("followerId", followerId.String()), slog.String("followingId", userRecord.Id.String()))
 	return nil
 }
 
-func (u *User) UnfollowUser(followerId string, followingId uuid.UUID) error {
+func (u *User) UnfollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
 	userRecord, err := u.userDb.GetUserById(followingId)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -52,12 +46,7 @@ func (u *User) UnfollowUser(followerId string, followingId uuid.UUID) error {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	followerUUID, err := uuid.Parse(followerId)
-	if err != nil {
-		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error parsing followerId: %w", err))
-	}
-
-	err = u.userDb.UnfollowUser(followerUUID, userRecord.Id)
+	err = u.userDb.UnfollowUser(followerId, userRecord.Id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
 			return app_errors.NewAppError(http.StatusBadRequest, NotFollowing, err)
@@ -65,12 +54,12 @@ func (u *User) UnfollowUser(followerId string, followingId uuid.UUID) error {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error unfollowing user: %w", err))
 	}
 
-	slog.Info("user unfollowed succesfully", slog.String("followerId", followerId), slog.String("followingId", userRecord.Id.String()))
+	slog.Info("user unfollowed succesfully", slog.String("followerId", followerId.String()), slog.String("followingId", userRecord.Id.String()))
 	return nil
 }
 
 // GetFollowers returns the followers of a user and if there are more to fetch
-func (u *User) GetFollowers(id uuid.UUID, userSessionId, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, bool, error) {
+func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, bool, error) {
 	userRequested, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -79,8 +68,8 @@ func (u *User) GetFollowers(id uuid.UUID, userSessionId, timestamp string, skip,
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 	
-	if userRequested.Id.String() != userSessionId {
-		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRequested.Id.String())
+	if userRequested.Id != userSessionId {
+		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRequested.Id)
 		if err != nil {
 			return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
 		}
@@ -104,7 +93,7 @@ func (u *User) GetFollowers(id uuid.UUID, userSessionId, timestamp string, skip,
 }
 
 // GetFollowers returns the user's a user is following and if there are more to fetch
-func (u *User) GetFollowing(id uuid.UUID, userSessionId, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, bool, error) {
+func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, bool, error) {
 	userRecord, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -113,8 +102,8 @@ func (u *User) GetFollowing(id uuid.UUID, userSessionId, timestamp string, skip,
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	if userRecord.Id.String() != userSessionId {
-		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRecord.Id.String())
+	if userRecord.Id != userSessionId {
+		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRecord.Id)
 		if err != nil {
 			return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
 		}

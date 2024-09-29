@@ -26,25 +26,26 @@ type ResolveResponse struct {
 }
 
 type UserPersonalInfoRequest struct {
-    FirstName  string `json:"first_name" validate:"required,firstnamevalidator"`
-    LastName   string `json:"last_name" validate:"required,lastnamevalidator"`
-    UserName   string `json:"username" validate:"required,usernamevalidator"`
-    Password   string `json:"password" validate:"required,passwordvalidator"`
+    FirstName  string `json:"first_name" validate:"firstnamevalidator"`
+    LastName   string `json:"last_name" validate:"lastnamevalidator"`
+    UserName   string `json:"username" validate:"usernamevalidator"`
+    Password   string `json:"password" validate:"passwordvalidator"`
     LocationId int    `json:"location" validate:"locationvalidator"`
 }
 
 type UserPersonalInfoRecord struct {
-	FirstName string `json:"first_name" validate:"required"`
-	LastName  string `json:"last_name" validate:"required"`
-	UserName  string `json:"username" validate:"required"`
-	Password  string `json:"password" validate:"required"`
-	Location  string `json:"location" validate:"required"`
+	FirstName string `json:"first_name" db:"first_name" validate:"required"`
+	LastName  string `json:"last_name" db:"last_name" validate:"required"`
+	UserName  string `json:"username" db:"username" validate:"required"`
+	Password  string `json:"password" db:"password" validate:"required"`
+	Location  string `json:"location" db:"location" validate:"required"`
 }
 
 type RegistryEntry struct {
-	Id            uuid.UUID              `json:"id" validate:"required"`
-	Email         string                 `json:"email" validate:"required"`
-	EmailVerified bool                   `json:"email_verified" validate:"required"`
-	PersonalInfo  UserPersonalInfoRecord `json:"personal_info" validate:"required"`
-	Interests     []string               `json:"interests" validate:"required"`
+	Id            uuid.UUID              `json:"id" db:"id" validate:"required"`
+	Email         string                 `json:"email" db:"email" validate:"required"`
+	EmailVerified bool                   `json:"email_verified" db:"email_verified" validate:"required"`
+	PersonalInfo  UserPersonalInfoRecord `json:"personal_info" db:"personal_info" validate:"required"`
+	Interests     []string               `json:"interests" db:"interests" validate:"required"`
 }
+

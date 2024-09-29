@@ -414,7 +414,7 @@ func getNotExistingUser(router *router.Router, id string, token string) (ErrorRe
 }
 
 func getRegisterOptions(router *router.Router) (RegisterOptions, error) {
-	req, err := http.NewRequest("GET", "/users/register/locations", nil)
+	req, err := http.NewRequest("GET", "/users/info/locations", nil)
 	if err != nil {
 		return RegisterOptions{}, err
 	}
@@ -429,7 +429,7 @@ func getRegisterOptions(router *router.Router) (RegisterOptions, error) {
 		return RegisterOptions{}, err
 	}
 
-	req, err = http.NewRequest("GET", "/users/register/interests", nil)
+	req, err = http.NewRequest("GET", "/users/info/interests", nil)
 	if err != nil {
 		return RegisterOptions{}, err
 	}
@@ -471,6 +471,56 @@ func getLocationAndInterestsNames(registerOptions RegisterOptions, locationId in
 		}
 	}
 	return location, interests
+}
+
+func editValidUserProfile(router *router.Router, token string, user EditUserProfileRequest) (UserPrivateProfile, error) {
+	userInfo, err := json.Marshal(user)
+	if err != nil {
+		return UserPrivateProfile{}, fmt.Errorf("error, marshalling user info: %s", err.Error())
+	}
+	req, err := http.NewRequest("PUT", "/users/profile", bytes.NewReader(userInfo))
+	if err != nil {
+		return UserPrivateProfile{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := UserPrivateProfile{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return UserPrivateProfile{}, err
+	}
+
+	if recorder.Code != http.StatusOK {
+		return UserPrivateProfile{}, fmt.Errorf("error, status code editing user profile was %d, expected: %d", recorder.Code, http.StatusNoContent)
+	}
+
+	return result, nil
+}
+
+func editInvalidUserProfile(router *router.Router, token string, user EditUserProfileRequest) (int, ValidationErrorResponse, error) {
+	userInfo, err := json.Marshal(user)
+	if err != nil {
+		return 0, ValidationErrorResponse{}, err
+	}
+	req, err := http.NewRequest("PUT", "/users/profile", bytes.NewReader(userInfo))
+	if err != nil {
+		return 0, ValidationErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := ValidationErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return 0, ValidationErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
 }
 
 func followValidUser(router *router.Router, id string, token string) error {
@@ -670,11 +720,65 @@ func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersona
 	}
 }
 
+func assertPrivateUsersAreEqual(t *testing.T, expected UserPrivateProfile, actual UserPrivateProfile) {
+	assert.Equal(t, expected.Id, actual.Id)
+	assert.Equal(t, expected.FirstName, actual.FirstName)
+	assert.Equal(t, expected.LastName, actual.LastName)
+	assert.Equal(t, expected.UserName, actual.UserName)
+	assert.Equal(t, expected.Email, actual.Email)
+	assert.Equal(t, expected.Location, actual.Location)
+	assert.Equal(t, expected.Followers, actual.Followers)
+	assert.Equal(t, expected.Following, actual.Following)
+
+	assert.Equal(t, len(expected.Interests), len(actual.Interests))
+	for _, interest := range expected.Interests {
+		found := false
+		for _, actualInterest := range actual.Interests {
+			if interest == actualInterest {
+				found = true
+				break
+			}
+		}
+		assert.Equal(t, found, true)
+	}
+}
+
 func AssertUserPublicProfileIsUser(t *testing.T, user UserPersonalInfo, location string, profile UserPublicProfile) {
 	assert.Equal(t, user.FirstName, profile.FirstName)
 	assert.Equal(t, user.LastName, profile.LastName)
 	assert.Equal(t, user.UserName, profile.UserName)
 	assert.Equal(t, location, profile.Location)
+}
+
+func assertInterestsNamesAreCorrectIds(t *testing.T, registerOptions RegisterOptions, interestsIds []int, interests []string) {
+	assert.Equal(t, len(interestsIds), len(interests))
+	for _, interestId := range interestsIds {
+		found := false
+		for _, interest := range registerOptions.Interests {
+			if interest.Id == interestId {
+				for _, name := range interests {
+					if name == interest.Name {
+						found = true
+						break
+					}
+				}
+				break
+			}
+		}
+		assert.Equal(t, found, true)
+	}
+}
+
+func assertLocationNameIsCorrectId(t *testing.T, registerOptions RegisterOptions, locationId int, location string) {
+	found := false
+	for _, loc := range registerOptions.Locations {
+		if loc.Id == locationId {
+			found = true
+			assert.Equal(t, loc.Name, location)
+			break
+		}
+	}
+	assert.Equal(t, found, true)
 }
 
 func assertRegisterInstancePattern(t *testing.T, finalUrl string, expected string) {

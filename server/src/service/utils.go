@@ -8,6 +8,7 @@ import (
 	"users-service/src/database/register_options"
 	"users-service/src/model"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -34,15 +35,11 @@ func generateUserRecordFromRegistryEntry(registry model.RegistryEntry) model.Use
 		Email:     registry.Email,
 		Password:  registry.PersonalInfo.Password,
 		Location:  registry.PersonalInfo.Location,
+		Interests: registry.Interests,
 	}
 }
 
 func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (model.UserPrivateProfile, error) {
-	interests, err := u.userDb.GetInterestsForUserId(record.Id)
-	if err != nil {
-		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error retrieving interests: %w", err))
-	}
-	
 	followers, following, err := u.getAmountOfFollowersAndFollowing(record)
 	if err != nil {
 		return model.UserPrivateProfile{}, err
@@ -55,7 +52,7 @@ func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (
 		LastName:  record.LastName,
 		Email:     record.Email,
 		Location:  record.Location,
-		Interests: interests,
+		Interests: record.Interests,
 		Followers: followers,
 		Following: following,
 	}, nil
@@ -78,14 +75,14 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 	}, nil
 }
 
-func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId string) ([]model.FollowUserPublicProfile, error) {
+func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId uuid.UUID) ([]model.FollowUserPublicProfile, error) {
 	profiles := make([]model.FollowUserPublicProfile, 0, len(userRecords))
 	for _, user := range userRecords {
 		profile, err := u.generateUserPublicProfileFromUserRecord(user)
 		if err != nil {
 			return nil, err
 		}
-		follows, err := u.userDb.CheckIfUserFollows(sessionUserId, user.Id.String())
+		follows, err := u.userDb.CheckIfUserFollows(sessionUserId, user.Id)
 		if err != nil {
 			return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if user follows: %w", err))
 		}
@@ -112,17 +109,14 @@ func checkPasswordHash(password, hash string) bool {
 	return err == nil
 }
 
-func extractInterestNames(interests []int) ([]string, error) {
+func extractInterestNamesFromValidIds(interests []int) []string {
 	interestsNames := make([]string, len(interests))
 	for i, interest := range interests {
 		if name := register_options.GetInterestName(interest); name != "" {
 			interestsNames[i] = name
-		} else {
-			return nil, fmt.Errorf("invalid interest: %d", interest)
 		}
-
 	}
-	return interestsNames, nil
+	return interestsNames
 }
 
 func getStepForRegistryEntry(entry model.RegistryEntry) string {
