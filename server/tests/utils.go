@@ -414,7 +414,7 @@ func getNotExistingUser(router *router.Router, id string, token string) (ErrorRe
 }
 
 func getRegisterOptions(router *router.Router) (RegisterOptions, error) {
-	req, err := http.NewRequest("GET", "/users/locations", nil)
+	req, err := http.NewRequest("GET", "/users/info/locations", nil)
 	if err != nil {
 		return RegisterOptions{}, err
 	}
@@ -429,7 +429,7 @@ func getRegisterOptions(router *router.Router) (RegisterOptions, error) {
 		return RegisterOptions{}, err
 	}
 
-	req, err = http.NewRequest("GET", "/users/interests", nil)
+	req, err = http.NewRequest("GET", "/users/info/interests", nil)
 	if err != nil {
 		return RegisterOptions{}, err
 	}

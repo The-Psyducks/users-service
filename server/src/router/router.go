@@ -113,8 +113,8 @@ func CreateRouter() (*Router, error) {
 	{
 		public.POST("/users/resolver", userController.ResolveUserEmail)
 		
-		public.GET("/users/locations", userController.GetLocations)
-		public.GET("/users/interests", userController.GetInterests)
+		public.GET("/users/info/locations", userController.GetLocations)
+		public.GET("/users/info/interests", userController.GetInterests)
 		public.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
 		public.POST("/users/register/:id/verify-email", userController.VerifyEmail)
 		public.PUT("/users/register/:id/personal-info", userController.AddPersonalInfo)
