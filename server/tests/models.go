@@ -102,6 +102,14 @@ type LoginResponse struct {
 	Profile	 UserPrivateProfile `json:"profile"`
 }
 
+type EditUserProfileRequest struct {
+	Username string `json:"username"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+	Location  int    `json:"location"`
+	Interests []int  `json:"interests"`
+}
+
 type FollowUserProfile struct {
 	Follows bool `json:"follows"`
 	Profile UserPublicProfile `json:"profile"`

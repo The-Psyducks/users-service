@@ -9,7 +9,7 @@ import (
 	"users-service/src/router"
 )
 
-func setUpTest() (testRouter *router.Router,user1 UserPrivateProfile, user1Password string, user2 UserPrivateProfile, user2Password string){
+func setUpFollowTests() (testRouter *router.Router,user1 UserPrivateProfile, user1Password string, user2 UserPrivateProfile, user2Password string){
     var err error
     
     testRouter, err = router.CreateRouter()
@@ -53,7 +53,7 @@ func setUpTest() (testRouter *router.Router,user1 UserPrivateProfile, user1Passw
 }
 
 func TestFollowUser(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
 	loginRequest := LoginRequest{
 		Email: user1.Email,
 		Password: user1Password, 
@@ -72,7 +72,7 @@ func TestFollowUser(t *testing.T) {
 }
 
 func TestFollowUserTwice(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -91,7 +91,7 @@ func TestFollowUserTwice(t *testing.T) {
 }
 
 func TestFollowMyself(t *testing.T) {
-    testRouter, user1, user1Password, _, _ := setUpTest()
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -107,7 +107,7 @@ func TestFollowMyself(t *testing.T) {
 }
 
 func TestFollowNonExistentUser(t *testing.T) {
-    testRouter, user1, user1Password, _, _ := setUpTest()
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -123,7 +123,7 @@ func TestFollowNonExistentUser(t *testing.T) {
 }
 
 func TestUnfollowUser(t *testing.T) {
-    testRouter, user1, user1Password, user2, user2Password := setUpTest()
+    testRouter, user1, user1Password, user2, user2Password := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -150,7 +150,7 @@ func TestUnfollowUser(t *testing.T) {
 }
 
 func TestUnfollowNonFollowingUser(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -166,7 +166,7 @@ func TestUnfollowNonFollowingUser(t *testing.T) {
 }
 
 func TestUnfollowNonExistentUser(t *testing.T) {
-    testRouter, user1, user1Password, _, _ := setUpTest()
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -182,7 +182,7 @@ func TestUnfollowNonExistentUser(t *testing.T) {
 }
 
 func TestGetFollowersWhenEmpty(t *testing.T) {
-    testRouter, user1, user1Password, _, _ := setUpTest()
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -196,7 +196,7 @@ func TestGetFollowersWhenEmpty(t *testing.T) {
 }
 
 func TestGetFollowers(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     email := "asjid@elric.com"
     locationId := 0
     interestsIds := []int{0, 1}
@@ -240,7 +240,7 @@ func TestGetFollowers(t *testing.T) {
 }
 
 func TestGetFollowingWhenEmpty(t *testing.T) {
-    testRouter, user1, user1Password, _, _ := setUpTest()
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
         Password: user1Password, 
@@ -254,7 +254,7 @@ func TestGetFollowingWhenEmpty(t *testing.T) {
 }
 
 func TestGetFollowing(t *testing.T) {
-    testRouter, user1, _, user2, _ := setUpTest()
+    testRouter, user1, _, user2, _ := setUpFollowTests()
     email := "asjid@elric.com"
     locationId := 0
     interestsIds := []int{0, 1}
@@ -291,7 +291,7 @@ func TestGetFollowing(t *testing.T) {
 }
 
 func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
-    testRouter, user1, user1Password, user2, _ := setUpTest()
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -307,7 +307,7 @@ func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
 }
 
 func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
-    testRouter, user1, user1Password, user2, user2Password := setUpTest()
+    testRouter, user1, user1Password, user2, user2Password := setUpFollowTests()
     email := "asjid@elric.com"
     locationId := 0
     interestsIds := []int{0, 1}

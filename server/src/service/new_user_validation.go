@@ -23,9 +23,8 @@ func NewUserCreationValidator(usersDb users_db.UserDatabase) *UserCreationValida
 	}
 }
 
-func (u *UserCreationValidator) ValidateUpdatedPrivateProfile(updatedProfile model.UpdateUserPrivateProfileRequest) ([]model.ValidationError, error) {
+func (u *UserCreationValidator) ValidateUpdatePrivateProfile(updateProfile model.UpdateUserPrivateProfileRequest) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
-
 	validate := validator.New()
 
 	customValidators := map[string]validator.Func{
@@ -43,7 +42,7 @@ func (u *UserCreationValidator) ValidateUpdatedPrivateProfile(updatedProfile mod
 		}
 	}
 
-	err := validate.Struct(updatedProfile)
+	err := validate.Struct(updateProfile)
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if _, isCustom := customValidators[err.ActualTag()]; !isCustom {
@@ -158,8 +157,9 @@ func (u *UserCreationValidator) emailValidator(fl validator.FieldLevel) bool {
 
 func (u *UserCreationValidator) firstnamevalidator(fl validator.FieldLevel) bool {
 	first_name := fl.Field().String()
-	if len(first_name) > constants.MaxFirstNameLength {
-		u.addValidationError("first_name", fmt.Sprintf("First name must be less than %d characters long", constants.MaxFirstNameLength))
+	fmt.Println("validating first name: ", first_name)
+	if len(first_name) > constants.MaxFirstNameLength || len(first_name) < constants.MinFirstNameLength {
+		u.addValidationError("first_name", fmt.Sprintf("First name must be between %d and %d characters long", constants.MinFirstNameLength, constants.MaxFirstNameLength))
 		return false
 	}
 	return true
@@ -167,14 +167,16 @@ func (u *UserCreationValidator) firstnamevalidator(fl validator.FieldLevel) bool
 
 func (u *UserCreationValidator) lastnamevalidator(fl validator.FieldLevel) bool {
 	last_name := fl.Field().String()
-	if len(last_name) > constants.MaxLastNameLength {
-		u.addValidationError("last_name", fmt.Sprintf("Last name must be less than %d characters long", constants.MaxLastNameLength))
+	fmt.Println("validating last name: ", last_name)
+	if len(last_name) > constants.MaxLastNameLength || len(last_name) < constants.MinLastNameLength {
+		u.addValidationError("last_name", fmt.Sprintf("Last name must be between %d and %d characters long", constants.MinLastNameLength, constants.MaxLastNameLength))
 		return false
 	}
 	return true
 }
 func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool {
 	username := fl.Field().String()
+	fmt.Println("validating username: ", username)
 	if len(username) < constants.MinUsernameLength || len(username) > constants.MaxUsernameLength {
 		u.addValidationError("username", fmt.Sprintf("Username must be between %d and %d characters long", constants.MinUsernameLength, constants.MaxUsernameLength))
 		return false
@@ -215,6 +217,7 @@ func (u *UserCreationValidator) passwordValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool {
 	location := fl.Field().Int()
+	fmt.Println("validating location: ", location)
 	if register_options.GetLocationName(int(location)) == "" {
 		u.addValidationError("location", "Invalid location")
 		return false
@@ -224,6 +227,7 @@ func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) interestsValidator(fl validator.FieldLevel) bool {
 	interests := fl.Field().Interface().([]int)
+	fmt.Println("validating interests: ", interests)
 	if len(interests) == 0 {
 		u.addValidationError("interests", "A user must have at least one interest")
 		return false

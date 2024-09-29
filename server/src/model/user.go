@@ -24,12 +24,12 @@ type UpdateUserPrivateProfile struct {
 }
 
 type UpdateUserPrivateProfileRequest struct {
-	UserName    string `json:"username" binding:"required"`
-	PicturePath string `json:"picture_path" db:"picture_path"`
-	FirstName   string `json:"first_name" binding:"required"`
-	LastName    string `json:"last_name" binding:"required"`
-	Location    int    `json:"location" binding:"required"`
-	Interests   []int  `json:"interests" binding:"required"`
+	PicturePath string `json:"picture_path"`
+    FirstName  string `json:"first_name" validate:"firstnamevalidator"`
+    LastName   string `json:"last_name" validate:"lastnamevalidator"`
+    UserName   string `json:"username" validate:"usernamevalidator"`
+	Location    int    `json:"location" validate:"locationvalidator"`
+	Interests   []int  `json:"interests" validate:"interestsvalidator"`
 }
 
 // UserPrivateProfile is a struct that represents a user in the HTTP response

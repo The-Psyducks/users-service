@@ -77,11 +77,12 @@ func (u *User) getPublicProfile(user model.UserRecord, session_user_id string) (
 }
 
 func (u *User) ModifyUserProfile(userSessionId uuid.UUID, data model.UpdateUserPrivateProfileRequest) (model.UserPrivateProfile, error) {
-	if valErrs, err := u.userValidator.ValidateUpdatedPrivateProfile(data); err != nil {
+	if valErrs, err := u.userValidator.ValidateUpdatePrivateProfile(data); err != nil {
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.UserPrivateProfile{}, app_errors.NewAppValidationError(valErrs)
 	}
+	fmt.Println("validated data: ", data)
 
 	location := register_options.GetLocationName(data.Location)
 	interests := extractInterestNamesFromValidIds(data.Interests)

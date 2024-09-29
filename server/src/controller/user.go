@@ -282,7 +282,7 @@ func (u *User) ModifyUserProfile(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, userProfile)
+	c.JSON(http.StatusOK, userProfile)
 }
 
 func (u *User) FollowUser(c *gin.Context) {
