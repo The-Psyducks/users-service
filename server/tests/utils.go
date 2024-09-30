@@ -698,6 +698,49 @@ func getFollowing(router *router.Router, id string, token string) ([]FollowUserP
 	return result, nil
 }
 
+func searchUsers(router *router.Router, text string, token string, limit int) ([]FollowUserProfile, error) {
+	var result []FollowUserProfile
+	var currPagination Pagination
+	
+	fetchUsers := func(skip int) error {
+		timestamp := time.Unix(time.Now().Unix()+1, 0).UTC().Format(time.RFC3339Nano)
+		url := fmt.Sprintf("/users/search?text=%s&time=%s&skip=%d&limit=%d",text, timestamp, skip, limit)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+	
+		req.Header.Add("Authorization", "Bearer "+token)
+		recorder := httptest.NewRecorder()
+		router.Engine.ServeHTTP(recorder, req)
+	
+		if recorder.Code != http.StatusOK {
+			return fmt.Errorf("error, status code getting following was %d, expected: %d", recorder.Code, http.StatusOK)
+		}
+	
+		newResult := PaginationResponse[FollowUserProfile]{}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &newResult); err != nil {
+			return err
+		}
+	
+		result = append(result, newResult.Data...)
+		currPagination = newResult.Pagination
+		return nil
+	}
+	
+	if err := fetchUsers(0); err != nil {
+		return nil, err
+	}
+	
+	for currPagination.NextOffset != 0 {
+		if err := fetchUsers(currPagination.NextOffset); err != nil {
+			return nil, err
+		}
+	}
+	
+	return result, nil
+}
+
 func AssertUserPrivateProfileIsUser(t *testing.T, email string, user UserPersonalInfo, location string, interests []string, profile UserPrivateProfile) {
 	assert.Equal(t, user.FirstName, profile.FirstName)
 	assert.Equal(t, user.LastName, profile.LastName)

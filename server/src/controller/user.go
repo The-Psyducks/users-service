@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -229,7 +230,7 @@ func getSessionUserId(c *gin.Context) (uuid.UUID, error) {
 	}
 	sessionUserId, err := uuid.Parse(sessionUserIdString)
 	if err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid id in token", err)
 		return uuid.Nil, err
 	}
 	return sessionUserId, nil
@@ -370,15 +371,7 @@ func (u *User) GetFollowers(c *gin.Context) {
 		return
 	}
 
-	response := model.FollowersPaginationResponse{
-		Followers: followers,
-		Pagination: model.Pagination{
-			Limit: limit,
-		},
-	}
-	if hasMore {
-		response.Pagination.NextOffset = skip + limit
-	}
+	response := model.CreatePaginationResponse(followers, limit, skip, hasMore)
 	c.JSON(http.StatusOK, response)
 }
 
@@ -400,14 +393,37 @@ func (u *User) GetFollowing(c *gin.Context) {
 		return
 	}
 
-	response := model.FollowingPaginationResponse{
-		Following: following,
-		Pagination: model.Pagination{
-			Limit: limit,
-		},
+	response := model.CreatePaginationResponse(following, limit, skip, hasMore)
+	c.JSON(http.StatusOK, response)
+}
+
+func (u *User) SearchUsers(c *gin.Context) {
+	userSessionId, err := getSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
 	}
-	if hasMore {
-		response.Pagination.NextOffset = skip + limit
+
+	timestamp, skip, limit, err := getPaginationParams(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
 	}
+
+	text := c.DefaultQuery("text", "")
+	if strings.TrimSpace(text) == "" {
+		fmt.Println("vacio, text: ",text)
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'text' value in request. Must not be empty.", fmt.Errorf("invalid search text"))
+		_ = c.Error(err)
+		return
+	}
+
+	users, hasMore, err := u.service.SearchUsers(userSessionId, text, timestamp, skip, limit)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	fmt.Println("users: ",users)
+	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
 	c.JSON(http.StatusOK, response)
 }

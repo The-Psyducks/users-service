@@ -200,24 +200,24 @@ func (postDB *UsersPostgresDB) ModifyUser(id uuid.UUID, data model.UpdateUserPri
 }
 
 // For testing purposes
-// func (postDB *UsersPostgresDB) PrintAllUsers() error {
-//     var users []model.UserRecord
-//     query := `SELECT * FROM users`
+func (postDB *UsersPostgresDB) PrintAllUsers() error {
+    var users []model.UserRecord
+    query := `SELECT * FROM users`
 
-//     err := postDB.db.Select(&users, query)
-//     if err != nil {
-//         return fmt.Errorf("error fetching users: %w", err)
-//     }
+    err := postDB.db.Select(&users, query)
+    if err != nil {
+        return fmt.Errorf("error fetching users: %w", err)
+    }
 
-//     // Imprimir cada usuario
-//     fmt.Println("All users in the database:")
-//     for _, user := range users {
-//         fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n",
-//             user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.Location, user.CreatedAt)
-//     }
+    // Imprimir cada usuario
+    fmt.Println("All users in the database:")
+    for _, user := range users {
+        fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n",
+            user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.Location, user.CreatedAt)
+    }
 
-//     return nil
-// }
+    return nil
+}
 
 func (postDB *UsersPostgresDB) GetUserById(id uuid.UUID) (model.UserRecord, error) {
 	var user model.UserRecord
@@ -437,6 +437,85 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 	}
 
 	return following, false, nil
+}
+
+func (postDB *UsersPostgresDB) GetUsersWithUsernameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
+	var users []model.UserRecord
+	query := `
+		SELECT *
+		FROM users
+		WHERE username ILIKE $1
+		AND created_at < $2
+		ORDER BY created_at DESC
+		OFFSET $3
+		LIMIT $4
+	`
+
+	err := postDB.db.Select(&users, query, "%"+text+"%", timestamp, skip, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("error getting users with username containing: %w", err)
+	}
+
+	if len(users) == limit+1 {
+		return users[:limit], true, nil
+	}
+
+	for i := range users {
+		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
+	}
+
+	if err := postDB.PrintAllUsers(); err != nil {
+		return nil, false, fmt.Errorf("error printing all users: %w", err)
+	}
+
+	return users, false, nil
+}
+
+func (postDB *UsersPostgresDB) GetAmountOfUsersWithUsernameContaining(text string) (int, error) {
+	var amount int
+	query := `SELECT COUNT(*) FROM users WHERE username ILIKE $1`
+	err := postDB.db.Get(&amount, query, "%"+text+"%")
+
+	if err != nil {
+		return 0, fmt.Errorf("error getting amount of users with username containing: %w", err)
+	}
+
+	return amount, nil
+}
+
+func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
+	var users []model.UserRecord
+	query := `
+		SELECT *
+		FROM users
+		WHERE (first_name ILIKE $1 OR last_name ILIKE $1)
+		AND username NOT ILIKE $1
+		AND created_at < $2
+		ORDER BY created_at DESC
+		OFFSET $3
+		LIMIT $4
+	`
+
+	err := postDB.db.Select(&users, query, "%"+text+"%", timestamp, skip, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("error getting users with name containing: %w", err)
+	}
+
+	if len(users) == limit+1 {
+		return users[:limit], true, nil
+	}
+
+	for i := range users {
+		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
+	}
+
+	return users, false, nil
 }
 
 // // For testing purposes

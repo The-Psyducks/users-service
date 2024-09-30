@@ -53,4 +53,16 @@ type UserDatabase interface {
 	// and if there are more followers to retrieve.
 	// It also receives a timestamp, skip and limit to paginate the results
 	GetFollowing(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
+	// GetUsersWithUsernameContaining returns the users that have a username containing the text
+	// it also receives a timestamp, skip and limit to paginate the results
+	GetUsersWithUsernameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
+	// GetAmountOfUsersWithUsernameContaining returns the amount of users that have a username containing the text
+	GetAmountOfUsersWithUsernameContaining(text string) (int, error)
+
+	// GetUsersWithOnlyNameContaining returns the users that JUST have the name containing the text. 
+	// If the username also has it, it discards it
+	// it also receives a timestamp, skip and limit to paginate the results
+	GetUsersWithOnlyNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
 }

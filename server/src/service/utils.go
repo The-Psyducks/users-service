@@ -75,8 +75,8 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 	}, nil
 }
 
-func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId uuid.UUID) ([]model.FollowUserPublicProfile, error) {
-	profiles := make([]model.FollowUserPublicProfile, 0, len(userRecords))
+func (u *User) getFollowStatusPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId uuid.UUID) ([]model.UserPublicProfileWithFollowStatus, error) {
+	profiles := make([]model.UserPublicProfileWithFollowStatus, 0, len(userRecords))
 	for _, user := range userRecords {
 		profile, err := u.generateUserPublicProfileFromUserRecord(user)
 		if err != nil {
@@ -86,7 +86,7 @@ func (u *User) getFollowersPublicProfilesFromUserRecords(userRecords []model.Use
 		if err != nil {
 			return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if user follows: %w", err))
 		}
-		followProfile := model.FollowUserPublicProfile{
+		followProfile := model.UserPublicProfileWithFollowStatus{
 			Follows: follows,
 			Profile: profile,
 		}

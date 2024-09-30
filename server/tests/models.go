@@ -130,3 +130,8 @@ type FollowingResponse struct {
 	Pagination Pagination			`json:"pagination"`
 }
 
+type PaginationResponse[T any] struct {
+	Data       []T        `json:"data" binding:"required"`
+	Pagination Pagination `json:"pagination" binding:"required"`
+}
+

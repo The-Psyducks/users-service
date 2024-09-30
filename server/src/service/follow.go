@@ -59,7 +59,7 @@ func (u *User) UnfollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
 }
 
 // GetFollowers returns the followers of a user and if there are more to fetch
-func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, bool, error) {
+func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.UserPublicProfileWithFollowStatus, bool, error) {
 	userRequested, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -67,33 +67,33 @@ func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp str
 		}
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
-	
+
 	if userRequested.Id != userSessionId {
 		follows, err := u.userDb.CheckIfUserFollows(userSessionId, userRequested.Id)
 		if err != nil {
 			return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user follows: %w", err))
 		}
-		
+
 		if !follows {
 			return nil, false, app_errors.NewAppError(http.StatusForbidden, NotFollowing, fmt.Errorf("user does not follow the user"))
 		}
 	}
-	
+
 	followers, hasMore, err := u.userDb.GetFollowers(userRequested.Id, timestamp, skip, limit)
 	if err != nil {
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting followers: %w", err))
 	}
-	
-	profiles, err := u.getFollowersPublicProfilesFromUserRecords(followers, userSessionId)
+
+	profiles, err := u.getFollowStatusPublicProfilesFromUserRecords(followers, userSessionId)
 	if err != nil {
 		return nil, false, err
 	}
-	
+
 	return profiles, hasMore, nil
 }
 
 // GetFollowers returns the user's a user is following and if there are more to fetch
-func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.FollowUserPublicProfile, bool, error) {
+func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.UserPublicProfileWithFollowStatus, bool, error) {
 	userRecord, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -118,10 +118,10 @@ func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp str
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting following: %w", err))
 	}
 
-	profiles, err := u.getFollowersPublicProfilesFromUserRecords(following, userSessionId)
+	profiles, err := u.getFollowStatusPublicProfilesFromUserRecords(following, userSessionId)
 	if err != nil {
 		return nil, false, err
 	}
-	
+
 	return profiles, hasMore, nil
 }
