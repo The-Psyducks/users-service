@@ -52,7 +52,7 @@ func setUpFollowTests() (testRouter *router.Router,user1 UserPrivateProfile, use
     return testRouter, user1, user1Password, user2, user2Password
 }
 
-func TestFollowUser(t *testing.T) {
+func TestFollowUserAddsItToFollowers(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpFollowTests()
 	loginRequest := LoginRequest{
 		Email: user1.Email,
@@ -71,7 +71,7 @@ func TestFollowUser(t *testing.T) {
     assert.Equal(t, followers[0].Profile.UserName, user1.UserName)
 }
 
-func TestFollowUserTwice(t *testing.T) {
+func TestFollowUserTwiceReturnsProperError(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -90,7 +90,7 @@ func TestFollowUserTwice(t *testing.T) {
     assert.Equal(t, response.Title, "The user already follows this user")
 }
 
-func TestFollowMyself(t *testing.T) {
+func TestFollowMyselfReturnsProperError(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -106,7 +106,7 @@ func TestFollowMyself(t *testing.T) {
     assert.Equal(t, response.Title, "Can't follow yourself")
 }
 
-func TestFollowNonExistentUser(t *testing.T) {
+func TestFollowNonExistentUserReturnsProperError(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -122,7 +122,7 @@ func TestFollowNonExistentUser(t *testing.T) {
     assert.Equal(t, response.Title, "User not found")
 }
 
-func TestUnfollowUser(t *testing.T) {
+func TestUnfollowUserDeletesItFromFollowers(t *testing.T) {
     testRouter, user1, user1Password, user2, user2Password := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -149,7 +149,7 @@ func TestUnfollowUser(t *testing.T) {
     assert.Equal(t, len(followers), 0)
 }
 
-func TestUnfollowNonFollowingUser(t *testing.T) {
+func TestUnfollowNonFollowingUserReturnsProperError(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -165,7 +165,7 @@ func TestUnfollowNonFollowingUser(t *testing.T) {
     assert.Equal(t, response.Title, "The user is not following this user")
 }
 
-func TestUnfollowNonExistentUser(t *testing.T) {
+func TestUnfollowNonExistentUserReturnsProperError(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -181,7 +181,7 @@ func TestUnfollowNonExistentUser(t *testing.T) {
     assert.Equal(t, response.Title, "User not found")
 }
 
-func TestGetFollowersWhenEmpty(t *testing.T) {
+func TestGetFollowersWhenEmptyIsEmptyList(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -195,7 +195,7 @@ func TestGetFollowersWhenEmpty(t *testing.T) {
     assert.Equal(t, len(followers), 0)
 }
 
-func TestGetFollowers(t *testing.T) {
+func TestGetFollowersReturnsCorrectly(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     email := "asjid@elric.com"
     locationId := 0
@@ -239,7 +239,7 @@ func TestGetFollowers(t *testing.T) {
     assertListsAreEqual(t, followers, profiles)
 }
 
-func TestGetFollowingWhenEmpty(t *testing.T) {
+func TestGetFollowingWhenEmptyReturnsEmptyList(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpFollowTests()
     loginRequest := LoginRequest{
         Email: user1.Email,
@@ -253,7 +253,7 @@ func TestGetFollowingWhenEmpty(t *testing.T) {
     assert.Equal(t, len(following), 0)
 }
 
-func TestGetFollowing(t *testing.T) {
+func TestGetFollowingReturnsCorrectly(t *testing.T) {
     testRouter, user1, _, user2, _ := setUpFollowTests()
     email := "asjid@elric.com"
     locationId := 0
@@ -290,7 +290,7 @@ func TestGetFollowing(t *testing.T) {
     assertListsAreEqual(t, following, profiles)
 }
 
-func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
+func TestGetFollowersForNonFollowingUserReturnsProperError(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpFollowTests()
     
     loginRequest := LoginRequest{
@@ -306,7 +306,7 @@ func TestCanNotGetFollowersForNonFollowingUser(t *testing.T) {
     assert.Equal(t, response.Title, "The user is not following this user")
 }
 
-func TestGetFollowerForMutualFollowingUsers(t *testing.T) {
+func TestGetFollowerForMutualFollowingUsersReturnsCorrectly(t *testing.T) {
     testRouter, user1, user1Password, user2, user2Password := setUpFollowTests()
     email := "asjid@elric.com"
     locationId := 0

@@ -12,7 +12,7 @@ import (
 	"users-service/src/router"
 )
 
-func TestCreateUser(t *testing.T) {
+func TestCreateUserCreatesAValidOne(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -38,7 +38,7 @@ func TestCreateUser(t *testing.T) {
 	AssertUserPrivateProfileIsUser(t, email, personalInfo, location, interests, userProfile)
 }
 
-func TestCreateUserWithInvalidPassword(t *testing.T) {
+func TestCreateUserWithInvalidPasswordReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -61,7 +61,7 @@ func TestCreateUserWithInvalidPassword(t *testing.T) {
 	assertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
-func TestCreateUserWithFirstAndLastNameTooLong(t *testing.T) {
+func TestCreateUserWithFirstAndLastNameTooLongReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -83,7 +83,7 @@ func TestCreateUserWithFirstAndLastNameTooLong(t *testing.T) {
 	assertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
-func TestCreateUserWithUsernameAndPasswordTooShort(t *testing.T) {
+func TestCreateUserWithUsernameAndPasswordTooShortReturnsProperValidationErrors(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -105,7 +105,7 @@ func TestCreateUserWithUsernameAndPasswordTooShort(t *testing.T) {
 	assertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
-func TestCreateUserWithInvalidLocation(t *testing.T) {
+func TestCreateUserWithInvalidLocationReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -132,7 +132,7 @@ func TestCreateUserWithInvalidLocation(t *testing.T) {
 	assertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
-func TestCreateUserWithNotExistingInterests(t *testing.T) {
+func TestCreateUserWithNotExistingInterestsReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -159,7 +159,7 @@ func TestCreateUserWithNotExistingInterests(t *testing.T) {
 	assertRegisterInstancePattern(t, "interests", response.Instance)
 }
 
-func TestCreateUserWithRepeatedInterests(t *testing.T) {
+func TestCreateUserWithRepeatedInterestsReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -183,7 +183,7 @@ func TestCreateUserWithRepeatedInterests(t *testing.T) {
 	assertRegisterInstancePattern(t, "interests", response.Instance)
 }
 
-func TestCreateUserWithInvalidMail(t *testing.T) {
+func TestCreateUserWithInvalidMailReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -210,7 +210,7 @@ func TestCreateUserWithInvalidMail(t *testing.T) {
 	assert.Equal(t, res.Instance, "/users/resolver")
 }
 
-func TestResolveUserWithMailThatExists(t *testing.T) {
+func TestResolveUserWithMailThatExistsReturnsLogInStep(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -247,7 +247,7 @@ func TestResolveUserWithMailThatExists(t *testing.T) {
 	assert.Equal(t, res.NextAuthStep, LoginAuthStep)
 }
 
-func TestCreateUserWithUsernameThatExistsWithDifferentCase(t *testing.T) {
+func TestCreateUserWithUsernameThatExistsWithDifferentCaseReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 

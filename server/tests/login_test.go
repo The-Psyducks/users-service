@@ -9,7 +9,7 @@ import (
 	"users-service/src/router"
 )
 
-func TestLoginUser(t *testing.T) {
+func TestLoginUserReturnsSession(t *testing.T) {
 	router, err := router.CreateRouter()
 
 	assert.Equal(t, err, nil)
@@ -38,7 +38,7 @@ func TestLoginUser(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestLoginNotExistingUser(t *testing.T) {
+func TestLoginNotExistingUserReturnsNotFoundError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -55,7 +55,7 @@ func TestLoginNotExistingUser(t *testing.T) {
 	assert.Equal(t, resp.Instance, "/users/login")
 }
 
-func TestLoginUserWithInvalidPassword(t *testing.T) {
+func TestLoginUserWithInvalidPasswordReturnsNotFoundError(t *testing.T) {
 	router, err := router.CreateRouter()
 
 	assert.Equal(t, err, nil)
@@ -85,7 +85,7 @@ func TestLoginUserWithInvalidPassword(t *testing.T) {
 	assert.Equal(t, code, http.StatusNotFound)
 }
 
-func TestLoginUserStillInRegistry(t *testing.T) {
+func TestLoginUserStillInRegistryReturnsNotFoundError(t *testing.T) {
 	router, err := router.CreateRouter()
 
 	assert.Equal(t, err, nil)

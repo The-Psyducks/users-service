@@ -8,7 +8,7 @@ import (
 	"users-service/src/router"
 )
 
-func TestUserAuthStepStartsWithEmailVerifiaction(t *testing.T) {
+func TestUserAuthStepStartsWithEmailVerification(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 

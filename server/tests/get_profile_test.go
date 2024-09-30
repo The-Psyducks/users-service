@@ -12,7 +12,7 @@ import (
 	"users-service/src/router"
 )
 
-func TestGetOwnUserProfile(t *testing.T) {
+func TestGetOwnUserProfileReturnsPrivateProfile(t *testing.T) {
 	router, err := router.CreateRouter()
 
 	assert.Equal(t, err, nil)
@@ -41,7 +41,7 @@ func TestGetOwnUserProfile(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestGetAnotherUserProfile(t *testing.T) {
+func TestGetAnotherUserProfileReturnsPublicProfile(t *testing.T) {
 	router, err := router.CreateRouter()
 
 	assert.Equal(t, err, nil)
@@ -83,7 +83,7 @@ func TestGetAnotherUserProfile(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
-func TestGetUserProfileWithoutToken(t *testing.T) {
+func TestGetUserProfileWithoutTokenReturnsAuthError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -114,7 +114,7 @@ func TestGetUserProfileWithoutToken(t *testing.T) {
 	assert.Equal(t, result.Title, "Unauthorized")
 }
 
-func TestGetNotExistingUserProfile(t *testing.T) {
+func TestGetNotExistingUserProfileReturnsProperError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -138,7 +138,7 @@ func TestGetNotExistingUserProfile(t *testing.T) {
 	assert.Equal(t, result.Title, "User not found")
 }
 
-func TestGetUserThatIsInRegistry(t *testing.T) {
+func TestGetUserThatIsInRegistryReturnsNotFoundError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
