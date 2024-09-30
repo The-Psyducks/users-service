@@ -257,7 +257,9 @@ func (u *User) GetUserProfileById(c *gin.Context) {
 		return
 	}
 
-	user, err := u.service.GetUserProfileById(userSessionId, id)
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+
+	user, err := u.service.GetUserProfileById(userSessionId, userSessionIsAdmin, id)
 
 	if err != nil {
 		_ = c.Error(err)
