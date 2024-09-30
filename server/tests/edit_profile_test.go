@@ -53,7 +53,7 @@ func setUpEditProfileTests() (testRouter *router.Router, user1 UserPrivateProfil
     return testRouter, user1, user1Password, user2, user2Password
 }
 
-func TestEditProfile(t *testing.T) {
+func TestEditProfileModifiesIt(t *testing.T) {
 	testRouter, user1, user1Password, _, _ := setUpEditProfileTests()
 	options, err := getRegisterOptions(testRouter)
 	assert.Equal(t, err, nil)
@@ -82,7 +82,7 @@ func TestEditProfile(t *testing.T) {
 	assertLocationNameIsCorrectId(t, options, updatedProfile.Location, newUser.Location)
 }
 
-func TestEditProfileChangesProfile(t *testing.T) {
+func TestEditProfileChangesPrivateProfile(t *testing.T) {
 	testRouter, user1, user1Password, _, _ := setUpEditProfileTests()
 	options, err := getRegisterOptions(testRouter)
 	assert.Equal(t, err, nil)
@@ -110,7 +110,7 @@ func TestEditProfileChangesProfile(t *testing.T) {
 	assertPrivateUsersAreEqual(t, newUser, userProfile)
 }
 
-func TestEditUnexistingProfile(t *testing.T) {
+func TestEditUnexistingProfileReturnsProperError(t *testing.T) {
 	testRouter, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
@@ -137,7 +137,7 @@ func TestEditUnexistingProfile(t *testing.T) {
 	assert.Equal(t, result.Title, "Unauthorized")
 }
 
-func TestEditProfileWithInvalidData(t *testing.T) {
+func TestEditProfileWithInvalidDataReturnsProperValidationError(t *testing.T) {
 	testRouter, user1, user1Password, _, _ := setUpEditProfileTests()
 
 	updatedProfile := EditUserProfileRequest {
