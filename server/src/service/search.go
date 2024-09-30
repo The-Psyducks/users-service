@@ -21,7 +21,7 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 		var nameUsers []model.UserRecord
 		remainingLimit := limit - len(users)
 		remainingSkip := skip
-		if len(users) == 0 { //case where I have to skip some users with name containing text 
+		if len(users) == 0 { //case where I have to skip some users with name containing text
 			amntWithUsername, err := u.userDb.GetAmountOfUsersWithUsernameContaining(text)
 			if err != nil {
 				return nil, false, fmt.Errorf("error getting amount of users with username containing %s: %w", text, err)
@@ -29,14 +29,13 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 			remainingSkip = skip - amntWithUsername
 		}
 
-		nameUsers, hasMore, err = u.userDb.GetUsersWithNameContaining(text, timestamp, remainingSkip, remainingLimit)
+		nameUsers, hasMore, err = u.userDb.GetUsersWithOnlyNameContaining(text, timestamp, remainingSkip, remainingLimit)
 		if err != nil {
 			return nil, false, err
 		}
 
 		users = append(users, nameUsers...)
 	}
-
 
 	profiles, err := u.getFollowStatusPublicProfilesFromUserRecords(users, userSessionId)
 	if err != nil {
@@ -45,5 +44,3 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 
 	return profiles, hasMore, nil
 }
-
-

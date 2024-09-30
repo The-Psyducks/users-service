@@ -230,7 +230,7 @@ func getSessionUserId(c *gin.Context) (uuid.UUID, error) {
 	}
 	sessionUserId, err := uuid.Parse(sessionUserIdString)
 	if err != nil {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid id in token", err)
 		return uuid.Nil, err
 	}
 	return sessionUserId, nil
@@ -412,7 +412,8 @@ func (u *User) SearchUsers(c *gin.Context) {
 
 	text := c.DefaultQuery("text", "")
 	if strings.TrimSpace(text) == "" {
-		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'text' value in request. Must not be empty.", nil)
+		fmt.Println("vacio, text: ",text)
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'text' value in request. Must not be empty.", fmt.Errorf("invalid search text"))
 		_ = c.Error(err)
 		return
 	}
@@ -422,7 +423,7 @@ func (u *User) SearchUsers(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-
+	fmt.Println("users: ",users)
 	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
 	c.JSON(http.StatusOK, response)
 }

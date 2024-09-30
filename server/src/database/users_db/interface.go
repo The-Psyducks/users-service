@@ -58,9 +58,11 @@ type UserDatabase interface {
 	// it also receives a timestamp, skip and limit to paginate the results
 	GetUsersWithUsernameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
 
+	// GetAmountOfUsersWithUsernameContaining returns the amount of users that have a username containing the text
 	GetAmountOfUsersWithUsernameContaining(text string) (int, error)
 
-	// GetUSersWithNameContaining returns the users that have a name containing the text
+	// GetUsersWithOnlyNameContaining returns the users that JUST have the name containing the text. 
+	// If the username also has it, it discards it
 	// it also receives a timestamp, skip and limit to paginate the results
-	GetUsersWithNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+	GetUsersWithOnlyNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
 }
