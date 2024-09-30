@@ -1,3 +1,0 @@
-Attaching to test-1
-test-1  | ok  	users-service/tests	7.632s
-[Ktest-1 exited with code 0
