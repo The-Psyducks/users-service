@@ -134,6 +134,8 @@ func CreateRouter() (*Router, error) {
 		private.DELETE("/users/:id/follow", userController.UnfollowUser)
 		private.GET("/users/:id/followers", userController.GetFollowers)
 		private.GET("/users/:id/following", userController.GetFollowing)
+
+		private.GET("/users/:id/search", userController.SearchUsers)
 	}
 
 	r.Engine.NoRoute(userController.HandleNoRoute)

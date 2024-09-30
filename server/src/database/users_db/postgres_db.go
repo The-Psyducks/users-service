@@ -439,6 +439,80 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 	return following, false, nil
 }
 
+func (postDB *UsersPostgresDB) GetUsersWithUsernameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
+	var users []model.UserRecord
+	query := `
+		SELECT *
+		FROM users
+		WHERE username ILIKE $1
+		AND created_at < $2
+		ORDER BY created_at DESC
+		OFFSET $3
+		LIMIT $4
+	`
+
+	err := postDB.db.Select(&users, query, "%"+query+"%", timestamp, skip, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("error getting users with username containing: %w", err)
+	}
+
+	if len(users) == limit+1 {
+		return users[:limit], true, nil
+	}
+
+	for i := range users {
+		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
+	}
+
+	return users, false, nil
+}
+
+func (postDB *UsersPostgresDB) GetAmountOfUsersWithUsernameContaining(text string) (int, error) {
+	var amount int
+	query := `SELECT COUNT(*) FROM users WHERE username ILIKE $1`
+	err := postDB.db.Get(&amount, query, "%"+text+"%")
+
+	if err != nil {
+		return 0, fmt.Errorf("error getting amount of users with username containing: %w", err)
+	}
+
+	return amount, nil
+}
+
+func (postDB *UsersPostgresDB) GetUsersWithNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
+	var users []model.UserRecord
+	query := `
+		SELECT *
+		FROM users
+		WHERE (first_name ILIKE $1 OR last_name ILIKE $1)
+		AND created_at < $2
+		ORDER BY created_at DESC
+		OFFSET $3
+		LIMIT $4
+	`
+
+	err := postDB.db.Select(&users, query, "%"+text+"%", timestamp, skip, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("error getting users with name containing: %w", err)
+	}
+
+	if len(users) == limit+1 {
+		return users[:limit], true, nil
+	}
+
+	for i := range users {
+		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
+	}
+
+	return users, false, nil
+}
+
 // // For testing purposes
 // func hashPassword(password string) string {
 // 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
