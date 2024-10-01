@@ -439,6 +439,36 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 	return following, false, nil
 }
 
+func (postDB *UsersPostgresDB) GetAllUsers(timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
+	var users []model.UserRecord
+	query := `
+		SELECT *
+		FROM users
+		WHERE created_at < $1
+		ORDER BY created_at DESC
+		OFFSET $2
+		LIMIT $3
+	`
+
+	err := postDB.db.Select(&users, query, timestamp, skip, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("error getting all users: %w", err)
+	}
+
+	if len(users) == limit+1 {
+		return users[:limit], true, nil
+	}
+
+	for i := range users {
+		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
+	}
+
+	return users, false, nil
+}
+
 func (postDB *UsersPostgresDB) GetUsersWithUsernameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
 	var users []model.UserRecord
 	query := `

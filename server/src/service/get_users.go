@@ -44,3 +44,22 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 
 	return profiles, hasMore, nil
 }
+
+// GetAllUsers retrieves all the users in the database, it is just for admins
+// it also receives a timestamp, skip and limit to paginate the results
+func (u *User) GetAllUsers(userSessionIsAdmin bool, timestamp string, skip int, limit int) ([]model.UserPublicProfile, bool, error) {
+	if !userSessionIsAdmin {
+		return nil, false, fmt.Errorf("user is not an admin")
+	}
+	users, hasMore, err := u.userDb.GetAllUsers(timestamp, skip, limit)
+	if err != nil {
+		return nil, false, err
+	}
+
+	profiles, err := u.getPublicProfilesFromUserRecords(users)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return profiles, hasMore, nil
+}

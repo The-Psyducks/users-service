@@ -49,6 +49,10 @@ type UserDatabase interface {
 	// it also receives a timestamp, skip and limit to paginate the results
 	GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
 
+	// GetAllUsers retrieves all the users in the database
+	// it also receives a timestamp, skip and limit to paginate the results
+	GetAllUsers(timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
 	// GetFollowing returns the users that a user is following for a given user ID
 	// and if there are more followers to retrieve.
 	// It also receives a timestamp, skip and limit to paginate the results

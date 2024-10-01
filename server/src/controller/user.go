@@ -258,7 +258,6 @@ func (u *User) GetUserProfileById(c *gin.Context) {
 	}
 
 	userSessionIsAdmin := c.GetBool("session_user_admin")
-
 	user, err := u.service.GetUserProfileById(userSessionId, userSessionIsAdmin, id)
 
 	if err != nil {
@@ -425,7 +424,25 @@ func (u *User) SearchUsers(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	fmt.Println("users: ",users)
+
+	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
+	c.JSON(http.StatusOK, response)
+}
+
+func (u *User) GetAllUsers(c *gin.Context) {
+	timestamp, skip, limit, err := getPaginationParams(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	users, hasMore, err := u.service.GetAllUsers(userSessionIsAdmin, timestamp, skip, limit)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
 	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
 	c.JSON(http.StatusOK, response)
 }
