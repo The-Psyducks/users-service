@@ -9,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 
-	// "golang.org/x/crypto/bcrypt" //testing purposes
+	"golang.org/x/crypto/bcrypt" //testing purposes
 
 	"users-service/src/constants"
 	"users-service/src/database"
@@ -34,7 +34,7 @@ func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
 	postgresDB := UsersPostgresDB{db}
 
 	// for testing purposes
-	// postgresDB.createTestUsers()
+	postgresDB.createTestUsers()
 
 	return &postgresDB, nil
 }
@@ -548,40 +548,40 @@ func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, times
 	return users, false, nil
 }
 
-// // For testing purposes
-// func hashPassword(password string) string {
-// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-// 	if err != nil {
-// 		fmt.Println("error hashing password: ", err)
-// 	}
+// For testing purposes
+func hashPassword(password string) string {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		fmt.Println("error hashing password: ", err)
+	}
 
-// 	return string(hashedPassword)
-// }
+	return string(hashedPassword)
+}
 
-// func (postDB *UsersPostgresDB) createTestUsers() {
-// 	users := []model.UserRecord{
-// 		{
-// 			UserName:  "Monke",
-// 			FirstName: "Test",
-// 			LastName:  "One",
-// 			Email:     "monke@gmail.com",
-// 			Password:  hashPassword("password"),
-// 			Location:  "Test Location",
-// 		},
-// 		{
-// 			UserName:  "Test",
-// 			FirstName: "Test",
-// 			LastName:  "Two",
-// 			Email:     "test@gmail.com",
-// 			Password:  hashPassword("password"),
-// 			Location:  "Test Location",
-// 		},
-// 	}
+func (postDB *UsersPostgresDB) createTestUsers() {
+	users := []model.UserRecord{
+		{
+			UserName:  "Monke",
+			FirstName: "Test",
+			LastName:  "One",
+			Email:     "monke@gmail.com",
+			Password:  hashPassword("password"),
+			Location:  "Test Location",
+		},
+		{
+			UserName:  "Test",
+			FirstName: "Test",
+			LastName:  "Two",
+			Email:     "test@gmail.com",
+			Password:  hashPassword("password"),
+			Location:  "Test Location",
+		},
+	}
 
-// 	for _, user := range users {
-// 		_, err := postDB.CreateUser(user)
-// 		if err != nil {
-// 			fmt.Println("error creating test user: ", err)
-// 		}
-// 	}
-// }
+	for _, user := range users {
+		_, err := postDB.CreateUser(user)
+		if err != nil {
+			fmt.Println("error creating test user: ", err)
+		}
+	}
+}
