@@ -13,7 +13,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *User) GetUserProfileById(userSessionId uuid.UUID, id uuid.UUID) (model.UserProfileResponse, error) {
+func (u *User) GetUserProfileById(userSessionId uuid.UUID, userSessionIsAdmin bool, id uuid.UUID) (model.UserProfileResponse, error) {
 	userRecord, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -22,7 +22,7 @@ func (u *User) GetUserProfileById(userSessionId uuid.UUID, id uuid.UUID) (model.
 		return model.UserProfileResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
 
-	if userSessionId == id {
+	if userSessionId == id || userSessionIsAdmin {
 		return u.getPrivateProfile(userRecord)
 	}
 	return u.getPublicProfile(userRecord, userSessionId)

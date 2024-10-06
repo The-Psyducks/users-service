@@ -95,6 +95,19 @@ func (u *User) getFollowStatusPublicProfilesFromUserRecords(userRecords []model.
 	return profiles, nil
 }
 
+func (u *User) getPublicProfilesFromUserRecords(userRecords []model.UserRecord) ([]model.UserPublicProfile, error) {
+	profiles := make([]model.UserPublicProfile, 0, len(userRecords))
+	for _, user := range userRecords {
+		profile, err := u.generateUserPublicProfileFromUserRecord(user)
+		if err != nil {
+			return nil, err
+		}
+		profiles = append(profiles, profile)
+	}
+	return profiles, nil
+}
+
+
 func hashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {

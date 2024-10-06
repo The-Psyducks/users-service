@@ -214,7 +214,6 @@ func (u *UserCreationValidator) passwordValidator(fl validator.FieldLevel) bool 
 
 func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool {
 	location := fl.Field().Int()
-	fmt.Println("g location: ", location)
 	if register_options.GetLocationName(int(location)) == "" {
 		u.addValidationError("location", "Invalid location")
 		return false
