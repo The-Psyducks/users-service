@@ -76,7 +76,15 @@ func (u *User) getPublicProfile(user model.UserRecord, session_user_id uuid.UUID
 }
 
 func (u *User) ModifyUserProfile(userSessionId uuid.UUID, data model.UpdateUserPrivateProfileRequest) (model.UserPrivateProfile, error) {
-	if valErrs, err := u.userValidator.ValidateUpdatePrivateProfile(data); err != nil {
+	userRecord, err := u.userDb.GetUserById(userSessionId)
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, UsernameNotFound, err)
+		}
+		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
+	}
+
+	if valErrs, err := u.userValidator.ValidateUpdatePrivateProfile(data, userRecord); err != nil {
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
 	} else if len(valErrs) > 0 {
 		return model.UserPrivateProfile{}, app_errors.NewAppValidationError(valErrs)

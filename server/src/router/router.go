@@ -1,19 +1,21 @@
 package router
 
 import (
-	"io"
-	"os"
 	"fmt"
+	"io"
 	"log/slog"
-	_ "github.com/lib/pq"
-	"github.com/jmoiron/sqlx"
-	"github.com/gin-gonic/gin"
+	"os"
+	"testing"
 	"users-service/src/config"
-	"users-service/src/service"
 	"users-service/src/controller"
-	"users-service/src/middleware"
-	"users-service/src/database/users_db"
 	"users-service/src/database/registry_db"
+	"users-service/src/database/users_db"
+	"users-service/src/middleware"
+	"users-service/src/service"
+
+	"github.com/gin-gonic/gin"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
@@ -48,18 +50,27 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 func createDBConnection(cfg *config.Config) (*sqlx.DB, error) {
 	var db *sqlx.DB
 	var err error
-	if cfg.Environment == "HEROKU" {
-		db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
-	} else {
-		dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-				cfg.DatabaseUser,
-				cfg.DatabasePassword,
-				cfg.DatabaseHost,
-				cfg.DatabasePort,
-				cfg.DatabaseName)
-	
-		db, err = sqlx.Connect("postgres", dsn)
+
+	switch cfg.Environment {
+		case "HEROKU":
+			fallthrough
+		case "production":
+			db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+		case "development":
+			fallthrough
+		case "testing":
+			dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+					cfg.DatabaseUser,
+					cfg.DatabasePassword,
+					cfg.DatabaseHost,
+					cfg.DatabasePort,
+					cfg.DatabaseName)
+		
+			db, err = sqlx.Connect("postgres", dsn)
+		default:
+			return nil, fmt.Errorf("invalid environment: %s", cfg.Environment)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
@@ -83,11 +94,16 @@ func createDatabases(cfg *config.Config) (users_db.UserDatabase, registry_db.Reg
 		return nil, nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 
-	userDb, err = users_db.CreateUsersPostgresDB(db)
+	test := false
+	if cfg.Environment == "testing" || testing.Testing() {
+		test = true
+	}
+
+	userDb, err = users_db.CreateUsersPostgresDB(db, test)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to users database: %w", err)
 	}
-	registryDb, err = registry_db.CreateRegistryPostgresDB(db)
+	registryDb, err = registry_db.CreateRegistryPostgresDB(db, test)
 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to connect to registry database: %w", err)

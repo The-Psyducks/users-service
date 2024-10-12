@@ -12,29 +12,34 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-type UserCreationValidator struct {
+type UserValidator struct {
 	usersDb          users_db.UserDatabase
 	validationErrors []model.ValidationError
 }
 
-func NewUserCreationValidator(usersDb users_db.UserDatabase) *UserCreationValidator {
-	return &UserCreationValidator{
+func NewUserValidator(usersDb users_db.UserDatabase) *UserValidator {
+	return &UserValidator{
 		usersDb: usersDb,
 	}
 }
 
-func (u *UserCreationValidator) ValidateUpdatePrivateProfile(updateProfile model.UpdateUserPrivateProfileRequest) ([]model.ValidationError, error) {
+func (u *UserValidator) ValidateUpdatePrivateProfile(newProfile model.UpdateUserPrivateProfileRequest, previousProfile model.UserRecord) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 	validate := validator.New()
 
+	
 	customValidators := map[string]validator.Func{
 		"firstnamevalidator": u.firstnamevalidator,
 		"lastnamevalidator":  u.lastnamevalidator,
-		"usernamevalidator":  u.usernameValidator,
 		"locationvalidator":  u.locationValidator,
 		"interestsvalidator": u.interestsValidator,
 	}
+	
+	if previousProfile.UserName != newProfile.UserName {
+		customValidators["usernamevalidator"] = u.usernameValidator
+	}
 
+	
 	for name, validatorFunc := range customValidators {
 		if err := validate.RegisterValidation(name, validatorFunc); err != nil {
 			slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
@@ -42,7 +47,7 @@ func (u *UserCreationValidator) ValidateUpdatePrivateProfile(updateProfile model
 		}
 	}
 
-	err := validate.Struct(updateProfile)
+	err := validate.Struct(newProfile)
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if _, isCustom := customValidators[err.ActualTag()]; !isCustom {
@@ -54,7 +59,7 @@ func (u *UserCreationValidator) ValidateUpdatePrivateProfile(updateProfile model
 	return u.validationErrors, nil
 }
 
-func (u *UserCreationValidator) ValidateEmail(email string) ([]model.ValidationError, error) {
+func (u *UserValidator) ValidateEmail(email string) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 
 	validate := validator.New()
@@ -75,7 +80,7 @@ func (u *UserCreationValidator) ValidateEmail(email string) ([]model.ValidationE
 	return u.validationErrors, nil
 }
 
-func (u *UserCreationValidator) ValidatePersonalInfo(personalInfo model.UserPersonalInfoRequest) ([]model.ValidationError, error) {
+func (u *UserValidator) ValidatePersonalInfo(personalInfo model.UserPersonalInfoRequest) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 	validate := validator.New()
 
@@ -106,7 +111,7 @@ func (u *UserCreationValidator) ValidatePersonalInfo(personalInfo model.UserPers
 	return u.validationErrors, nil
 }
 
-func (u *UserCreationValidator) ValidateInterests(interests []int) ([]model.ValidationError, error) {
+func (u *UserValidator) ValidateInterests(interests []int) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 	validate := validator.New()
 
@@ -127,18 +132,18 @@ func (u *UserCreationValidator) ValidateInterests(interests []int) ([]model.Vali
 	return u.validationErrors, nil
 }
 
-func (u *UserCreationValidator) clearValidationErrors() {
+func (u *UserValidator) clearValidationErrors() {
 	u.validationErrors = []model.ValidationError{}
 }
 
-func (u *UserCreationValidator) addValidationError(fieldName, message string) {
+func (u *UserValidator) addValidationError(fieldName, message string) {
 	u.validationErrors = append(u.validationErrors, model.ValidationError{
 		Field:   fieldName,
 		Message: message,
 	})
 }
 
-func (u *UserCreationValidator) emailValidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) emailValidator(fl validator.FieldLevel) bool {
 	email := fl.Field().String()
 
 	if len(email) < constants.MinEmailLength || len(email) > constants.MaxEmailLength {
@@ -155,7 +160,7 @@ func (u *UserCreationValidator) emailValidator(fl validator.FieldLevel) bool {
 	return true
 }
 
-func (u *UserCreationValidator) firstnamevalidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) firstnamevalidator(fl validator.FieldLevel) bool {
 	first_name := fl.Field().String()
 	if len(first_name) > constants.MaxFirstNameLength || len(first_name) < constants.MinFirstNameLength {
 		u.addValidationError("first_name", fmt.Sprintf("First name must be between %d and %d characters long", constants.MinFirstNameLength, constants.MaxFirstNameLength))
@@ -164,7 +169,7 @@ func (u *UserCreationValidator) firstnamevalidator(fl validator.FieldLevel) bool
 	return true
 }
 
-func (u *UserCreationValidator) lastnamevalidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) lastnamevalidator(fl validator.FieldLevel) bool {
 	last_name := fl.Field().String()
 	if len(last_name) > constants.MaxLastNameLength || len(last_name) < constants.MinLastNameLength {
 		u.addValidationError("last_name", fmt.Sprintf("Last name must be between %d and %d characters long", constants.MinLastNameLength, constants.MaxLastNameLength))
@@ -172,7 +177,7 @@ func (u *UserCreationValidator) lastnamevalidator(fl validator.FieldLevel) bool 
 	}
 	return true
 }
-func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) usernameValidator(fl validator.FieldLevel) bool {
 	username := fl.Field().String()
 	if len(username) < constants.MinUsernameLength || len(username) > constants.MaxUsernameLength {
 		u.addValidationError("username", fmt.Sprintf("Username must be between %d and %d characters long", constants.MinUsernameLength, constants.MaxUsernameLength))
@@ -193,7 +198,7 @@ func (u *UserCreationValidator) usernameValidator(fl validator.FieldLevel) bool 
 	return true
 }
 
-func (u *UserCreationValidator) passwordValidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) passwordValidator(fl validator.FieldLevel) bool {
 	password := fl.Field().String()
 
 	if len(password) < constants.MinPasswordLength || len(password) > constants.MaxPasswordLength {
@@ -212,7 +217,7 @@ func (u *UserCreationValidator) passwordValidator(fl validator.FieldLevel) bool 
 	return true
 }
 
-func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) locationValidator(fl validator.FieldLevel) bool {
 	location := fl.Field().Int()
 	if register_options.GetLocationName(int(location)) == "" {
 		u.addValidationError("location", "Invalid location")
@@ -221,7 +226,7 @@ func (u *UserCreationValidator) locationValidator(fl validator.FieldLevel) bool 
 	return true
 }
 
-func (u *UserCreationValidator) interestsValidator(fl validator.FieldLevel) bool {
+func (u *UserValidator) interestsValidator(fl validator.FieldLevel) bool {
 	interests := fl.Field().Interface().([]int)
 	if len(interests) == 0 {
 		u.addValidationError("interests", "A user must have at least one interest")
