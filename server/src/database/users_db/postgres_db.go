@@ -9,7 +9,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 
-	"golang.org/x/crypto/bcrypt" //testing purposes
+	// "golang.org/x/crypto/bcrypt" //testing purposes
 
 	"users-service/src/constants"
 	"users-service/src/database"
@@ -26,28 +26,30 @@ type UsersPostgresDB struct {
 	db *sqlx.DB
 }
 
-func CreateUsersPostgresDB(db *sqlx.DB) (*UsersPostgresDB, error) {
-	if err := createTables(db); err != nil {
+func CreateUsersPostgresDB(db *sqlx.DB, test bool) (*UsersPostgresDB, error) {
+	if err := createTables(db, test); err != nil {
 		return nil, fmt.Errorf("failed to create tables: %w", err)
 	}
 
 	postgresDB := UsersPostgresDB{db}
 
 	// for testing purposes
-	postgresDB.createTestUsers()
+	// postgresDB.createTestUsers()
 
 	return &postgresDB, nil
 }
 
-func createTables(db *sqlx.DB) error {
-	dropTables := fmt.Sprintf(`
-		DROP TABLE IF EXISTS %s CASCADE;
-		DROP TABLE IF EXISTS %s CASCADE;
-		DROP TABLE IF EXISTS %s CASCADE;
-		`, usersTable, interestsTable, followersTable)
+func createTables(db *sqlx.DB, test bool) error {
+	if test {
+		dropTables := fmt.Sprintf(`
+			DROP TABLE IF EXISTS %s CASCADE;
+			DROP TABLE IF EXISTS %s CASCADE;
+			DROP TABLE IF EXISTS %s CASCADE;
+			`, usersTable, interestsTable, followersTable)
 
-	if _, err := db.Exec(dropTables); err != nil {
-		return fmt.Errorf("failed to drop database: %w", err)
+		if _, err := db.Exec(dropTables); err != nil {
+			return fmt.Errorf("failed to drop database: %w", err)
+		}
 	}
 
 	schemaUsers := fmt.Sprintf(`
@@ -549,39 +551,39 @@ func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, times
 }
 
 // For testing purposes
-func hashPassword(password string) string {
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		fmt.Println("error hashing password: ", err)
-	}
+// func hashPassword(password string) string {
+// 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+// 	if err != nil {
+// 		fmt.Println("error hashing password: ", err)
+// 	}
 
-	return string(hashedPassword)
-}
+// 	return string(hashedPassword)
+// }
 
-func (postDB *UsersPostgresDB) createTestUsers() {
-	users := []model.UserRecord{
-		{
-			UserName:  "Monke",
-			FirstName: "Test",
-			LastName:  "One",
-			Email:     "monke@gmail.com",
-			Password:  hashPassword("password"),
-			Location:  "Test Location",
-		},
-		{
-			UserName:  "Test",
-			FirstName: "Test",
-			LastName:  "Two",
-			Email:     "test@gmail.com",
-			Password:  hashPassword("password"),
-			Location:  "Test Location",
-		},
-	}
+// func (postDB *UsersPostgresDB) createTestUsers() {
+// 	users := []model.UserRecord{
+// 		{
+// 			UserName:  "Monke",
+// 			FirstName: "Test",
+// 			LastName:  "One",
+// 			Email:     "monke@gmail.com",
+// 			Password:  hashPassword("password"),
+// 			Location:  "Test Location",
+// 		},
+// 		{
+// 			UserName:  "Test",
+// 			FirstName: "Test",
+// 			LastName:  "Two",
+// 			Email:     "test@gmail.com",
+// 			Password:  hashPassword("password"),
+// 			Location:  "Test Location",
+// 		},
+// 	}
 
-	for _, user := range users {
-		_, err := postDB.CreateUser(user)
-		if err != nil {
-			fmt.Println("error creating test user: ", err)
-		}
-	}
-}
+// 	for _, user := range users {
+// 		_, err := postDB.CreateUser(user)
+// 		if err != nil {
+// 			fmt.Println("error creating test user: ", err)
+// 		}
+// 	}
+// }

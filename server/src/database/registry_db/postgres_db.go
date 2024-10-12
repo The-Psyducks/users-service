@@ -16,13 +16,15 @@ type RegistryPostgresDB struct {
 	db *sqlx.DB
 }
 
-func CreateRegistryPostgresDB(db *sqlx.DB) (*RegistryPostgresDB, error) {
-	dropTables := `
-    DROP TABLE IF EXISTS registry_interests CASCADE;
-    DROP TABLE IF EXISTS registry_entries CASCADE;
-	`
-	if _, err := db.Exec(dropTables); err != nil {
-		return nil, fmt.Errorf("failed to drop tables: %w", err)
+func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, error) {
+	if test {
+		dropTables := `
+			DROP TABLE IF EXISTS registry_interests CASCADE;
+			DROP TABLE IF EXISTS registry_entries CASCADE;
+		`
+		if _, err := db.Exec(dropTables); err != nil {
+			return nil, fmt.Errorf("failed to drop tables: %w", err)
+		}
 	}
 
 	schema := fmt.Sprintf(`
