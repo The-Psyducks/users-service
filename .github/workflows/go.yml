@@ -2,11 +2,11 @@ name: Go
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "coverage" ]
   pull_request:
     branches: [ "main" ]
     
 jobs:
   go-pipeline:
-    uses: The-Psyducks/ci-template/.github/workflows/lintTest&RunContainer.yml@main
+    uses: The-Psyducks/ci-template/.github/workflows/lint-test-coverage.yml@main
 

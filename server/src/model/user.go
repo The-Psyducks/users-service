@@ -32,6 +32,14 @@ type UpdateUserPrivateProfileRequest struct {
 	Interests   []int  `json:"interests" validate:"interestsvalidator"`
 }
 
+type UpdateUserPrivateProfileData struct {
+	PicturePath string `json:"picture_path"`
+	FirstName  string `json:"first_name" validate:"firstnamevalidator"`
+	LastName   string `json:"last_name" validate:"lastnamevalidator"`
+	Location    int    `json:"location" validate:"locationvalidator"`
+	Interests   []int  `json:"interests" validate:"interestsvalidator"`
+}
+
 // UserPrivateProfile is a struct that represents a user in the HTTP response
 type UserPrivateProfile struct {
 	Id          uuid.UUID `json:"id" binding:"required"`

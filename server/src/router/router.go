@@ -51,25 +51,37 @@ func createDBConnection(cfg *config.Config) (*sqlx.DB, error) {
 	var db *sqlx.DB
 	var err error
 
-	switch cfg.Environment {
-		case "HEROKU":
-			fallthrough
-		case "production":
-			db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
-		case "development":
-			fallthrough
-		case "testing":
-			dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-					cfg.DatabaseUser,
-					cfg.DatabasePassword,
-					cfg.DatabaseHost,
-					cfg.DatabasePort,
-					cfg.DatabaseName)
-		
-			db, err = sqlx.Connect("postgres", dsn)
-		default:
-			return nil, fmt.Errorf("invalid environment: %s", cfg.Environment)
+	if testing.Testing() {
+		dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		cfg.DatabaseUser,
+		cfg.DatabasePassword,
+		cfg.DatabaseHost,
+		cfg.DatabasePort,
+		cfg.DatabaseName)
+
+	db, err = sqlx.Connect("postgres", dsn)
+	} else {
+		switch cfg.Environment {
+			case "HEROKU":
+				fallthrough
+			case "production":
+				db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+			case "development":
+				fallthrough
+			case "testing":
+				dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+						cfg.DatabaseUser,
+						cfg.DatabasePassword,
+						cfg.DatabaseHost,
+						cfg.DatabasePort,
+						cfg.DatabaseName)
+			
+				db, err = sqlx.Connect("postgres", dsn)
+			default:
+				return nil, fmt.Errorf("invalid environment: %s", cfg.Environment)
+		}
 	}
+
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
