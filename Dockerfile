@@ -14,7 +14,7 @@ RUN go build -o twitsnap ./main.go
 FROM builder AS twitsnap-test-stage
 
 # CMD ["go", "test", "-v", "./tests"]
-CMD ["go", "test", "./tests"]
+CMD ["go", "test", "-cover", "-coverprofile=coverage/coverage.out", "./tests"]
 
 # Run stage
 FROM alpine:3.20

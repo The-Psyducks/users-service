@@ -33,6 +33,8 @@ services:
       target: twitsnap-test-stage
     env_file:
       - ./server/.env
+    volumes:
+      - ./coverage:/home/app/coverage
     depends_on:
       postgres:
           condition: service_healthy
