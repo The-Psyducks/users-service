@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/database/register_options"
@@ -75,6 +76,36 @@ func (u *User) getPublicProfile(user model.UserRecord, session_user_id uuid.UUID
 	}, nil
 }
 
+func (u *User) validateUpdateUserPrivateProfile(data model.UpdateUserPrivateProfileRequest, userRecord model.UserRecord) ([]model.ValidationError, error) {
+	totalValErrors := []model.ValidationError{}
+
+	if !strings.EqualFold(data.UserName, userRecord.UserName) {
+		if valErrs, err := u.userValidator.ValidateUpdateUsername(data.UserName); err != nil {
+			return []model.ValidationError{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating username: %w", err))
+		} else if len(valErrs) > 0 {
+			totalValErrors = append(totalValErrors, valErrs...)
+			fmt.Println("username val errs:", valErrs)
+		}
+	}
+
+	updateProfileData := model.UpdateUserPrivateProfileData{
+		PicturePath: data.PicturePath,
+		FirstName:   data.FirstName,
+		LastName:    data.LastName,
+		Location:    data.Location,
+		Interests:   data.Interests,
+	}
+
+	if valErrs, err := u.userValidator.ValidateUpdatePrivateProfileData(updateProfileData); err != nil {
+		return []model.ValidationError{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
+	} else if len(valErrs) > 0 {
+		totalValErrors = append(totalValErrors, valErrs...)
+		fmt.Println("personal info val errs:", valErrs)
+	}
+
+	return totalValErrors, nil
+}
+
 func (u *User) ModifyUserProfile(userSessionId uuid.UUID, data model.UpdateUserPrivateProfileRequest) (model.UserPrivateProfile, error) {
 	userRecord, err := u.userDb.GetUserById(userSessionId)
 	if err != nil {
@@ -83,13 +114,14 @@ func (u *User) ModifyUserProfile(userSessionId uuid.UUID, data model.UpdateUserP
 		}
 		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
 	}
-
-	if valErrs, err := u.userValidator.ValidateUpdatePrivateProfile(data, userRecord); err != nil {
-		return model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating user personal info: %w", err))
+	
+	valErrs, err := u.validateUpdateUserPrivateProfile(data, userRecord)
+	if err != nil {
+		return model.UserPrivateProfile{}, err
 	} else if len(valErrs) > 0 {
+		fmt.Println("all val errs:", valErrs)
 		return model.UserPrivateProfile{}, app_errors.NewAppValidationError(valErrs)
 	}
-	fmt.Println("validated data: ", data)
 
 	location := register_options.GetLocationName(data.Location)
 	interests := extractInterestNamesFromValidIds(data.Interests)

@@ -23,7 +23,25 @@ func NewUserValidator(usersDb users_db.UserDatabase) *UserValidator {
 	}
 }
 
-func (u *UserValidator) ValidateUpdatePrivateProfile(newProfile model.UpdateUserPrivateProfileRequest, previousProfile model.UserRecord) ([]model.ValidationError, error) {
+func (u *UserValidator) ValidateUpdateUsername(newUsername string) ([]model.ValidationError, error) {
+	u.clearValidationErrors()
+	validate := validator.New()
+
+	validate.RegisterValidation("usernamevalidator", u.usernameValidator)
+
+	err := validate.Var(newUsername, "usernamevalidator")
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			if err.ActualTag() != "usernamevalidator" {
+				u.addValidationError(err.Field(), err.Tag())
+			}
+			fmt.Println("error: ", err)
+		}
+	}
+	
+	return u.validationErrors, nil
+}
+func (u *UserValidator) ValidateUpdatePrivateProfileData(newProfile model.UpdateUserPrivateProfileData) ([]model.ValidationError, error) {
 	u.clearValidationErrors()
 	validate := validator.New()
 
@@ -35,11 +53,6 @@ func (u *UserValidator) ValidateUpdatePrivateProfile(newProfile model.UpdateUser
 		"interestsvalidator": u.interestsValidator,
 	}
 	
-	if previousProfile.UserName != newProfile.UserName {
-		customValidators["usernamevalidator"] = u.usernameValidator
-	}
-
-	
 	for name, validatorFunc := range customValidators {
 		if err := validate.RegisterValidation(name, validatorFunc); err != nil {
 			slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
@@ -47,7 +60,9 @@ func (u *UserValidator) ValidateUpdatePrivateProfile(newProfile model.UpdateUser
 		}
 	}
 
+	fmt.Println("antes de validar")
 	err := validate.Struct(newProfile)
+	fmt.Println("desp de validar")
 	if err != nil {
 		for _, err := range err.(validator.ValidationErrors) {
 			if _, isCustom := customValidators[err.ActualTag()]; !isCustom {
@@ -55,7 +70,8 @@ func (u *UserValidator) ValidateUpdatePrivateProfile(newProfile model.UpdateUser
 			}
 		}
 	}
-
+	
+	fmt.Println("desp de errores")
 	return u.validationErrors, nil
 }
 
