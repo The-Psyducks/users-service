@@ -27,7 +27,10 @@ func (u *UserValidator) ValidateUpdateUsername(newUsername string) ([]model.Vali
 	u.clearValidationErrors()
 	validate := validator.New()
 
-	validate.RegisterValidation("usernamevalidator", u.usernameValidator)
+	if err := validate.RegisterValidation("usernamevalidator", u.usernameValidator); err != nil {
+		slog.Error("Error registering custom validator", slog.String("error: ", err.Error()))
+		return []model.ValidationError{}, err
+	}
 
 	err := validate.Var(newUsername, "usernamevalidator")
 	if err != nil {
