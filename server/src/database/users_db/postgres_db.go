@@ -169,9 +169,9 @@ func (postDB *UsersPostgresDB) ModifyUser(id uuid.UUID, data model.UpdateUserPri
 	var user model.UserRecord
 	query := `
 		UPDATE users
-		SET username = :username, first_name = :first_name, last_name = :last_name, location = :location
+		SET username = :username, first_name = :first_name, last_name = :last_name, location = :location, picture_path = :picture_path
 		WHERE id = :id
-		RETURNING id, username, first_name, last_name, email, location
+		RETURNING id, username, first_name, last_name, email, location, picture_path
 	`
 
 	rows, err := postDB.db.NamedQuery(query, map[string]interface{}{
@@ -180,6 +180,7 @@ func (postDB *UsersPostgresDB) ModifyUser(id uuid.UUID, data model.UpdateUserPri
 		"first_name": data.FirstName,
 		"last_name":  data.LastName,
 		"location":   data.Location,
+		"picture_path": data.PicturePath,
 	})
 	if err != nil {
 		return model.UserRecord{}, err

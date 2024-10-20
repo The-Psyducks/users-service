@@ -142,7 +142,8 @@ func (u *User) ModifyUserProfile(userSessionId uuid.UUID, data model.UpdateUserP
 	if err != nil {
 		return model.UserPrivateProfile{}, err
 	}
-
+	fmt.Println("updated user:", updatedUser)
+	fmt.Println("private profile:", privateProfile)
 	slog.Info("user profile updated succesfully", slog.String("userId", userSessionId.String()))
 	return privateProfile, nil
 }
