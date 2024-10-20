@@ -53,6 +53,7 @@ func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (
 		Email:     record.Email,
 		Location:  record.Location,
 		Interests: record.Interests,
+		PicturePath: record.PicturePath,
 		Followers: followers,
 		Following: following,
 	}, nil
