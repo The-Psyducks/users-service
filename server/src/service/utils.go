@@ -73,6 +73,7 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 		Location:  user.Location,
 		Followers: followers,
 		Following: following,
+		PicturePath: user.PicturePath,
 	}, nil
 }
 
