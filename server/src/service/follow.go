@@ -59,7 +59,7 @@ func (u *User) UnfollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
 }
 
 // GetFollowers returns the followers of a user and if there are more to fetch
-func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.UserPublicProfileWithFollowStatus, bool, error) {
+func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.UserProfileResponse, bool, error) {
 	userRequested, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -84,7 +84,7 @@ func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp str
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting followers: %w", err))
 	}
 
-	profiles, err := u.getFollowStatusPublicProfilesFromUserRecords(followers, userSessionId)
+	profiles, err := u.getUserProfilesFromUserRecords(followers, userSessionId)
 	if err != nil {
 		return nil, false, err
 	}
@@ -93,7 +93,7 @@ func (u *User) GetFollowers(id uuid.UUID, userSessionId uuid.UUID, timestamp str
 }
 
 // GetFollowers returns the user's a user is following and if there are more to fetch
-func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.UserPublicProfileWithFollowStatus, bool, error) {
+func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp string, skip, limit int) ([]model.UserProfileResponse, bool, error) {
 	userRecord, err := u.userDb.GetUserById(id)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -118,7 +118,7 @@ func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp str
 		return nil, false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting following: %w", err))
 	}
 
-	profiles, err := u.getFollowStatusPublicProfilesFromUserRecords(following, userSessionId)
+	profiles, err := u.getUserProfilesFromUserRecords(following, userSessionId)
 	if err != nil {
 		return nil, false, err
 	}

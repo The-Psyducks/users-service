@@ -106,7 +106,7 @@ func (u *User) SendVerificationEmail(c *gin.Context) {
 
 func (u *User) VerifyEmail(c *gin.Context) {
 	var verificationRequest struct {
-		Pin string `json:"pin" validate:"required"`
+		Pin string `json:"pin" binding:"required"`
 	}
 
 	if err := c.BindJSON(&verificationRequest); err != nil {
