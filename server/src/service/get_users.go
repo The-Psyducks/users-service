@@ -12,7 +12,7 @@ import (
 // it sends first the ones that contain the text in the username
 // then the ones that contain it in the name
 // it also receives a timestamp, skip and limit to paginate the results
-func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp string, skip int, limit int) ([]model.UserPublicProfileWithFollowStatus, bool, error) {
+func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp string, skip int, limit int) ([]model.UserProfileResponse, bool, error) {
 	users, hasMore, err := u.userDb.GetUsersWithUsernameContaining(text, timestamp, skip, limit)
 	if err != nil {
 		err = app_errors.NewAppError(500, "Internal server error", fmt.Errorf("error getting users with username containing %s: %w", text, err))
@@ -41,7 +41,7 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 		users = append(users, nameUsers...)
 	}
 
-	profiles, err := u.getFollowStatusPublicProfilesFromUserRecords(users, userSessionId)
+	profiles, err := u.getUserProfilesFromUserRecords(users, userSessionId)
 	if err != nil {
 		return nil, false, err
 	}

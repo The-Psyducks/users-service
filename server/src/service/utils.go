@@ -46,16 +46,16 @@ func (u *User) createUserPrivateProfileFromUserRecord(record model.UserRecord) (
 	}
 
 	return model.UserPrivateProfile{
-		Id:        record.Id,
-		UserName:  record.UserName,
-		FirstName: record.FirstName,
-		LastName:  record.LastName,
-		Email:     record.Email,
-		Location:  record.Location,
-		Interests: record.Interests,
+		Id:          record.Id,
+		UserName:    record.UserName,
+		FirstName:   record.FirstName,
+		LastName:    record.LastName,
+		Email:       record.Email,
+		Location:    record.Location,
+		Interests:   record.Interests,
 		PicturePath: record.PicturePath,
-		Followers: followers,
-		Following: following,
+		Followers:   followers,
+		Following:   following,
 	}, nil
 }
 
@@ -66,19 +66,19 @@ func (u *User) generateUserPublicProfileFromUserRecord(user model.UserRecord) (m
 	}
 
 	return model.UserPublicProfile{
-		Id:        user.Id,
-		UserName:  user.UserName,
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Location:  user.Location,
-		Followers: followers,
-		Following: following,
+		Id:          user.Id,
+		UserName:    user.UserName,
+		FirstName:   user.FirstName,
+		LastName:    user.LastName,
+		Location:    user.Location,
+		Followers:   followers,
+		Following:   following,
 		PicturePath: user.PicturePath,
 	}, nil
 }
 
-func (u *User) getFollowStatusPublicProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId uuid.UUID) ([]model.UserPublicProfileWithFollowStatus, error) {
-	profiles := make([]model.UserPublicProfileWithFollowStatus, 0, len(userRecords))
+func (u *User) getUserProfilesFromUserRecords(userRecords []model.UserRecord, sessionUserId uuid.UUID) ([]model.UserProfileResponse, error) {
+	profiles := make([]model.UserProfileResponse, 0, len(userRecords))
 	for _, user := range userRecords {
 		profile, err := u.generateUserPublicProfileFromUserRecord(user)
 		if err != nil {
@@ -88,9 +88,10 @@ func (u *User) getFollowStatusPublicProfilesFromUserRecords(userRecords []model.
 		if err != nil {
 			return nil, app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error checking if user follows: %w", err))
 		}
-		followProfile := model.UserPublicProfileWithFollowStatus{
-			Follows: follows,
-			Profile: profile,
+		followProfile := model.UserProfileResponse{
+			Follows:    follows,
+			OwnProfile: sessionUserId == user.Id,
+			Profile:    profile,
 		}
 		profiles = append(profiles, followProfile)
 	}
@@ -108,7 +109,6 @@ func (u *User) getPublicProfilesFromUserRecords(userRecords []model.UserRecord) 
 	}
 	return profiles, nil
 }
-
 
 func hashPassword(password string) (string, error) {
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
