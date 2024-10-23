@@ -30,9 +30,9 @@ type Router struct {
 func (r *Router) setNewRelicMiddleware() error {
 	app, err := newrelic.NewApplication(
 		newrelic.ConfigAppName("users-micro"),
-		newrelic.ConfigLicense("ed0d3b23a2f596f67f3c740627feb84aFFFFNRAL"),
+		newrelic.ConfigLicense("17d526e259addba25d17621e40416378FFFFNRAL"),
 		newrelic.ConfigAppLogForwardingEnabled(true),
-	  )
+	  )  
 	  
 	if err != nil {
 		return err
