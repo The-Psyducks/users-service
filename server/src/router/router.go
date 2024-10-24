@@ -16,12 +16,31 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+
+	"github.com/newrelic/go-agent/v3/newrelic"
+	nrgin "github.com/newrelic/go-agent/v3/integrations/nrgin"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
 type Router struct {
 	Engine  *gin.Engine
 	Address string
+}
+
+func (r *Router) setNewRelicMiddleware() error {
+	app, err := newrelic.NewApplication(
+		newrelic.ConfigAppName("users-micro"),
+		newrelic.ConfigLicense("ed0d3b23a2f596f67f3c740627feb84aFFFFNRAL"),
+		newrelic.ConfigAppLogForwardingEnabled(true),
+	  )
+	  
+	  
+	if err != nil {
+		return err
+	}
+
+	r.Engine.Use(nrgin.Middleware(app))
+	return nil
 }
 
 // Creates a new router with the configuration provided in the env file
@@ -39,9 +58,6 @@ func createRouterFromConfig(cfg *config.Config) *Router {
 		Engine:  gin.Default(),
 		Address: cfg.Host + ":" + cfg.Port,
 	}
-
-	router.Engine.Use(middleware.RequestLogger())
-	router.Engine.Use(middleware.ErrorHandler())
 
 	return router
 }
@@ -134,9 +150,16 @@ func CreateRouter() (*Router, error) {
 		return nil, err
 	}
 
+	if err := r.setNewRelicMiddleware(); err != nil {
+		return nil, fmt.Errorf("error setting up newRelic: %w", err)
+	}
+
+	r.Engine.Use(middleware.RequestLogger())
+	r.Engine.Use(middleware.ErrorHandler())
+
 	userService := service.CreateUserService(userDb, registryDb)
 	userController := controller.CreateUserController(userService)
-
+	
 	public := r.Engine.Group("/")
 	{
 		public.POST("/users/resolver", userController.ResolveUserEmail)
