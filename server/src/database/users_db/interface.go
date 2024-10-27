@@ -74,5 +74,8 @@ type UserDatabase interface {
 	RegisterLoginAttempt(userID uuid.UUID, provider *string, successful bool) error
 
 	// GetLoginSummaryMetrics retrieves the login metrics
-	GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error) 
+	GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error)
+
+	// GetLocationMetrics retrieves the location metrics
+	GetLocationMetrics() ([]model.LocationMetrics, error)
 }
