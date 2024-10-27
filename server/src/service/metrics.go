@@ -30,3 +30,15 @@ func (u *User) GetLoginMetrics(isAdmin bool) (*model.LoginSummaryMetrics, error)
 	}
 	return metrics, nil
 }
+
+func (u *User) GetLocationMetrics(isAdmin bool) ([]model.LocationMetrics, error) {
+	if !isAdmin {
+		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
+	}
+
+	metrics, err := u.userDb.GetLocationMetrics()
+	if err != nil {
+		return nil, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, err)
+	}
+	return metrics, nil
+}

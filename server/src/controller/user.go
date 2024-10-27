@@ -54,29 +54,29 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 
 	var identityProvider *string
 	switch data.ProviderData.Name {
-		case constants.GoogleProvider:
-			var googleMetadata model.GoogleAuthMetadata
-			if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
-				err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
-				_ = c.Error(err)
-				return
-			}
-			slog.Info("authenticating Google provider")
-			if isValid, err := auth.IsGoogleTokenValid(googleMetadata.FirebaseTokenId); err != nil {
-				err = app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating google token: %w", err))
-				_ = c.Error(err)
-				return
-			} else if !isValid {
-				err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", fmt.Errorf("google token is invalid: %s", googleMetadata.FirebaseTokenId))
-				_ = c.Error(err)
-				return
-			}
-			identityProvider = &data.ProviderData.Name
-		case "":
-		default:
-			err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
+	case constants.GoogleProvider:
+		var googleMetadata model.GoogleAuthMetadata
+		if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
+			err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 			_ = c.Error(err)
 			return
+		}
+		slog.Info("authenticating Google provider")
+		if isValid, err := auth.IsGoogleTokenValid(googleMetadata.FirebaseTokenId); err != nil {
+			err = app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating google token: %w", err))
+			_ = c.Error(err)
+			return
+		} else if !isValid {
+			err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", fmt.Errorf("google token is invalid: %s", googleMetadata.FirebaseTokenId))
+			_ = c.Error(err)
+			return
+		}
+		identityProvider = &data.ProviderData.Name
+	case "":
+	default:
+		err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
+		_ = c.Error(err)
+		return
 	}
 
 	user, err := u.service.ResolveUserEmail(data.Email, identityProvider)
@@ -415,7 +415,7 @@ func (u *User) SearchUsers(c *gin.Context) {
 
 	text := c.DefaultQuery("text", "")
 	if strings.TrimSpace(text) == "" {
-		fmt.Println("vacio, text: ",text)
+		fmt.Println("vacio, text: ", text)
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'text' value in request. Must not be empty.", fmt.Errorf("invalid search text"))
 		_ = c.Error(err)
 		return
@@ -463,6 +463,17 @@ func (u *User) GetRegistrationMetrics(c *gin.Context) {
 func (u *User) GetLoginMetrics(c *gin.Context) {
 	userSessionIsAdmin := c.GetBool("session_user_admin")
 	metrics, err := u.service.GetLoginMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
+func (u *User) GetLocationMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetLocationMetrics(userSessionIsAdmin)
 	if err != nil {
 		_ = c.Error(err)
 		return

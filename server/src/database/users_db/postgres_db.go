@@ -645,6 +645,20 @@ func (postDB *UsersPostgresDB) GetLoginSummaryMetrics() (*model.LoginSummaryMetr
 	return &loginSummary, nil
 }
 
+func (postDB *UsersPostgresDB) GetLocationMetrics() ([]model.LocationMetrics, error) {
+	var locationMetrics []model.LocationMetrics
+	query := `
+		SELECT location AS country, COUNT(*) AS amount
+		FROM users
+		GROUP BY location
+	`
+
+	if err := postDB.db.Select(&locationMetrics, query); err != nil {
+		return nil, fmt.Errorf("error getting location metrics: %w", err)
+	}
+
+	return locationMetrics, nil
+}
 
 // For testing purposes
 // func hashPassword(password string) string {
