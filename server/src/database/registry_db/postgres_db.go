@@ -31,6 +31,7 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
     CREATE TABLE IF NOT EXISTS registry_entries (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email VARCHAR(%d) NOT NULL UNIQUE,
+		identity_provider VARCHAR(255) DEFAULT NULL,
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
         first_name VARCHAR(%d) DEFAULT '',
         last_name VARCHAR(%d) DEFAULT '',
@@ -215,4 +216,50 @@ func (db *RegistryPostgresDB) getInterests(id uuid.UUID) ([]string, error) {
 	}
 
 	return interests, nil
+}
+
+func (db *RegistryPostgresDB) GetRegistrySummaryMetrics() (*model.RegistrationSummaryMetrics, error) {
+	var metrics model.RegistrationSummaryMetrics
+
+	query := `SELECT COUNT(*) as total_registrations,
+				SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) as successful_registrations,
+				SUM(CASE WHEN deleted_at IS NOT NULL THEN 0 ELSE 1 END) as failed_registrations,
+				AVG(EXTRACT(EPOCH FROM (deleted_at - created_at)) * 1000) as average_registration_time_ms
+			FROM registry_entries
+	`
+	err := db.db.Get(&metrics, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get registration summary metrics: %w", err)
+	}
+
+	query = `SELECT 
+				SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END) AS email,
+				SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END) AS federated
+			FROM registry_entries
+	`
+	err = db.db.Get(&metrics.MethodDistribution, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get registration method distribution: %w", err)
+	}
+
+	var federatedProviders []struct {
+		Provider string `db:"identity_provider"`
+		Amount   int    `db:"amount"`
+	}
+	query = `
+		SELECT identity_provider, COUNT(*) AS amount
+		FROM registry_entries
+		WHERE identity_provider IS NOT NULL
+		GROUP BY identity_provider
+	`
+	if err := db.db.Select(&federatedProviders, query); err != nil {
+		return nil, fmt.Errorf("error getting federated providers: %w", err)
+	}
+
+	metrics.FederatedProviders = make(map[string]int)
+	for _, provider := range federatedProviders {
+		metrics.FederatedProviders[provider.Provider] = provider.Amount
+	}
+
+	return &metrics, nil
 }
