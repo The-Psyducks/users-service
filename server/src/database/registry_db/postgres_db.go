@@ -56,9 +56,9 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
 	return &RegistryPostgresDB{db}, nil
 }
 
-func (db *RegistryPostgresDB) CreateRegistryEntry(email string) (uuid.UUID, error) {
+func (db *RegistryPostgresDB) CreateRegistryEntry(email string, identityProvider *string) (uuid.UUID, error) {
 	var id uuid.UUID
-	err := db.db.QueryRow("INSERT INTO registry_entries (email) VALUES ($1) RETURNING id", email).Scan(&id)
+	err := db.db.QueryRow("INSERT INTO registry_entries (email, identity_provider) VALUES ($1, $2) RETURNING id", email, identityProvider).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to create registry entry: %w", err)
 	}
@@ -222,9 +222,9 @@ func (db *RegistryPostgresDB) GetRegistrySummaryMetrics() (*model.RegistrationSu
 	var metrics model.RegistrationSummaryMetrics
 
 	query := `SELECT COUNT(*) as total_registrations,
-				SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END) as successful_registrations,
-				SUM(CASE WHEN deleted_at IS NOT NULL THEN 0 ELSE 1 END) as failed_registrations,
-				AVG(EXTRACT(EPOCH FROM (deleted_at - created_at)) * 1000) as average_registration_time_ms
+				COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END), 0) as succesfull_registrations,
+				COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 0 ELSE 1 END), 0) as failed_registrations,
+				COALESCE(AVG(EXTRACT(EPOCH FROM (deleted_at - created_at))), 0) as average_registration_time
 			FROM registry_entries
 	`
 	err := db.db.Get(&metrics, query)
@@ -233,8 +233,8 @@ func (db *RegistryPostgresDB) GetRegistrySummaryMetrics() (*model.RegistrationSu
 	}
 
 	query = `SELECT 
-				SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END) AS email,
-				SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END) AS federated
+				COALESCE(SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END), 0) AS email,
+				COALESCE(SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END), 0) AS federated
 			FROM registry_entries
 	`
 	err = db.db.Get(&metrics.MethodDistribution, query)
@@ -256,6 +256,7 @@ func (db *RegistryPostgresDB) GetRegistrySummaryMetrics() (*model.RegistrationSu
 		return nil, fmt.Errorf("error getting federated providers: %w", err)
 	}
 
+	// Inicializa el mapa de federated providers en caso de que esté vacío
 	metrics.FederatedProviders = make(map[string]int)
 	for _, provider := range federatedProviders {
 		metrics.FederatedProviders[provider.Provider] = provider.Amount

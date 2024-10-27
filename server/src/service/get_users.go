@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net/http"
 	"users-service/src/app_errors"
 	"users-service/src/model"
 
@@ -15,7 +16,7 @@ import (
 func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp string, skip int, limit int) ([]model.UserProfileResponse, bool, error) {
 	users, hasMore, err := u.userDb.GetUsersWithUsernameContaining(text, timestamp, skip, limit)
 	if err != nil {
-		err = app_errors.NewAppError(500, "Internal server error", fmt.Errorf("error getting users with username containing %s: %w", text, err))
+		err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting users with username containing %s: %w", text, err))
 		return nil, false, err
 	}
 
@@ -26,7 +27,7 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 		if len(users) == 0 { //case where I have to skip some users with name containing text
 			amntWithUsername, err := u.userDb.GetAmountOfUsersWithUsernameContaining(text)
 			if err != nil {
-				err = app_errors.NewAppError(500, "Internal server error", fmt.Errorf("error getting amount of users with username containing %s: %w", text, err))
+				err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting amount of users with username containing %s: %w", text, err))
 				return nil, false, err
 			}
 			remainingSkip = skip - amntWithUsername
@@ -34,7 +35,7 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 
 		nameUsers, hasMore, err = u.userDb.GetUsersWithOnlyNameContaining(text, timestamp, remainingSkip, remainingLimit)
 		if err != nil {
-			err = app_errors.NewAppError(500, "Internal server error", fmt.Errorf("error getting users with name containing %s: %w", text, err))
+			err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting users with name containing %s: %w", text, err))
 			return nil, false, err
 		}
 
@@ -53,18 +54,18 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 // it also receives a timestamp, skip and limit to paginate the results
 func (u *User) GetAllUsers(userSessionIsAdmin bool, timestamp string, skip int, limit int) ([]model.UserPublicProfile, bool, error) {
 	if !userSessionIsAdmin {
-		err := app_errors.NewAppError(403, "Forbidden", fmt.Errorf("user is not an admin"))
+		err := app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
 		return nil, false, err
 	}
 	users, hasMore, err := u.userDb.GetAllUsers(timestamp, skip, limit)
 	if err != nil {
-		err = app_errors.NewAppError(500, "Internal server error", fmt.Errorf("error getting all users: %w", err))
+		err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting all users: %w", err))
 		return nil, false, err
 	}
 
 	profiles, err := u.getPublicProfilesFromUserRecords(users)
 	if err != nil {
-		err = app_errors.NewAppError(500, "Internal server error", fmt.Errorf("error getting public profiles from user records: %w", err))
+		err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting public profiles from user records: %w", err))
 		return nil, false, err
 	}
 

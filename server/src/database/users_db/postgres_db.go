@@ -583,14 +583,28 @@ func (postDB *UsersPostgresDB) NewProviderLogin(userId uuid.UUID, succesfull boo
 	return nil
 }
 
+func (db *UsersPostgresDB) RegisterLoginAttempt(userID uuid.UUID, provider *string, succesfull bool) error {
+	query := `
+		INSERT INTO login_metrics (user_id, login_time, succesfull, identity_provider)
+		VALUES ($1, NOW(), $2, $3)
+	`
+
+	_, err := db.db.Exec(query, userID, succesfull, provider)
+	if err != nil {
+		return fmt.Errorf("failed to register login: %w", err)
+	}
+
+	return nil
+}
+
 func (postDB *UsersPostgresDB) GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error) {
 	var loginSummary model.LoginSummaryMetrics
 
 	query := `
 		SELECT 
 			COUNT(*) AS total_logins,
-			SUM(CASE WHEN successful THEN 1 ELSE 0 END) AS successful_logins,
-			SUM(CASE WHEN NOT successful THEN 1 ELSE 0 END) AS failed_logins
+			COALESCE(SUM(CASE WHEN succesfull THEN 1 ELSE 0 END), 0) AS succesfull_logins,
+			COALESCE(SUM(CASE WHEN NOT succesfull THEN 1 ELSE 0 END), 0) AS failed_logins
 		FROM login_metrics
 	`
 	if err := postDB.db.Get(&loginSummary, query); err != nil {
@@ -599,9 +613,10 @@ func (postDB *UsersPostgresDB) GetLoginSummaryMetrics() (*model.LoginSummaryMetr
 
 	query = `
 		SELECT 
-			SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END) AS email,
-			SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END) AS federated
+			COALESCE(SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END), 0) AS email,
+			COALESCE(SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END), 0) AS federated
 		FROM login_metrics
+		WHERE succesfull = true
 	`
 	if err := postDB.db.Get(&loginSummary.MethodDistribution, query); err != nil {
 		return nil, fmt.Errorf("error getting login method distribution: %w", err)
@@ -621,6 +636,7 @@ func (postDB *UsersPostgresDB) GetLoginSummaryMetrics() (*model.LoginSummaryMetr
 		return nil, fmt.Errorf("error getting federated providers: %w", err)
 	}
 
+	// Inicializa el mapa de federated providers en caso de que esté vacío
 	loginSummary.FederatedProviders = make(map[string]int)
 	for _, provider := range federatedProviders {
 		loginSummary.FederatedProviders[provider.Provider] = provider.Amount

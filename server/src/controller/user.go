@@ -52,32 +52,34 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 		return
 	}
 
+	var identityProvider *string
 	switch data.ProviderData.Name {
-	case constants.GoogleProvider:
-		var googleMetadata model.GoogleAuthMetadata
-		if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
-			err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		case constants.GoogleProvider:
+			var googleMetadata model.GoogleAuthMetadata
+			if err := json.Unmarshal(data.ProviderData.Metadata, &googleMetadata); err != nil {
+				err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+				_ = c.Error(err)
+				return
+			}
+			slog.Info("authenticating Google provider")
+			if isValid, err := auth.IsGoogleTokenValid(googleMetadata.FirebaseTokenId); err != nil {
+				err = app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating google token: %w", err))
+				_ = c.Error(err)
+				return
+			} else if !isValid {
+				err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", fmt.Errorf("google token is invalid: %s", googleMetadata.FirebaseTokenId))
+				_ = c.Error(err)
+				return
+			}
+			identityProvider = &data.ProviderData.Name
+		case "":
+		default:
+			err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
 			_ = c.Error(err)
 			return
-		}
-		slog.Info("authenticating Google provider")
-		if isValid, err := auth.IsGoogleTokenValid(googleMetadata.FirebaseTokenId); err != nil {
-			err = app_errors.NewAppError(http.StatusInternalServerError, "Internal server error", fmt.Errorf("error validating google token: %w", err))
-			_ = c.Error(err)
-			return
-		} else if !isValid {
-			err := app_errors.NewAppError(http.StatusUnauthorized, "Invalid token", fmt.Errorf("google token is invalid: %s", googleMetadata.FirebaseTokenId))
-			_ = c.Error(err)
-			return
-		}
-	case "":
-	default:
-		err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
-		_ = c.Error(err)
-		return
 	}
 
-	user, err := u.service.ResolveUserEmail(data.Email)
+	user, err := u.service.ResolveUserEmail(data.Email, identityProvider)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -445,4 +447,26 @@ func (u *User) GetAllUsers(c *gin.Context) {
 
 	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
 	c.JSON(http.StatusOK, response)
+}
+
+func (u *User) GetRegistrationMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetRegistrationMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
+func (u *User) GetLoginMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetLoginMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
 }
