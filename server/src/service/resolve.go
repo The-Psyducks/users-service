@@ -22,8 +22,8 @@ func (u *User) checkIfEmailHasAccount(email string) (bool, error) {
 
 }
 
-func (u *User) createNewRegistry(email string) (model.ResolveResponse, error) {
-	registryId, err := u.registryDb.CreateRegistryEntry(email)
+func (u *User) createNewRegistry(email string, identityProvider *string) (model.ResolveResponse, error) {
+	registryId, err := u.registryDb.CreateRegistryEntry(email, identityProvider)
 	if err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating registry entry: %w", err))
 	}
@@ -53,7 +53,7 @@ func (u *User) resolveExistingRegistry(email string) (model.ResolveResponse, err
 	}, nil
 }
 
-func (u *User) ResolveUserEmail(email string) (model.ResolveResponse, error) {
+func (u *User) ResolveUserEmail(email string, identityProvider *string) (model.ResolveResponse, error) {
 	if valErrs, err := u.userValidator.ValidateEmail(email); err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error validating mail: %w", err))
 	} else if len(valErrs) > 0 {
@@ -84,5 +84,5 @@ func (u *User) ResolveUserEmail(email string) (model.ResolveResponse, error) {
 	}
 
 	slog.Info("user email resolved successfully: it doesnt have account", slog.String("email", email))
-	return u.createNewRegistry(email)
+	return u.createNewRegistry(email, identityProvider)
 }
