@@ -69,4 +69,13 @@ type UserDatabase interface {
 	// If the username also has it, it discards it
 	// it also receives a timestamp, skip and limit to paginate the results
 	GetUsersWithOnlyNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
+	// RegisterLoginAttempt registers a login attempt in the database
+	RegisterLoginAttempt(userID uuid.UUID, provider *string, successful bool) error
+
+	// GetLoginSummaryMetrics retrieves the login metrics
+	GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error)
+
+	// GetLocationMetrics retrieves the location metrics
+	GetLocationMetrics() (*model.LocationMetrics, error)
 }

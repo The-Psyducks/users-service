@@ -17,8 +17,8 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
-	"github.com/newrelic/go-agent/v3/newrelic"
 	nrgin "github.com/newrelic/go-agent/v3/integrations/nrgin"
+	"github.com/newrelic/go-agent/v3/newrelic"
 )
 
 // Router is a wrapper for the gin.Engine and the address where it is running
@@ -32,9 +32,8 @@ func (r *Router) setNewRelicMiddleware() error {
 		newrelic.ConfigAppName("users-micro"),
 		newrelic.ConfigLicense("ed0d3b23a2f596f67f3c740627feb84aFFFFNRAL"),
 		newrelic.ConfigAppLogForwardingEnabled(true),
-	  )
-	  
-	  
+	)
+
 	if err != nil {
 		return err
 	}
@@ -69,35 +68,34 @@ func createDBConnection(cfg *config.Config) (*sqlx.DB, error) {
 
 	if testing.Testing() {
 		dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-		cfg.DatabaseUser,
-		cfg.DatabasePassword,
-		cfg.DatabaseHost,
-		cfg.DatabasePort,
-		cfg.DatabaseName)
+			cfg.DatabaseUser,
+			cfg.DatabasePassword,
+			cfg.DatabaseHost,
+			cfg.DatabasePort,
+			cfg.DatabaseName)
 
-	db, err = sqlx.Connect("postgres", dsn)
+		db, err = sqlx.Connect("postgres", dsn)
 	} else {
 		switch cfg.Environment {
-			case "HEROKU":
-				fallthrough
-			case "production":
-				db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
-			case "development":
-				fallthrough
-			case "testing":
-				dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
-						cfg.DatabaseUser,
-						cfg.DatabasePassword,
-						cfg.DatabaseHost,
-						cfg.DatabasePort,
-						cfg.DatabaseName)
-			
-				db, err = sqlx.Connect("postgres", dsn)
-			default:
-				return nil, fmt.Errorf("invalid environment: %s", cfg.Environment)
+		case "HEROKU":
+			fallthrough
+		case "production":
+			db, err = sqlx.Connect("postgres", os.Getenv("DATABASE_URL"))
+		case "development":
+			fallthrough
+		case "testing":
+			dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+				cfg.DatabaseUser,
+				cfg.DatabasePassword,
+				cfg.DatabaseHost,
+				cfg.DatabasePort,
+				cfg.DatabaseName)
+
+			db, err = sqlx.Connect("postgres", dsn)
+		default:
+			return nil, fmt.Errorf("invalid environment: %s", cfg.Environment)
 		}
 	}
-
 
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %w", err)
@@ -159,11 +157,11 @@ func CreateRouter() (*Router, error) {
 
 	userService := service.CreateUserService(userDb, registryDb)
 	userController := controller.CreateUserController(userService)
-	
+
 	public := r.Engine.Group("/")
 	{
 		public.POST("/users/resolver", userController.ResolveUserEmail)
-		
+
 		public.GET("/users/info/locations", userController.GetLocations)
 		public.GET("/users/info/interests", userController.GetInterests)
 		public.POST("/users/register/:id/send-email", userController.SendVerificationEmail)
@@ -180,7 +178,7 @@ func CreateRouter() (*Router, error) {
 	{
 		private.GET("/users/:id", userController.GetUserProfileById)
 		private.PUT("/users/profile", userController.ModifyUserProfile)
-		
+
 		private.POST("/users/:id/follow", userController.FollowUser)
 		private.DELETE("/users/:id/follow", userController.UnfollowUser)
 		private.GET("/users/:id/followers", userController.GetFollowers)
@@ -189,6 +187,10 @@ func CreateRouter() (*Router, error) {
 		private.GET("/users/search", userController.SearchUsers)
 
 		private.GET("/users/all", userController.GetAllUsers)
+
+		private.GET("/users/metrics/registry", userController.GetRegistrationMetrics)
+		private.GET("/users/metrics/login", userController.GetLoginMetrics)
+		private.GET("/users/metrics/location", userController.GetLocationMetrics)
 	}
 
 	r.Engine.NoRoute(userController.HandleNoRoute)

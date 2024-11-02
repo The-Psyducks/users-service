@@ -8,7 +8,7 @@ import (
 
 type RegistryDatabase interface {
 	// CreateRegistryEntry creates a new registry entry with the given email
-	CreateRegistryEntry(email string) (uuid.UUID, error)
+	CreateRegistryEntry(email string, identityProvider *string) (uuid.UUID, error)
 
 	// GetRegistryEntry returns the registry entry with the given id
 	GetRegistryEntry(id uuid.UUID) (model.RegistryEntry, error)
@@ -33,4 +33,7 @@ type RegistryDatabase interface {
 
 	// DeleteRegistryEntry deletes the registry entry with the given id
 	DeleteRegistryEntry(id uuid.UUID) error
+
+	// GetRegistrySummaryMetrics returns the summary metrics of the registry
+	GetRegistrySummaryMetrics() (*model.RegistrationSummaryMetrics, error)
 }

@@ -24,6 +24,9 @@ func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivate
 	}
 
 	if !checkPasswordHash(data.Password, userRecord.Password) {
+		if err := u.userDb.RegisterLoginAttempt(userRecord.Id, nil, false); err != nil {
+			return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error registering login attempt: %w", err))
+		}
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
@@ -39,6 +42,10 @@ func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivate
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating private profile: %w", err))
 	}
 
+	if err := u.userDb.RegisterLoginAttempt(userRecord.Id, nil, true); err != nil {
+		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error registering login attempt: %w",
+			err))
+	}
 	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
 	return authToken, privateProfile, nil
 }

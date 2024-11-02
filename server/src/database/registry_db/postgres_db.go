@@ -31,6 +31,7 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
     CREATE TABLE IF NOT EXISTS registry_entries (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email VARCHAR(%d) NOT NULL UNIQUE,
+		identity_provider VARCHAR(255) DEFAULT NULL,
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
         first_name VARCHAR(%d) DEFAULT '',
         last_name VARCHAR(%d) DEFAULT '',
@@ -55,9 +56,9 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
 	return &RegistryPostgresDB{db}, nil
 }
 
-func (db *RegistryPostgresDB) CreateRegistryEntry(email string) (uuid.UUID, error) {
+func (db *RegistryPostgresDB) CreateRegistryEntry(email string, identityProvider *string) (uuid.UUID, error) {
 	var id uuid.UUID
-	err := db.db.QueryRow("INSERT INTO registry_entries (email) VALUES ($1) RETURNING id", email).Scan(&id)
+	err := db.db.QueryRow("INSERT INTO registry_entries (email, identity_provider) VALUES ($1, $2) RETURNING id", email, identityProvider).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to create registry entry: %w", err)
 	}
@@ -215,4 +216,51 @@ func (db *RegistryPostgresDB) getInterests(id uuid.UUID) ([]string, error) {
 	}
 
 	return interests, nil
+}
+
+func (db *RegistryPostgresDB) GetRegistrySummaryMetrics() (*model.RegistrationSummaryMetrics, error) {
+	var metrics model.RegistrationSummaryMetrics
+
+	query := `SELECT COUNT(*) as total_registrations,
+				COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END), 0) as succesfull_registrations,
+				COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 0 ELSE 1 END), 0) as failed_registrations,
+				COALESCE(AVG(EXTRACT(EPOCH FROM (deleted_at - created_at))), 0) as average_registration_time
+			FROM registry_entries
+	`
+	err := db.db.Get(&metrics, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get registration summary metrics: %w", err)
+	}
+
+	query = `SELECT 
+				COALESCE(SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END), 0) AS email,
+				COALESCE(SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END), 0) AS federated
+			FROM registry_entries
+	`
+	err = db.db.Get(&metrics.MethodDistribution, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get registration method distribution: %w", err)
+	}
+
+	var federatedProviders []struct {
+		Provider string `db:"identity_provider"`
+		Amount   int    `db:"amount"`
+	}
+	query = `
+		SELECT identity_provider, COUNT(*) AS amount
+		FROM registry_entries
+		WHERE identity_provider IS NOT NULL
+		GROUP BY identity_provider
+	`
+	if err := db.db.Select(&federatedProviders, query); err != nil {
+		return nil, fmt.Errorf("error getting federated providers: %w", err)
+	}
+
+	// Inicializa el mapa de federated providers en caso de que esté vacío
+	metrics.FederatedProviders = make(map[string]int)
+	for _, provider := range federatedProviders {
+		metrics.FederatedProviders[provider.Provider] = provider.Amount
+	}
+
+	return &metrics, nil
 }
