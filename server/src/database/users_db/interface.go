@@ -77,5 +77,5 @@ type UserDatabase interface {
 	GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error)
 
 	// GetLocationMetrics retrieves the location metrics
-	GetLocationMetrics() ([]model.LocationMetrics, error)
+	GetLocationMetrics() (*model.LocationMetrics, error)
 }

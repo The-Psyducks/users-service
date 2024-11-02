@@ -22,7 +22,11 @@ type LoginSummaryMetrics struct {
 	FederatedProviders	map[string]int		`json:"federated_providers" db:"federated_providers"`
 }
 
-type LocationMetrics struct {
+type LocationMetric struct {
 	Country string `json:"country" db:"country"`
 	Amount  int    `json:"amount" db:"amount"`
+}	
+
+type LocationMetrics struct {
+	Locations []LocationMetric `json:"locations"`
 }
