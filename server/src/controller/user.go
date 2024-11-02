@@ -52,6 +52,7 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 		return
 	}
 
+	var identityProvider *string
 	switch data.ProviderData.Name {
 	case constants.GoogleProvider:
 		var googleMetadata model.GoogleAuthMetadata
@@ -70,6 +71,7 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 			_ = c.Error(err)
 			return
 		}
+		identityProvider = &data.ProviderData.Name
 	case "":
 	default:
 		err := app_errors.NewAppError(http.StatusBadRequest, "Unknown provider type", nil)
@@ -77,7 +79,7 @@ func (u *User) ResolveUserEmail(c *gin.Context) {
 		return
 	}
 
-	user, err := u.service.ResolveUserEmail(data.Email)
+	user, err := u.service.ResolveUserEmail(data.Email, identityProvider)
 	if err != nil {
 		_ = c.Error(err)
 		return
@@ -413,7 +415,7 @@ func (u *User) SearchUsers(c *gin.Context) {
 
 	text := c.DefaultQuery("text", "")
 	if strings.TrimSpace(text) == "" {
-		fmt.Println("vacio, text: ",text)
+		fmt.Println("vacio, text: ", text)
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'text' value in request. Must not be empty.", fmt.Errorf("invalid search text"))
 		_ = c.Error(err)
 		return
@@ -445,4 +447,37 @@ func (u *User) GetAllUsers(c *gin.Context) {
 
 	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
 	c.JSON(http.StatusOK, response)
+}
+
+func (u *User) GetRegistrationMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetRegistrationMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
+func (u *User) GetLoginMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetLoginMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
+func (u *User) GetLocationMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetLocationMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
 }

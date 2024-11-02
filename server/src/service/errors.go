@@ -3,8 +3,9 @@ package service
 import "errors"
 
 var (
-	ErrUserNotFound = errors.New("user not found")
+	ErrUserNotFound 	= errors.New("user not found")
 	ErrRegistryNotFound = errors.New("registry not found")
+	ErruserIsNotAdmin 	= errors.New("The user is not an admin")
 )
 
 const (
@@ -20,4 +21,5 @@ const (
 	AlreadyFollowing			= "The user already follows this user"
 	NotFollowing				= "The user is not following this user"
 	UserShouldModifyItself		= "The user should modify its own profile"
+	UserIsNotAdmin				= "The user is not an admin"
 )

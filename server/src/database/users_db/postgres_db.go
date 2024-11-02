@@ -89,6 +89,17 @@ func createTables(db *sqlx.DB, test bool) error {
 			);
 		`, followersTable)
 
+	schemaLoginMetrics := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			user_id UUID NOT NULL,
+			login_time TIMESTAMPTZ NOT NULL DEFAULT now(),
+			succesfull BOOLEAN NOT NULL,
+			identity_provider VARCHAR(255) DEFAULT NULL,
+			PRIMARY KEY (user_id, login_time),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			);
+		`, "login_metrics")
+
 	if _, err := db.Exec(schemaUsers); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
@@ -96,6 +107,9 @@ func createTables(db *sqlx.DB, test bool) error {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 	if _, err := db.Exec(schemaFollowers); err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+	if _, err := db.Exec(schemaLoginMetrics); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
@@ -549,6 +563,101 @@ func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, times
 	}
 
 	return users, false, nil
+}
+
+func (postDB *UsersPostgresDB) NewEmailAndPasswordLogin(userId uuid.UUID, succesfull bool) error {
+	query := `INSERT INTO login_metrics (user_id, succesfull) VALUES ($1, $2)`
+	_, err := postDB.db.Exec(query, userId, succesfull)
+	if err != nil {
+		return fmt.Errorf("error logging login: %w", err)
+	}
+	return nil
+}
+
+func (postDB *UsersPostgresDB) NewProviderLogin(userId uuid.UUID, succesfull bool, provider string) error {
+	query := `INSERT INTO login_metrics (user_id, succesfull, provider) VALUES ($1, $2, $3)`
+	_, err := postDB.db.Exec(query, userId, succesfull, provider)
+	if err != nil {
+		return fmt.Errorf("error logging login: %w", err)
+	}
+	return nil
+}
+
+func (db *UsersPostgresDB) RegisterLoginAttempt(userID uuid.UUID, provider *string, succesfull bool) error {
+	query := `
+		INSERT INTO login_metrics (user_id, login_time, succesfull, identity_provider)
+		VALUES ($1, NOW(), $2, $3)
+	`
+
+	_, err := db.db.Exec(query, userID, succesfull, provider)
+	if err != nil {
+		return fmt.Errorf("failed to register login: %w", err)
+	}
+
+	return nil
+}
+
+func (postDB *UsersPostgresDB) GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error) {
+	var loginSummary model.LoginSummaryMetrics
+
+	query := `
+		SELECT 
+			COUNT(*) AS total_logins,
+			COALESCE(SUM(CASE WHEN succesfull THEN 1 ELSE 0 END), 0) AS succesfull_logins,
+			COALESCE(SUM(CASE WHEN NOT succesfull THEN 1 ELSE 0 END), 0) AS failed_logins
+		FROM login_metrics
+	`
+	if err := postDB.db.Get(&loginSummary, query); err != nil {
+		return nil, fmt.Errorf("error getting login metrics: %w", err)
+	}
+
+	query = `
+		SELECT 
+			COALESCE(SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END), 0) AS email,
+			COALESCE(SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END), 0) AS federated
+		FROM login_metrics
+		WHERE succesfull = true
+	`
+	if err := postDB.db.Get(&loginSummary.MethodDistribution, query); err != nil {
+		return nil, fmt.Errorf("error getting login method distribution: %w", err)
+	}
+
+	var federatedProviders []struct {
+		Provider string `db:"identity_provider"`
+		Amount   int    `db:"amount"`
+	}
+	query = `
+		SELECT identity_provider, COUNT(*) AS amount
+		FROM login_metrics
+		WHERE identity_provider IS NOT NULL
+		GROUP BY identity_provider
+	`
+	if err := postDB.db.Select(&federatedProviders, query); err != nil {
+		return nil, fmt.Errorf("error getting federated providers: %w", err)
+	}
+
+	// Inicializa el mapa de federated providers en caso de que esté vacío
+	loginSummary.FederatedProviders = make(map[string]int)
+	for _, provider := range federatedProviders {
+		loginSummary.FederatedProviders[provider.Provider] = provider.Amount
+	}
+
+	return &loginSummary, nil
+}
+
+func (postDB *UsersPostgresDB) GetLocationMetrics() (*model.LocationMetrics, error) {
+	var locationMetrics model.LocationMetrics
+	query := `
+		SELECT location AS country, COUNT(*) AS amount
+		FROM users
+		GROUP BY location
+	`
+
+	if err := postDB.db.Select(&locationMetrics.Locations, query); err != nil {
+		return nil, fmt.Errorf("error getting location metrics: %w", err)
+	}
+
+	return &locationMetrics, nil
 }
 
 // For testing purposes
