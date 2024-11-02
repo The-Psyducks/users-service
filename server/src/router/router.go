@@ -14,6 +14,7 @@ import (
 	"users-service/src/service"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gin-contrib/cors"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 
@@ -137,6 +138,16 @@ func createDatabases(cfg *config.Config) (users_db.UserDatabase, registry_db.Reg
 	return userDb, registryDb, nil
 }
 
+func addCorsConfiguration(r *Router) {
+	config := cors.DefaultConfig()
+	config.AllowMethods = []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"}
+	config.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization"}
+	config.AllowAllOrigins = true
+	config.AllowCredentials = true
+	r.Engine.Use(cors.New(config))
+}
+
+
 // Creates a new router with the configuration provided in the env file
 func CreateRouter() (*Router, error) {
 	cfg := config.LoadConfig()
@@ -154,6 +165,8 @@ func CreateRouter() (*Router, error) {
 
 	r.Engine.Use(middleware.RequestLogger())
 	r.Engine.Use(middleware.ErrorHandler())
+
+	addCorsConfiguration(r)
 
 	userService := service.CreateUserService(userDb, registryDb)
 	userController := controller.CreateUserController(userService)
