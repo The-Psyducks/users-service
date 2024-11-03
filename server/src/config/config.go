@@ -15,8 +15,11 @@ type Config struct {
 }
 
 // LoadConfig loads the configuration from the Environment variables
-func LoadConfig() *Config {
-	buildFirebaseConfig()
+func LoadConfig() (*Config, error) {
+	err := buildFirebaseConfig()
+	if err != nil {
+		return nil, err
+	}
 	return &Config{
 		Host:             getEnvOrDefault("HOST", "0.0.0.0"),
 		Port:             getEnvOrDefault("PORT", "8080"),
@@ -26,7 +29,7 @@ func LoadConfig() *Config {
 		DatabaseName:     os.Getenv("DATABASE_NAME"),
 		DatabaseUser:     os.Getenv("DATABASE_USER"),
 		DatabasePassword: os.Getenv("DATABASE_PASSWORD"),
-	}
+	}, nil
 }
 
 func getEnvOrDefault(key, defaultValue string) string {
