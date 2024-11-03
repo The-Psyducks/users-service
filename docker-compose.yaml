@@ -7,7 +7,6 @@ services:
       - 8080:8080
     env_file:
       - ./server/.env
-      - ./server/firebase.env
     depends_on:
       postgres:
           condition: service_healthy
