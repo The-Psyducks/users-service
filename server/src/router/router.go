@@ -150,7 +150,10 @@ func addCorsConfiguration(r *Router) {
 
 // Creates a new router with the configuration provided in the env file
 func CreateRouter() (*Router, error) {
-	cfg := config.LoadConfig()
+	cfg, err := config.LoadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("failed to load configuration: %w", err)
+	}
 	r := createRouterFromConfig(cfg)
 
 	userDb, registryDb, err := createDatabases(cfg)

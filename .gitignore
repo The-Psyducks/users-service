@@ -1,7 +1,7 @@
 /database/postgres
 coverage/
 /server/service-account.json
-/server/.env
+/server/firebase.env
 
 text.txt
 
