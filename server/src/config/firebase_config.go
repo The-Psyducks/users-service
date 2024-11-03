@@ -43,14 +43,15 @@ func buildFirebaseConfig() error {
 	if err != nil {
 		return fmt.Errorf("error marshaling JSON: %w", err)
 	}
-	err = os.WriteFile(os.Getenv("FIREBASE_CREDENTIALS_FILE"), jsonData, 0644)
+
+	fileName := os.Getenv("FIREBASE_CREDENTIALS_FILE")
+	if fileName == "" {
+		fileName = "firebase_credentials.json"
+	}
+	err = os.WriteFile(fileName, jsonData, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing to file: %w", err)
 	}
-
-	// print file content
-	fmt.Println("Firebase config file content:")
-	fmt.Println(string(jsonData))
 
 	return nil
 }
