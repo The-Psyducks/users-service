@@ -3,16 +3,20 @@ package auth
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
+	"google.golang.org/api/option"
 )
 
 func IsGoogleTokenValid(idToken string) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	app, err := firebase.NewApp(ctx, nil)
+
+	opt := option.WithCredentialsFile(os.Getenv("FIREBASE_CREDENTIALS_FILE"))
+	app, err := firebase.NewApp(ctx, nil, opt)
 	if err != nil {
 		return false, fmt.Errorf("error initializing firebase app: %w", err)
 	}

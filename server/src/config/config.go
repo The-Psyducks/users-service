@@ -16,6 +16,7 @@ type Config struct {
 
 // LoadConfig loads the configuration from the Environment variables
 func LoadConfig() *Config {
+	buildFirebaseConfig()
 	return &Config{
 		Host:             getEnvOrDefault("HOST", "0.0.0.0"),
 		Port:             getEnvOrDefault("PORT", "8080"),
