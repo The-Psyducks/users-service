@@ -1,4 +1,5 @@
 # Users service
+[![Coverage Status](https://coveralls.io/repos/github/The-Psyducks/users-service/badge.svg?branch=main)](https://coveralls.io/github/The-Psyducks/users-service?branch=main)
 
 ## table of Contents
 
