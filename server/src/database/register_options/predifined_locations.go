@@ -13,11 +13,6 @@ var predefinedLocations = map[int]string{
 func GetAllLocationsAndIds() map[int]string {
     return predefinedLocations
 }
-// IsValidLocatio checks if an interest ID is valid
-func IsValidLocation(id int) bool {
-	_, exists := predefinedLocations[id]
-	return exists
-}
 
 // GetLocationName returns the name of an interest given its ID
 func GetLocationName(id int) string {

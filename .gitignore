@@ -8,3 +8,4 @@ text.txt
 # For dev Dockerfile and docker-compose
 docker-compose.dev.yaml
 Dockerfile.dev
+.pre-commit-config.yaml
