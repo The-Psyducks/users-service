@@ -12,12 +12,17 @@ type ResolveRequest struct {
 }
 
 type Provider struct {
-	Name     string      `json:"type" validate:"required"`
+	Name     string          `json:"type" validate:"required"`
 	Metadata json.RawMessage `json:"metadata" validate:"required"`
 }
 
 type GoogleAuthMetadata struct {
-	FirebaseTokenId	string	`json:"firebase_token_id" validate:"required"`
+	FirebaseTokenId string `json:"firebase_token_id" validate:"required"`
+}
+
+type ResolveWithProviderMetadata struct {
+	Token   string             `json:"access_token"`
+	Profile UserPrivateProfile `json:"profile"`
 }
 
 type ResolveResponse struct {
@@ -26,11 +31,11 @@ type ResolveResponse struct {
 }
 
 type UserPersonalInfoRequest struct {
-    FirstName  string `json:"first_name" validate:"firstnamevalidator"`
-    LastName   string `json:"last_name" validate:"lastnamevalidator"`
-    UserName   string `json:"username" validate:"usernamevalidator"`
-    Password   string `json:"password" validate:"passwordvalidator"`
-    LocationId int    `json:"location" validate:"locationvalidator"`
+	FirstName  string `json:"first_name" validate:"firstnamevalidator"`
+	LastName   string `json:"last_name" validate:"lastnamevalidator"`
+	UserName   string `json:"username" validate:"usernamevalidator"`
+	Password   string `json:"password" validate:"passwordvalidator"`
+	LocationId int    `json:"location" validate:"locationvalidator"`
 }
 
 type UserPersonalInfoRecord struct {
@@ -48,4 +53,3 @@ type RegistryEntry struct {
 	PersonalInfo  UserPersonalInfoRecord `json:"personal_info" db:"personal_info" validate:"required"`
 	Interests     []string               `json:"interests" db:"interests" validate:"required"`
 }
-

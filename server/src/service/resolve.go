@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"users-service/src/app_errors"
-	"users-service/src/auth"
 	"users-service/src/constants"
 	"users-service/src/model"
 )
@@ -54,21 +53,21 @@ func (u *User) resolveExistingRegistry(email string) (model.ResolveResponse, err
 	}, nil
 }
 
-func (u *User) resolveAccountWithIdentityProvider(email string) (model.ResolveResponse, error) {
+func (u *User) resolveAccountWithIdentityProvider(email string, provider *string) (model.ResolveResponse, error) {
 	userRecord, err := u.userDb.GetUserByEmail(email)
 	if err != nil {
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting user by email: %w", err))
 	}
-	token, err := auth.GenerateToken(userRecord.Id.String(), false)
+	token, profile, err := u.loginValidUser(userRecord, provider)
 	if err != nil {
-		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating token: %w", err))
-	}
-	type tokenResponse struct {
-		AccessToken string `json:"access_token"`
+		return model.ResolveResponse{}, err
 	}
 	return model.ResolveResponse{
 		NextAuthStep: constants.SessionStep,
-		Metadata:     tokenResponse{AccessToken: token},
+		Metadata: model.ResolveWithProviderMetadata{
+			Token:   token,
+			Profile: profile,
+		},
 	}, nil
 }
 
@@ -87,7 +86,7 @@ func (u *User) ResolveUserEmail(email string, identityProvider *string) (model.R
 	if hasAccount {
 		slog.Info("user email resolved successfully: it has account", slog.String("email", email))
 		if identityProvider != nil {
-			return u.resolveAccountWithIdentityProvider(email)
+			return u.resolveAccountWithIdentityProvider(email, identityProvider)
 		}
 		return model.ResolveResponse{
 			NextAuthStep: constants.LoginStep,
