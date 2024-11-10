@@ -457,7 +457,7 @@ func (u *User) GetUserInformation(c *gin.Context) {
 	}
 
 	userSessionIsAdmin := c.GetBool("session_user_admin")
-	user, err := u.service.GetUserProfileById(userSessionId, userSessionIsAdmin, id)
+	user, err := u.service.GetUserInformation(userSessionId, userSessionIsAdmin, id)
 
 	if err != nil {
 		_ = c.Error(err)
