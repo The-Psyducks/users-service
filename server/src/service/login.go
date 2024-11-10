@@ -24,7 +24,7 @@ func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (st
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating private profile: %w", err))
 	}
 
-	if err := u.userDb.RegisterLoginAttempt(userRecord.Id, nil, true); err != nil {
+	if err := u.userDb.RegisterLoginAttempt(userRecord.Id, provider, true); err != nil {
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error registering login attempt: %w",
 			err))
 	}
