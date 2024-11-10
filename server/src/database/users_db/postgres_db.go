@@ -565,24 +565,6 @@ func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, times
 	return users, false, nil
 }
 
-func (postDB *UsersPostgresDB) NewEmailAndPasswordLogin(userId uuid.UUID, succesfull bool) error {
-	query := `INSERT INTO login_metrics (user_id, succesfull) VALUES ($1, $2)`
-	_, err := postDB.db.Exec(query, userId, succesfull)
-	if err != nil {
-		return fmt.Errorf("error logging login: %w", err)
-	}
-	return nil
-}
-
-func (postDB *UsersPostgresDB) NewProviderLogin(userId uuid.UUID, succesfull bool, provider string) error {
-	query := `INSERT INTO login_metrics (user_id, succesfull, provider) VALUES ($1, $2, $3)`
-	_, err := postDB.db.Exec(query, userId, succesfull, provider)
-	if err != nil {
-		return fmt.Errorf("error logging login: %w", err)
-	}
-	return nil
-}
-
 func (db *UsersPostgresDB) RegisterLoginAttempt(userID uuid.UUID, provider *string, succesfull bool) error {
 	query := `
 		INSERT INTO login_metrics (user_id, login_time, succesfull, identity_provider)
