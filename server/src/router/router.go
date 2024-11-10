@@ -200,6 +200,8 @@ func CreateRouter() (*Router, error) {
 		private.DELETE("/users/:id/follow", userController.UnfollowUser)
 		private.GET("/users/:id/followers", userController.GetFollowers)
 		private.GET("/users/:id/following", userController.GetFollowing)
+		private.POST("/users/:id/block", userController.GetLocationMetrics)
+		private.POST("/users/:id/unblock", userController.GetLocationMetrics)
 
 		private.GET("/users/search", userController.SearchUsers)
 
@@ -208,6 +210,7 @@ func CreateRouter() (*Router, error) {
 		private.GET("/users/metrics/registry", userController.GetRegistrationMetrics)
 		private.GET("/users/metrics/login", userController.GetLoginMetrics)
 		private.GET("/users/metrics/location", userController.GetLocationMetrics)
+		
 	}
 
 	r.Engine.NoRoute(userController.HandleNoRoute)

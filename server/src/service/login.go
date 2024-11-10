@@ -9,8 +9,6 @@ import (
 	"users-service/src/auth"
 	"users-service/src/database"
 	"users-service/src/model"
-
-	"github.com/google/uuid"
 )
 
 func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (string, model.UserPrivateProfile, error) {
@@ -62,10 +60,3 @@ func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivate
 	return u.loginValidUser(userRecord, nil)
 }
 
-func (u *User) CheckIfUserIsBlocked(userId uuid.UUID) (bool, error) {
-	isBlocked, err := u.userDb.CheckIfUserIsBlocked(userId)
-	if err != nil {
-		return false, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user is blocked: %w", err))
-	}
-	return isBlocked, nil
-}
