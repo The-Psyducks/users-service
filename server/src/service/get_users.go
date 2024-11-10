@@ -95,6 +95,6 @@ func (u *User) GetUserInformation(userSessionId uuid.UUID, userSessionIsAdmin bo
 
 	return model.UserInformationResponse{
 		IsBlocked: userRecord.IsBlocked,
-		Profile:   profile,
+		Profile:   profile.Profile,
 	}, nil
 }
