@@ -415,7 +415,6 @@ func (u *User) SearchUsers(c *gin.Context) {
 
 	text := c.DefaultQuery("text", "")
 	if strings.TrimSpace(text) == "" {
-		fmt.Println("vacio, text: ", text)
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'text' value in request. Must not be empty.", fmt.Errorf("invalid search text"))
 		_ = c.Error(err)
 		return
@@ -502,12 +501,13 @@ func (u *User) GetLocationMetrics(c *gin.Context) {
 
 func (u *User) BlockUser(c *gin.Context) {
 	userSessionIsAdmin := c.GetBool("session_user_admin")
-	sessionUserId, err := getSessionUserId(c)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
-	if err := u.service.BlockUser(sessionUserId, userSessionIsAdmin); err != nil {
+	if err := u.service.BlockUser(id, userSessionIsAdmin); err != nil {
 		_ = c.Error(err)
 		return
 	}
