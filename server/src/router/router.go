@@ -191,6 +191,7 @@ func CreateRouter() (*Router, error) {
 
 	private := r.Engine.Group("/")
 	private.Use(middleware.AuthMiddleware())
+	private.Use(middleware.UserBlockedMiddleware(userService))
 	{
 		private.GET("/users/:id", userController.GetUserProfileById)
 		private.PUT("/users/profile", userController.ModifyUserProfile)

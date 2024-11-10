@@ -78,4 +78,13 @@ type UserDatabase interface {
 
 	// GetLocationMetrics retrieves the location metrics
 	GetLocationMetrics() (*model.LocationMetrics, error)
+
+	// BlockUser blocks a user
+	BlockUser(userId uuid.UUID) error
+
+	// UnblockUser unblocks a user
+	UnblockUser(userId uuid.UUID) error
+
+	// CheckIfUserIsBlocked checks if a user is blocked
+	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error)
 }

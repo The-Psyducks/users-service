@@ -62,6 +62,7 @@ func createTables(db *sqlx.DB, test bool) error {
 			email VARCHAR(%d) NOT NULL UNIQUE,
 			password TEXT NOT NULL,
 			location VARCHAR(255) NOT NULL,
+			is_blocked BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		);
 		
@@ -640,6 +641,34 @@ func (postDB *UsersPostgresDB) GetLocationMetrics() (*model.LocationMetrics, err
 	}
 
 	return &locationMetrics, nil
+}
+
+func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID) error {
+	query := `UPDATE users SET is_blocked = true WHERE id = $1`
+	_, err := postDB.db.Exec(query, userId)
+	if err != nil {
+		return fmt.Errorf("error blocking user: %w", err)
+	}
+	return nil
+}
+
+func (postDB *UsersPostgresDB) UnblockUser(userId uuid.UUID) error {
+	query := `UPDATE users SET is_blocked = false WHERE id = $1`
+	_, err := postDB.db.Exec(query, userId)
+	if err != nil {
+		return fmt.Errorf("error unblocking user: %w", err)
+	}
+	return nil
+}
+
+func (postDB *UsersPostgresDB) 	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error) {
+	var isBlocked bool
+	query := `SELECT is_blocked FROM users WHERE id = $1`
+	err := postDB.db.Get(&isBlocked, query, userId)
+	if err != nil {
+		return false, fmt.Errorf("error checking if user is blocked: %w", err)
+	}
+	return isBlocked, nil
 }
 
 // For testing purposes

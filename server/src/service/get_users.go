@@ -54,7 +54,7 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 // it also receives a timestamp, skip and limit to paginate the results
 func (u *User) GetAllUsers(userSessionIsAdmin bool, timestamp string, skip int, limit int) ([]model.UserPublicProfile, bool, error) {
 	if !userSessionIsAdmin {
-		err := app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
+		err := app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
 		return nil, false, err
 	}
 	users, hasMore, err := u.userDb.GetAllUsers(timestamp, skip, limit)
