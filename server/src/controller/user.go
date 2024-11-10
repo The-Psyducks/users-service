@@ -517,12 +517,13 @@ func (u *User) BlockUser(c *gin.Context) {
 
 func (u *User) UnblockUser(c *gin.Context) {
 	userSessionIsAdmin := c.GetBool("session_user_admin")
-	sessionUserId, err := getSessionUserId(c)
+	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)
 		return
 	}
-	if err := u.service.UnblockUser(sessionUserId, userSessionIsAdmin); err != nil {
+	if err := u.service.UnblockUser(id, userSessionIsAdmin); err != nil {
 		_ = c.Error(err)
 		return
 	}
