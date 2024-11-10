@@ -13,6 +13,11 @@ type UserProfileResponse struct {
 	Profile    interface{} `json:"profile" binding:"required"`
 }
 
+type UserInformationResponse struct {
+	IsBlocked    bool        `json:"is_blocked"`
+	Profile    interface{}	`json:"profile"`
+}
+
 // UserPrivateProfileRequest is a struct that represents a user in the HTTP request
 type UpdateUserPrivateProfile struct {
 	UserName    string `json:"username" binding:"required"`
@@ -78,6 +83,7 @@ type UserRecord struct {
 	Location    string    `json:"location" db:"location"`
 	Interests	[]string  `json:"interests" db:"interests"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
+	IsBlocked   bool      `json:"is_blocked" db:"is_blocked"`
 }
 
 type UserLoginRequest struct {

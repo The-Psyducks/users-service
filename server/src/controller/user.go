@@ -449,6 +449,24 @@ func (u *User) GetAllUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (u *User) GetUserInformation(c *gin.Context) {
+	id, userSessionId, err := getUrlIdAndSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	user, err := u.service.GetUserProfileById(userSessionId, userSessionIsAdmin, id)
+
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, user)
+}
+
 func (u *User) GetRegistrationMetrics(c *gin.Context) {
 	userSessionIsAdmin := c.GetBool("session_user_admin")
 	metrics, err := u.service.GetRegistrationMetrics(userSessionIsAdmin)
@@ -480,4 +498,34 @@ func (u *User) GetLocationMetrics(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, metrics)
+}
+
+func (u *User) BlockUser(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	sessionUserId, err := getSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	if err := u.service.BlockUser(sessionUserId, userSessionIsAdmin); err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, gin.H{})
+}
+
+func (u *User) UnblockUser(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	sessionUserId, err := getSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+	if err := u.service.UnblockUser(sessionUserId, userSessionIsAdmin); err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusNoContent, gin.H{})
 }

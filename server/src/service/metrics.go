@@ -9,7 +9,7 @@ import (
 
 func (u *User) GetRegistrationMetrics(isAdmin bool) (*model.RegistrationSummaryMetrics, error) {
 	if !isAdmin {
-		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
+		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
 	}
 
 	metris, err := u.registryDb.GetRegistrySummaryMetrics()
@@ -21,7 +21,7 @@ func (u *User) GetRegistrationMetrics(isAdmin bool) (*model.RegistrationSummaryM
 
 func (u *User) GetLoginMetrics(isAdmin bool) (*model.LoginSummaryMetrics, error) {
 	if !isAdmin {
-		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
+		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
 	}
 
 	metrics, err := u.userDb.GetLoginSummaryMetrics()
@@ -33,7 +33,7 @@ func (u *User) GetLoginMetrics(isAdmin bool) (*model.LoginSummaryMetrics, error)
 
 func (u *User) GetLocationMetrics(isAdmin bool) (*model.LocationMetrics, error) {
 	if !isAdmin {
-		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
+		return nil, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
 	}
 
 	metrics, err := u.userDb.GetLocationMetrics()

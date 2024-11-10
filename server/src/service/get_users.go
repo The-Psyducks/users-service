@@ -1,9 +1,11 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"users-service/src/app_errors"
+	"users-service/src/database"
 	"users-service/src/model"
 
 	"github.com/google/uuid"
@@ -54,7 +56,7 @@ func (u *User) SearchUsers(userSessionId uuid.UUID, text string, timestamp strin
 // it also receives a timestamp, skip and limit to paginate the results
 func (u *User) GetAllUsers(userSessionIsAdmin bool, timestamp string, skip int, limit int) ([]model.UserPublicProfile, bool, error) {
 	if !userSessionIsAdmin {
-		err := app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErruserIsNotAdmin)
+		err := app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
 		return nil, false, err
 	}
 	users, hasMore, err := u.userDb.GetAllUsers(timestamp, skip, limit)
@@ -70,4 +72,29 @@ func (u *User) GetAllUsers(userSessionIsAdmin bool, timestamp string, skip int, 
 	}
 
 	return profiles, hasMore, nil
+}
+
+func (u *User) GetUserInformation(userSessionId uuid.UUID, userSessionIsAdmin bool, id uuid.UUID) (model.UserInformationResponse, error) {
+	if !userSessionIsAdmin {
+		return model.UserInformationResponse{}, app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
+	}
+	userRecord, err := u.userDb.GetUserById(id)
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			err = app_errors.NewAppError(http.StatusNotFound, UsernameNotFound, err)
+		} else {
+			err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error retrieving user: %w", err))
+		}
+		return model.UserInformationResponse{}, err
+	}
+
+	profile, err := u.getPrivateProfile(userRecord)
+	if err != nil {
+		return model.UserInformationResponse{}, err
+	}
+
+	return model.UserInformationResponse{
+		IsBlocked: userRecord.IsBlocked,
+		Profile:   profile,
+	}, nil
 }
