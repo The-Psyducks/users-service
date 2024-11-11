@@ -34,7 +34,7 @@ func UserBlockedMiddleware(service *service.User) gin.HandlerFunc {
 		}
 
 		if isBlocked {
-			err := app_errors.NewAppError(http.StatusForbidden, "User is blocked", nil)
+			err := app_errors.NewAppError(http.StatusUnauthorized, "User is blocked", nil)
 			_ = c.AbortWithError(err.Code,err)
 			c.Next()
 			return
