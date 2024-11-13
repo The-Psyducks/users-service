@@ -65,6 +65,15 @@ type UserDatabase interface {
 	// GetAmountOfUsersWithUsernameContaining returns the amount of users that have a username containing the text
 	GetAmountOfUsersWithUsernameContaining(text string) (int, error)
 
+	// BlockUser blocks a user
+	BlockUser(userId uuid.UUID) error
+
+	// UnblockUser unblocks a user
+	UnblockUser(userId uuid.UUID) error
+
+	// CheckIfUserIsBlocked checks if a user is blocked
+	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error)
+
 	// GetUsersWithOnlyNameContaining returns the users that JUST have the name containing the text. 
 	// If the username also has it, it discards it
 	// it also receives a timestamp, skip and limit to paginate the results
@@ -78,13 +87,4 @@ type UserDatabase interface {
 
 	// GetLocationMetrics retrieves the location metrics
 	GetLocationMetrics() (*model.LocationMetrics, error)
-
-	// BlockUser blocks a user
-	BlockUser(userId uuid.UUID) error
-
-	// UnblockUser unblocks a user
-	UnblockUser(userId uuid.UUID) error
-
-	// CheckIfUserIsBlocked checks if a user is blocked
-	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error)
 }

@@ -62,7 +62,6 @@ func createTables(db *sqlx.DB, test bool) error {
 			email VARCHAR(%d) NOT NULL UNIQUE,
 			password TEXT NOT NULL,
 			location VARCHAR(255) NOT NULL,
-			is_blocked BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		);
 		
@@ -101,6 +100,17 @@ func createTables(db *sqlx.DB, test bool) error {
 			);
 		`, "login_metrics")
 
+	schemaUsersBlocked := fmt.Sprintf(`
+		CREATE TABLE IF NOT EXISTS %s (
+			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+			user_id UUID NOT NULL,
+			blocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+			unblocked_at TIMESTAMPTZ DEFAULT NULL,
+			CONSTRAINT user_blocks_unique_block UNIQUE (user_id, blocked_at)
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			);
+		`, "users_blocks")
+
 	if _, err := db.Exec(schemaUsers); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
@@ -111,6 +121,9 @@ func createTables(db *sqlx.DB, test bool) error {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 	if _, err := db.Exec(schemaLoginMetrics); err != nil {
+		return fmt.Errorf("failed to create table: %w", err)
+	}
+	if _, err := db.Exec(schemaUsersBlocked); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
@@ -217,25 +230,25 @@ func (postDB *UsersPostgresDB) ModifyUser(id uuid.UUID, data model.UpdateUserPri
 	return user, nil
 }
 
-// For testing purposes
-func (postDB *UsersPostgresDB) PrintAllUsers() error {
-    var users []model.UserRecord
-    query := `SELECT * FROM users`
+// // For testing purposes
+// func (postDB *UsersPostgresDB) PrintAllUsers() error {
+//     var users []model.UserRecord
+//     query := `SELECT * FROM users`
 
-    err := postDB.db.Select(&users, query)
-    if err != nil {
-        return fmt.Errorf("error fetching users: %w", err)
-    }
+//     err := postDB.db.Select(&users, query)
+//     if err != nil {
+//         return fmt.Errorf("error fetching users: %w", err)
+//     }
 
-    // Imprimir cada usuario
-    fmt.Println("All users in the database:")
-    for _, user := range users {
-        fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n",
-            user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.Location, user.CreatedAt)
-    }
+//     // Imprimir cada usuario
+//     fmt.Println("All users in the database:")
+//     for _, user := range users {
+//         fmt.Printf("ID: %s, Username: %s, First Name: %s, Last Name: %s, Email: %s, Location: %s, Created At: %s\n",
+//             user.Id, user.UserName, user.FirstName, user.LastName, user.Email, user.Location, user.CreatedAt)
+//     }
 
-    return nil
-}
+//     return nil
+// }
 
 func (postDB *UsersPostgresDB) GetUserById(id uuid.UUID) (model.UserRecord, error) {
 	var user model.UserRecord
@@ -515,10 +528,6 @@ func (postDB *UsersPostgresDB) GetUsersWithUsernameContaining(text string, times
 		}
 	}
 
-	if err := postDB.PrintAllUsers(); err != nil {
-		return nil, false, fmt.Errorf("error printing all users: %w", err)
-	}
-
 	return users, false, nil
 }
 
@@ -619,7 +628,6 @@ func (postDB *UsersPostgresDB) GetLoginSummaryMetrics() (*model.LoginSummaryMetr
 		return nil, fmt.Errorf("error getting federated providers: %w", err)
 	}
 
-	// Inicializa el mapa de federated providers en caso de que esté vacío
 	loginSummary.FederatedProviders = make(map[string]int)
 	for _, provider := range federatedProviders {
 		loginSummary.FederatedProviders[provider.Provider] = provider.Amount
@@ -644,31 +652,32 @@ func (postDB *UsersPostgresDB) GetLocationMetrics() (*model.LocationMetrics, err
 }
 
 func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID) error {
-	query := `UPDATE users SET is_blocked = true WHERE id = $1`
-	_, err := postDB.db.Exec(query, userId)
-	if err != nil {
-		return fmt.Errorf("error blocking user: %w", err)
-	}
-	return nil
+    query := `INSERT INTO user_blocks (user_id, blocked_at) VALUES ($1, NOW())`
+    _, err := postDB.db.Exec(query, userId)
+    if err != nil {
+        return fmt.Errorf("error blocking user: %w", err)
+    }
+    return nil
 }
 
 func (postDB *UsersPostgresDB) UnblockUser(userId uuid.UUID) error {
-	query := `UPDATE users SET is_blocked = false WHERE id = $1`
-	_, err := postDB.db.Exec(query, userId)
-	if err != nil {
-		return fmt.Errorf("error unblocking user: %w", err)
-	}
-	return nil
+    query := `UPDATE user_blocks SET unblocked_at = NOW() 
+              WHERE user_id = $1 AND unblocked_at IS NULL`
+    _, err := postDB.db.Exec(query, userId)
+    if err != nil {
+        return fmt.Errorf("error unblocking user: %w", err)
+    }
+    return nil
 }
 
-func (postDB *UsersPostgresDB) 	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error) {
-	var isBlocked bool
-	query := `SELECT is_blocked FROM users WHERE id = $1`
-	err := postDB.db.Get(&isBlocked, query, userId)
-	if err != nil {
-		return false, fmt.Errorf("error checking if user is blocked: %w", err)
-	}
-	return isBlocked, nil
+func (postDB *UsersPostgresDB) CheckIfUserIsBlocked(userId uuid.UUID) (bool, error) {
+    var count int
+    query := `SELECT COUNT(*) FROM user_blocks WHERE user_id = $1 AND unblocked_at IS NULL`
+    err := postDB.db.Get(&count, query, userId)
+    if err != nil {
+        return false, fmt.Errorf("error checking if user is blocked: %w", err)
+    }
+    return count > 0, nil
 }
 
 // For testing purposes
