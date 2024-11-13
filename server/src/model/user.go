@@ -83,7 +83,6 @@ type UserRecord struct {
 	Location    string    `json:"location" db:"location"`
 	Interests	[]string  `json:"interests" db:"interests"`
 	CreatedAt   time.Time `json:"created_at" db:"created_at"`
-	IsBlocked   bool      `json:"is_blocked" db:"is_blocked"`
 }
 
 type UserLoginRequest struct {
