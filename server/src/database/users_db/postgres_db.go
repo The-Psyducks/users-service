@@ -106,7 +106,7 @@ func createTables(db *sqlx.DB, test bool) error {
 			user_id UUID NOT NULL,
 			blocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			unblocked_at TIMESTAMPTZ DEFAULT NULL,
-			CONSTRAINT user_blocks_unique_block UNIQUE (user_id, blocked_at),
+			CONSTRAINT users_blocks_unique_block UNIQUE (user_id, blocked_at),
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 			);
 		`, "users_blocks")
@@ -652,7 +652,7 @@ func (postDB *UsersPostgresDB) GetLocationMetrics() (*model.LocationMetrics, err
 }
 
 func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID) error {
-    query := `INSERT INTO user_blocks (user_id, blocked_at) VALUES ($1, NOW())`
+    query := `INSERT INTO users_blocks (user_id, blocked_at) VALUES ($1, NOW())`
     _, err := postDB.db.Exec(query, userId)
     if err != nil {
         return fmt.Errorf("error blocking user: %w", err)
@@ -661,7 +661,7 @@ func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID) error {
 }
 
 func (postDB *UsersPostgresDB) UnblockUser(userId uuid.UUID) error {
-    query := `UPDATE user_blocks SET unblocked_at = NOW() 
+    query := `UPDATE users_blocks SET unblocked_at = NOW() 
               WHERE user_id = $1 AND unblocked_at IS NULL`
     _, err := postDB.db.Exec(query, userId)
     if err != nil {
@@ -672,7 +672,7 @@ func (postDB *UsersPostgresDB) UnblockUser(userId uuid.UUID) error {
 
 func (postDB *UsersPostgresDB) CheckIfUserIsBlocked(userId uuid.UUID) (bool, error) {
     var count int
-    query := `SELECT COUNT(*) FROM user_blocks WHERE user_id = $1 AND unblocked_at IS NULL`
+    query := `SELECT COUNT(*) FROM users_blocks WHERE user_id = $1 AND unblocked_at IS NULL`
     err := postDB.db.Get(&count, query, userId)
     if err != nil {
         return false, fmt.Errorf("error checking if user is blocked: %w", err)
