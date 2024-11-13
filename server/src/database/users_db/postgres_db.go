@@ -106,7 +106,7 @@ func createTables(db *sqlx.DB, test bool) error {
 			user_id UUID NOT NULL,
 			blocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			unblocked_at TIMESTAMPTZ DEFAULT NULL,
-			CONSTRAINT user_blocks_unique_block UNIQUE (user_id, blocked_at)
+			CONSTRAINT user_blocks_unique_block UNIQUE (user_id, blocked_at),
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 			);
 		`, "users_blocks")
