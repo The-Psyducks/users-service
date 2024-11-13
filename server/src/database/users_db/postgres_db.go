@@ -651,6 +651,23 @@ func (postDB *UsersPostgresDB) GetLocationMetrics() (*model.LocationMetrics, err
 	return &locationMetrics, nil
 }
 
+func (postDB *UsersPostgresDB) GetUsersBlockedMetrics() (*model.UsersBlockedMetrics, error) {
+	var usersBlockedMetrics model.UsersBlockedMetrics
+	query := `
+		SELECT 
+			COUNT(*) AS total_users_blocked,
+			COALESCE(SUM(CASE WHEN unblocked_at IS NULL THEN 1 ELSE 0 END), 0) AS currently_blocked,
+			COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at)), 0) AS average_block_time
+		FROM users_blocks
+	`
+
+	if err := postDB.db.Get(&usersBlockedMetrics, query); err != nil {
+		return nil, fmt.Errorf("error getting users blocked metrics: %w", err)
+	}
+
+	return &usersBlockedMetrics, nil
+}
+
 func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID) error {
     query := `INSERT INTO users_blocks (user_id, blocked_at) VALUES ($1, NOW())`
     _, err := postDB.db.Exec(query, userId)

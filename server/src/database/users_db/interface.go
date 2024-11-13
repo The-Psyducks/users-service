@@ -87,4 +87,7 @@ type UserDatabase interface {
 
 	// GetLocationMetrics retrieves the location metrics
 	GetLocationMetrics() (*model.LocationMetrics, error)
+
+	// GetUserBlockedMetrics retrieves the user blocked metrics
+	GetUsersBlockedMetrics() (*model.UsersBlockedMetrics, error)
 }
