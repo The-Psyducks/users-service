@@ -211,6 +211,7 @@ func CreateRouter() (*Router, error) {
 		private.GET("/users/metrics/registry", userController.GetRegistrationMetrics)
 		private.GET("/users/metrics/login", userController.GetLoginMetrics)
 		private.GET("/users/metrics/location", userController.GetLocationMetrics)
+		private.GET("/users/metrics/blocked", userController.GetUsersBlockedMetrics)
 		
 	}
 
