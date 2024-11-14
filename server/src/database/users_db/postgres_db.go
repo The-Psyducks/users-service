@@ -104,6 +104,7 @@ func createTables(db *sqlx.DB, test bool) error {
 		CREATE TABLE IF NOT EXISTS %s (
 			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
 			user_id UUID NOT NULL,
+			reason TEXT DEFAULT NULL,
 			blocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
 			unblocked_at TIMESTAMPTZ DEFAULT NULL,
 			CONSTRAINT users_blocks_unique_block UNIQUE (user_id, blocked_at),
@@ -657,7 +658,8 @@ func (postDB *UsersPostgresDB) GetUsersBlockedMetrics() (*model.UsersBlockedMetr
 		SELECT 
 			COUNT(*) AS total_users_blocked,
 			COALESCE(SUM(CASE WHEN unblocked_at IS NULL THEN 1 ELSE 0 END), 0) AS currently_blocked,
-			COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at) / 86400), 0) AS average_block_time_in_days
+			COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at) / 86400), 0) AS average_block_time_in_days,
+			ARRAY(SELECT DISTINCT reason FROM users_blocks WHERE reason IS NOT NULL) AS reasons
 		FROM users_blocks
 	`
 
@@ -668,9 +670,9 @@ func (postDB *UsersPostgresDB) GetUsersBlockedMetrics() (*model.UsersBlockedMetr
 	return &usersBlockedMetrics, nil
 }
 
-func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID) error {
-    query := `INSERT INTO users_blocks (user_id, blocked_at) VALUES ($1, NOW())`
-    _, err := postDB.db.Exec(query, userId)
+func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID, reason string) error {
+    query := `INSERT INTO users_blocks (user_id, blocked_at, reason) VALUES ($1, NOW(), $2)`
+    _, err := postDB.db.Exec(query, userId, reason)
     if err != nil {
         return fmt.Errorf("error blocking user: %w", err)
     }

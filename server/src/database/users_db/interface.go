@@ -66,7 +66,7 @@ type UserDatabase interface {
 	GetAmountOfUsersWithUsernameContaining(text string) (int, error)
 
 	// BlockUser blocks a user
-	BlockUser(userId uuid.UUID) error
+	BlockUser(userId uuid.UUID, reason string) error
 
 	// UnblockUser unblocks a user
 	UnblockUser(userId uuid.UUID) error
