@@ -653,21 +653,29 @@ func (postDB *UsersPostgresDB) GetLocationMetrics() (*model.LocationMetrics, err
 }
 
 func (postDB *UsersPostgresDB) GetUsersBlockedMetrics() (*model.UsersBlockedMetrics, error) {
-	var usersBlockedMetrics model.UsersBlockedMetrics
-	query := `
-		SELECT 
-			COUNT(*) AS total_users_blocked,
-			COALESCE(SUM(CASE WHEN unblocked_at IS NULL THEN 1 ELSE 0 END), 0) AS currently_blocked,
-			COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at) / 86400), 0) AS average_block_time_in_days,
-			ARRAY(SELECT DISTINCT reason FROM users_blocks WHERE reason IS NOT NULL) AS reasons
-		FROM users_blocks
-	`
+    var usersBlockedMetrics model.UsersBlockedMetrics
+    query := `
+        SELECT 
+            COUNT(*) AS total_users_blocked,
+            COALESCE(SUM(CASE WHEN unblocked_at IS NULL THEN 1 ELSE 0 END), 0) AS currently_blocked,
+            COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at) / 86400), 0) AS average_block_time_in_days
+        FROM users_blocks
+    `
 
-	if err := postDB.db.Get(&usersBlockedMetrics, query); err != nil {
-		return nil, fmt.Errorf("error getting users blocked metrics: %w", err)
-	}
+    if err := postDB.db.Get(&usersBlockedMetrics, query); err != nil {
+        return nil, fmt.Errorf("error getting users blocked metrics: %w", err)
+    }
 
-	return &usersBlockedMetrics, nil
+    var reasons pq.StringArray
+    query = `SELECT ARRAY(SELECT DISTINCT reason FROM users_blocks WHERE reason IS NOT NULL)`
+
+    if err := postDB.db.Get(&reasons, query); err != nil {
+        return nil, fmt.Errorf("error getting reasons: %w", err)
+    }
+
+    usersBlockedMetrics.Reasons = []string(reasons)
+
+    return &usersBlockedMetrics, nil
 }
 
 func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID, reason string) error {
