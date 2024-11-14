@@ -657,7 +657,7 @@ func (postDB *UsersPostgresDB) GetUsersBlockedMetrics() (*model.UsersBlockedMetr
 		SELECT 
 			COUNT(*) AS total_users_blocked,
 			COALESCE(SUM(CASE WHEN unblocked_at IS NULL THEN 1 ELSE 0 END), 0) AS currently_blocked,
-			COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at)), 0) AS average_block_time
+			COALESCE(AVG(EXTRACT(EPOCH FROM unblocked_at - blocked_at) / 86400), 0) AS average_block_time_in_days
 		FROM users_blocks
 	`
 

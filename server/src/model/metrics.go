@@ -34,5 +34,5 @@ type LocationMetrics struct {
 type UsersBlockedMetrics struct {
 	TotalUsersBlocked int `json:"total_users_blocked" db:"total_users_blocked"`
 	CurrentlyBlocked  int `json:"currently_blocked" db:"currently_blocked"`
-	AverageBlockTime  float64 `json:"average_block_time" db:"average_block_time"`
+	AverageBlockTimeDays  float64 `json:"average_block_time_in_days" db:"average_block_time"`
 }
