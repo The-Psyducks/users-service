@@ -499,6 +499,17 @@ func (u *User) GetLocationMetrics(c *gin.Context) {
 	c.JSON(http.StatusOK, metrics)
 }
 
+func (u *User) GetUsersBlockedMetrics(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	metrics, err := u.service.GetUsersBlockedMetrics(userSessionIsAdmin)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, metrics)
+}
+
 func (u *User) BlockUser(c *gin.Context) {
 	userSessionIsAdmin := c.GetBool("session_user_admin")
 	id, err := uuid.Parse(c.Param("id"))
@@ -507,7 +518,17 @@ func (u *User) BlockUser(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	if err := u.service.BlockUser(id, userSessionIsAdmin); err != nil {
+
+	type blockRequest struct {
+		Reason string `json:"reason" binding:"required"`
+	}
+	var data blockRequest
+	if err := c.BindJSON(&data); err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+	if err := u.service.BlockUser(id, userSessionIsAdmin, data.Reason); err != nil {
 		_ = c.Error(err)
 		return
 	}

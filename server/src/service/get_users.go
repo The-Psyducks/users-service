@@ -93,8 +93,14 @@ func (u *User) GetUserInformation(userSessionId uuid.UUID, userSessionIsAdmin bo
 		return model.UserInformationResponse{}, err
 	}
 
+	isBlocked, err := u.userDb.CheckIfUserIsBlocked(id)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error checking if user is blocked: %w", err))
+		return model.UserInformationResponse{}, err
+	}
+
 	return model.UserInformationResponse{
-		IsBlocked: userRecord.IsBlocked,
+		IsBlocked: isBlocked,
 		Profile:   profile.Profile,
 	}, nil
 }

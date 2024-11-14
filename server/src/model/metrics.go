@@ -30,3 +30,10 @@ type LocationMetric struct {
 type LocationMetrics struct {
 	Locations []LocationMetric `json:"locations"`
 }
+
+type UsersBlockedMetrics struct {
+	TotalUsersBlocked 		int 		`json:"total_users_blocked" db:"total_users_blocked"`
+	CurrentlyBlocked  		int 		`json:"currently_blocked" db:"currently_blocked"`
+	AverageBlockTimeDays  	float64 	`json:"average_block_time_in_days" db:"average_block_time_in_days"`
+	Reasons 				[]string	`json:"reasons" db:"reasons"`
+}

@@ -7,13 +7,13 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *User) BlockUser(userId uuid.UUID, userSessionIsAdmin bool) error {
+func (u *User) BlockUser(userId uuid.UUID, userSessionIsAdmin bool, reason string) error {
 	if !userSessionIsAdmin {
 		err := app_errors.NewAppError(http.StatusForbidden, UserIsNotAdmin, ErrUserIsNotAdmin)
 		return err
 	}
 
-	if err := u.userDb.BlockUser(userId); err != nil {
+	if err := u.userDb.BlockUser(userId, reason); err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error blocking user: %w", err))
 	}
 	return nil
