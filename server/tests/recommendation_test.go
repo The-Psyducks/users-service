@@ -80,7 +80,7 @@ func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivatePro
         Password:  user3Password,
         Location:  locationId,
     }
-    _, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user4, err = CreateValidUser(testRouter, email, user, interestsIds)
     if err != nil {
         panic("Failed to create user4: " + err.Error())
     }
@@ -122,6 +122,10 @@ func TestGetRecommendationsForUserReturnsCorrectRecommendations(t *testing.T) {
 
 	recommendations, err := getAllUserRecommendations(testRouter, response.AccessToken, 10)
 	assert.Equal(t, err, nil)
+
+    fmt.Println("ASD",recommendations)
+    fmt.Println("ASD: user4",user4)
+    fmt.Println("ASD user2",user2)
 
 	assert.Equal(t, len(recommendations), 2)
 	assert.Equal(t, recommendations[0].Profile.Id, user4.Id)
