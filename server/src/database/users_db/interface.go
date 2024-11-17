@@ -65,6 +65,17 @@ type UserDatabase interface {
 	// GetAmountOfUsersWithUsernameContaining returns the amount of users that have a username containing the text
 	GetAmountOfUsersWithUsernameContaining(text string) (int, error)
 
+	// GetUsersWithOnlyNameContaining returns the users that JUST have the name containing the text. 
+	// If the username also has it, it discards it
+	// it also receives a timestamp, skip and limit to paginate the results
+	GetUsersWithOnlyNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
+	// GetRecommendations returns the users that are recommended for a given user ID and if there are more users to retrieve
+	// it also receives a timestamp, skip and limit to paginate the results
+	// it calculates the recommendations based on the user's interests and location, returning first the users that share both
+	// then the users that share only one of them
+	GetRecommendations(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
 	// BlockUser blocks a user
 	BlockUser(userId uuid.UUID, reason string) error
 
@@ -73,11 +84,6 @@ type UserDatabase interface {
 
 	// CheckIfUserIsBlocked checks if a user is blocked
 	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error)
-
-	// GetUsersWithOnlyNameContaining returns the users that JUST have the name containing the text. 
-	// If the username also has it, it discards it
-	// it also receives a timestamp, skip and limit to paginate the results
-	GetUsersWithOnlyNameContaining(text string, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
 
 	// RegisterLoginAttempt registers a login attempt in the database
 	RegisterLoginAttempt(userID uuid.UUID, provider *string, successful bool) error
