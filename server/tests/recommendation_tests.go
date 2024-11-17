@@ -80,7 +80,7 @@ func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivatePro
         Password:  user3Password,
         Location:  locationId,
     }
-    user3, err = CreateValidUser(testRouter, email, user, interestsIds)
+    _, err = CreateValidUser(testRouter, email, user, interestsIds)
     if err != nil {
         panic("Failed to create user4: " + err.Error())
     }
