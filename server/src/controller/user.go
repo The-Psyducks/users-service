@@ -430,6 +430,29 @@ func (u *User) SearchUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (u *User) RecommendUsers(c *gin.Context) {
+	userSessionId, err := getSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	timestamp, skip, limit, err := getPaginationParams(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	users, hasMore, err := u.service.RecommendUsers(userSessionId, timestamp, skip, limit)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	response := model.CreatePaginationResponse(users, limit, skip, hasMore)
+	c.JSON(http.StatusOK, response)
+}
+
 func (u *User) GetAllUsers(c *gin.Context) {
 	timestamp, skip, limit, err := getPaginationParams(c)
 	if err != nil {

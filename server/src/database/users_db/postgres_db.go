@@ -576,6 +576,100 @@ func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, times
 	return users, false, nil
 }
 
+func (postDB *UsersPostgresDB) GetRecommendations(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
+	var users []model.UserRecord
+	query := `
+		WITH temp AS (
+			SELECT DISTINCT ON (id)
+				id, 
+				username, 
+				first_name, 
+				last_name, 
+				email, 
+				location, 
+				created_at, 
+				priority
+			FROM (
+				(SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.location, u.created_at, 1 AS priority
+				FROM users u
+				LEFT JOIN followers f ON u.id = f.following_id AND f.follower_id = $1
+				JOIN user_interests ui ON u.id = ui.user_id
+				JOIN users u2 ON u.location = u2.location AND u2.id = $1
+				WHERE u.id != $1
+				AND f.following_id IS NULL
+				AND EXISTS (
+					SELECT 1
+					FROM user_interests ui2
+					WHERE ui2.user_id = $1
+						AND ui2.interest = ui.interest
+				)
+				AND u.created_at < $2
+				ORDER BY u.created_at DESC
+				LIMIT $4)
+
+				UNION ALL
+
+				(SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.location, u.created_at, 2 AS priority
+				FROM users u
+				LEFT JOIN followers f ON u.id = f.following_id AND f.follower_id = $1
+				JOIN users u2 ON u.location = u2.location AND u2.id = $1
+				WHERE u.id != $1
+				AND f.following_id IS NULL
+				AND u.created_at < $2
+				ORDER BY u.created_at DESC
+				LIMIT $4)
+
+				UNION ALL
+
+				(SELECT u.id, u.username, u.first_name, u.last_name, u.email, u.location, u.created_at, 3 AS priority
+				FROM users u
+				LEFT JOIN followers f ON u.id = f.following_id AND f.follower_id = $1
+				JOIN user_interests ui ON u.id = ui.user_id
+				WHERE u.id != $1
+				AND f.following_id IS NULL
+				AND EXISTS (
+					SELECT 1
+					FROM user_interests ui2
+					WHERE ui2.user_id = $1
+						AND ui2.interest = ui.interest
+				)
+				AND u.created_at < $2
+				ORDER BY u.created_at DESC
+				LIMIT $4)
+			)
+		)
+		SELECT 
+			p.id, 
+			p.username, 
+			p.first_name, 
+			p.last_name, 
+			p.email, 
+			p.location
+		FROM temp p
+		ORDER BY p.priority ASC, p.created_at DESC
+		OFFSET $3
+		LIMIT $4;
+	`
+
+	err := postDB.db.Select(&users, query, userId, timestamp, skip, limit+1)
+	if err != nil {
+		return nil, false, fmt.Errorf("error getting users with name containing: %w", err)
+	}
+
+	if len(users) == limit+1 {
+		return users[:limit], true, nil
+	}
+
+	for i := range users {
+		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
+		if err != nil {
+			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
+		}
+	}
+
+	return users, false, nil
+}
+
 func (db *UsersPostgresDB) RegisterLoginAttempt(userID uuid.UUID, provider *string, succesfull bool) error {
 	query := `
 		INSERT INTO login_metrics (user_id, login_time, succesfull, identity_provider)

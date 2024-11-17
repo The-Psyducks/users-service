@@ -206,6 +206,8 @@ func CreateRouter() (*Router, error) {
 
 		private.GET("/users/search", userController.SearchUsers)
 
+		private.GET("/users/recommendations", userController.RecommendUsers)
+
 		private.GET("/users/all", userController.GetAllUsers)
 
 		private.GET("/users/metrics/registry", userController.GetRegistrationMetrics)
