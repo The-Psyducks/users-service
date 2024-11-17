@@ -44,7 +44,8 @@ func sendNewFollowerNotification(followerId uuid.UUID, followingId uuid.UUID, to
 		return errors.New("error sending request, status code: "  + strconv.Itoa(resp.StatusCode))
 	}
 
-	slog.Info("Notification sent to ", followingId.String())
+	// slog.Info("Notification sent to ", followingId.String())
+	slog.Info("Notification sent", slog.String("userId",followingId.String()))
 	return nil
 }
 
