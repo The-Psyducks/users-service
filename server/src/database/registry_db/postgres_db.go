@@ -32,6 +32,7 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email VARCHAR(%d) NOT NULL UNIQUE,
 		identity_provider VARCHAR(255) DEFAULT NULL,
+		email_verification_pin VARCHAR(10),
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
         first_name VARCHAR(%d) DEFAULT '',
         last_name VARCHAR(%d) DEFAULT '',
@@ -182,6 +183,30 @@ func (db *RegistryPostgresDB) AddInterestsToRegistryEntry(id uuid.UUID, interest
 
     return nil
 }
+
+func (db *RegistryPostgresDB) SetEmailVerificationPin(id uuid.UUID, code string) error {
+	res, err := db.db.Exec("UPDATE registry_entries SET email_verification_pin = $2 WHERE id = $1", id, code)
+	if err != nil {
+		return fmt.Errorf("failed to set email verification pin: %w", err)
+	}
+	if affected, err := res.RowsAffected(); err != nil || affected == 0 {
+		return database.ErrKeyNotFound
+	}
+	return nil
+}
+
+func (db *RegistryPostgresDB) GetEmailVerificationPin(id uuid.UUID) (string, error) {
+	var pin string
+	err := db.db.QueryRow("SELECT email_verification_pin FROM registry_entries WHERE id = $1", id).Scan(&pin)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return "", database.ErrKeyNotFound
+		}
+		return "", fmt.Errorf("failed to get email verification pin: %w", err)
+	}
+	return pin, nil
+}
+
 
 func (db *RegistryPostgresDB) VerifyEmail(id uuid.UUID) error {
 	_, err := db.db.Exec("UPDATE registry_entries SET email_verified = true WHERE id = $1", id)

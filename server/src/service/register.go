@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"users-service/src/app_errors"
 	"users-service/src/constants"
 	"users-service/src/database"
@@ -89,13 +90,13 @@ func (u *User) SendVerificationEmail(id uuid.UUID) error {
 		return app_errors.NewAppError(http.StatusConflict, InvalidRegistryStep, fmt.Errorf("invalid registry step, should be %s, it is %s", actual_step, constants.EmailVerificationStep))
 	}
 
-	r := GenerateRandomInRange(100000, 999999) // random 6 digit number
+	code := strconv.Itoa(GenerateRandomInRange(100000, 999999)) // random 6 digit number
 
-	// if err := u.registryDb.SetEmailVerificationPin(id, r); err != nil {
-	// 	return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error setting email verification pin: %w", err))
-	// }
+	if err := u.registryDb.SetEmailVerificationPin(id, code); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error setting email verification pin: %w", err))
+	}
 
-	if err := SendVerificationEmail(registry.Email, r); err != nil {
+	if err := SendVerificationEmail(registry.Email, code); err != nil {
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error sending verification email: %w", err))
 	}
 
@@ -112,6 +113,18 @@ func (u *User) VerifyEmail(id uuid.UUID, pin string) error {
 
 	if err := u.validateRegistryStep(id, constants.EmailVerificationStep); err != nil {
 		return err
+	}
+
+	verificationPin, err := u.registryDb.GetEmailVerificationPin(id)
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return app_errors.NewAppError(http.StatusNotFound, VerificationPinNotFound, ErrVerificationPinNotFound)
+		}
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting email verification pin: %w", err))
+	}
+
+	if verificationPin != pin {
+		return app_errors.NewAppError(http.StatusBadRequest, VerificationPinNotFound, ErrVerificationPinNotFound)
 	}
 
 	if err := u.registryDb.VerifyEmail(id); err != nil {

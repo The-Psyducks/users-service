@@ -7,7 +7,7 @@ import (
 	"gopkg.in/gomail.v2"
 )
 
-func SendVerificationEmail(email string, verificationCode int) error {
+func SendVerificationEmail(email string, verificationCode string) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("APP_EMAIL_DIR"))
 	m.SetHeader("To", email)
@@ -26,7 +26,7 @@ func SendVerificationEmail(email string, verificationCode int) error {
 				  Verify your email by introducing the verification code below:
 			  </p>
 			  <div style="margin-top: 20px; font-size: 32px; font-weight: bold; background-color: #f0f0f0; display: inline-block; padding: 20px 30px; border-radius: 5px; color: #333; letter-spacing: 4px;">
-				  %d
+				  %s
 			  </div>
 		  </div>
 	  `, verificationCode)
