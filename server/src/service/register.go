@@ -1,11 +1,14 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"users-service/src/app_errors"
 	"users-service/src/constants"
+	"users-service/src/database"
 	"users-service/src/database/register_options"
 	"users-service/src/model"
 
@@ -36,7 +39,7 @@ func (u *User) GetInterests() map[string]interface{} {
 	}
 }
 
-func (u *User) validateRegistryEntry(id uuid.UUID) error {
+func (u *User) validateRegistryEntryExists(id uuid.UUID) error {
 	slog.Info("checking if registry entry exists")
 
 	hasRegistry, err := u.registryDb.CheckIfRegistryEntryExists(id)
@@ -65,20 +68,36 @@ func (u *User) validateRegistryStep(id uuid.UUID, step string) error {
 	return nil
 }
 
+// GenerateRandomInRange generates a random number in the range [low, hi)
+func GenerateRandomInRange(low, hi int) int {
+    return low + rand.Intn(hi-low)
+}
+
 func (u *User) SendVerificationEmail(id uuid.UUID) error {
 	slog.Info("sending verification email")
 
-	if err := u.validateRegistryEntry(id); err != nil {
-		return err
+	registry, err := u.registryDb.GetRegistryEntry(id)
+	if err != nil {
+		if errors.Is(err, database.ErrKeyNotFound) {
+			return app_errors.NewAppError(http.StatusNotFound, RegistryNotFound, ErrRegistryNotFound)
+		}
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error getting registry entry: %w", err))
 	}
 
-	if err := u.validateRegistryStep(id, constants.EmailVerificationStep); err != nil {
-		return err
+	actual_step := getStepForRegistryEntry(registry)
+	if actual_step != constants.EmailVerificationStep {
+		return app_errors.NewAppError(http.StatusConflict, InvalidRegistryStep, fmt.Errorf("invalid registry step, should be %s, it is %s", actual_step, constants.EmailVerificationStep))
 	}
 
-	// if err := u.registryDb.SendVerificationEmail(id, email); err != nil {
-	// 	return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error sending verification email: %w", err))
+	r := GenerateRandomInRange(100000, 999999) // random 6 digit number
+
+	// if err := u.registryDb.SetEmailVerificationPin(id, r); err != nil {
+	// 	return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error setting email verification pin: %w", err))
 	// }
+
+	if err := SendVerificationEmail(registry.Email, r); err != nil {
+		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error sending verification email: %w", err))
+	}
 
 	slog.Info("verification email sent successfully", slog.String("registration_id", id.String()))
 	return nil
@@ -87,7 +106,7 @@ func (u *User) SendVerificationEmail(id uuid.UUID) error {
 func (u *User) VerifyEmail(id uuid.UUID, pin string) error {
 	slog.Info("verifying email")
 
-	if err := u.validateRegistryEntry(id); err != nil {
+	if err := u.validateRegistryEntryExists(id); err != nil {
 		return err
 	}
 
@@ -112,7 +131,7 @@ func (u *User) AddPersonalInfo(id uuid.UUID, data model.UserPersonalInfoRequest)
 		return app_errors.NewAppValidationError(valErrs)
 	}
 
-	if err := u.validateRegistryEntry(id); err != nil {
+	if err := u.validateRegistryEntryExists(id); err != nil {
 		return err
 	}
 
@@ -142,7 +161,7 @@ func (u *User) AddInterests(id uuid.UUID, interestsIds []int) error {
 		return app_errors.NewAppValidationError(valErrs)
 	}
 
-	if err := u.validateRegistryEntry(id); err != nil {
+	if err := u.validateRegistryEntryExists(id); err != nil {
 		return err
 	}
 
