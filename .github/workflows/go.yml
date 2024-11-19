@@ -30,11 +30,6 @@ jobs:
         with:
           go-version: 1.23.0
 
-      # - name: Create .env file
-      #   run: |
-      #     echo "APP_EMAIL_DIR=$APP_EMAIL_DIR" >> server/.env
-      #     echo "APP_EMAIL_PASSWORD=$APP_EMAIL_PASSWORD" >> server/.env
-          
       - name: Build container
         run: |
           docker compose build
@@ -43,11 +38,7 @@ jobs:
         env:
           APP_EMAIL_DIR: ${{ secrets.APP_EMAIL_DIR }}
           APP_EMAIL_PASSWORD: ${{ secrets.APP_EMAIL_PASSWORD }}
-          HOLA: ola
         run: |
-          echo dir: $APP_EMAIL_DIR
-          echo pass: $APP_EMAIL_PASSWORD
-          echo hello: $HOLA
           echo >> server/.env
           echo "APP_EMAIL_DIR=$APP_EMAIL_DIR" >> server/.env
           echo "APP_EMAIL_PASSWORD=$APP_EMAIL_PASSWORD" >> server/.env
@@ -58,7 +49,6 @@ jobs:
           cd server
           coverage=$(go tool cover -func=../coverage/coverage.out | grep total | awk '{print $3}' | sed 's/%//')
           
-          cat .env
           if (( $(echo "$coverage < 60.0" | bc -l) )); then
             echo "Test coverage is below 60%! Failing the job."
             exit 1
