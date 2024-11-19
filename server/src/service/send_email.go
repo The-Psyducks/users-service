@@ -14,6 +14,9 @@ func SendVerificationEmail(email string, verificationCode string) error {
   
 	m.SetHeader("Subject", "Twitnsap Email verification")
   
+	fmt.Println("email", os.Getenv("APP_EMAIL_DIR"))
+	fmt.Println("password", os.Getenv("APP_EMAIL_PASSWORD"))
+
 	m.Embed("rsc/twitsnap.png")
   
 	emailBody := fmt.Sprintf(`
