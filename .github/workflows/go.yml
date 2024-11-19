@@ -7,6 +7,68 @@ on:
     branches: [ "main" ]
     
 jobs:
-  go-pipeline:
-    uses: The-Psyducks/ci-template/.github/workflows/lint-test-coverage.yml@main
+  lint-go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.0
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest  
+      - name: Run go linting
+        run: |
+          cd server
+          golangci-lint run --timeout=5m ./... 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up go
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.23.0
+
+      # - name: Create .env file
+      #   run: |
+      #     echo "APP_EMAIL_DIR=$APP_EMAIL_DIR" >> server/.env
+      #     echo "APP_EMAIL_PASSWORD=$APP_EMAIL_PASSWORD" >> server/.env
+          
+      - name: Build container
+        run: |
+          docker compose build
+
+      - name: Run test
+        env:
+          APP_EMAIL_DIR: ${{ secrets.APP_EMAIL_DIR }}
+          APP_EMAIL_PASSWORD: ${{ secrets.APP_EMAIL_PASSWORD }}
+          HOLA: ola
+        run: |
+          echo dir: $APP_EMAIL_DIR
+          echo pass: $APP_EMAIL_PASSWORD
+          echo hello: $HOLA
+          echo >> server/.env
+          echo "APP_EMAIL_DIR=$APP_EMAIL_DIR" >> server/.env
+          echo "APP_EMAIL_PASSWORD=$APP_EMAIL_PASSWORD" >> server/.env
+          docker compose up test
+          
+      - name: check coverage
+        run: |
+          cd server
+          coverage=$(go tool cover -func=../coverage/coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+          
+          cat .env
+          if (( $(echo "$coverage < 60.0" | bc -l) )); then
+            echo "Test coverage is below 60%! Failing the job."
+            exit 1
+          fi
+          echo "coverage ${coverage}%"
+      
+      - name: Upload Coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage/coverage.out
+  
 
