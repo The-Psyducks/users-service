@@ -2,7 +2,7 @@ name: Go
 
 on:
   push:
-    branches: [ "main", "dev", "coverage" ]
+    branches: [ "main", "dev", "coverage", "email-verification"]
   pull_request:
     branches: [ "main" ]
     
