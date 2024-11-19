@@ -1,10 +1,14 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"strconv"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
@@ -12,7 +16,40 @@ import (
 	"github.com/google/uuid"
 )
 
-func (u *User) FollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
+func sendNewFollowerNotification(followerId uuid.UUID, followingId uuid.UUID, token string) error {
+	type NewFollowerNotification struct {
+		UserId      uuid.UUID `json:"user_id"`
+		FollowerId	uuid.UUID `json:"follower_id"`
+	}
+
+	url := "http://" + os.Getenv("NOTIF_HOST") + "/notification/followers-milestone"
+	marshalledData, _ := json.Marshal(NewFollowerNotification{followingId, followerId})
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(marshalledData))
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	if err != nil {
+		return errors.New("error creating request")
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+
+	if err != nil {
+		return errors.New("error sending request, " + err.Error())
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return errors.New("error sending request, status code: "  + strconv.Itoa(resp.StatusCode))
+	}
+
+	// slog.Info("Notification sent to ", followingId.String())
+	slog.Info("Notification sent", slog.String("userId",followingId.String()))
+	return nil
+}
+
+func (u *User) FollowUser(followerId uuid.UUID, followingId uuid.UUID, token string) error {
 	userRecord, err := u.userDb.GetUserById(followingId)
 	if err != nil {
 		if errors.Is(err, database.ErrKeyNotFound) {
@@ -31,6 +68,11 @@ func (u *User) FollowUser(followerId uuid.UUID, followingId uuid.UUID) error {
 			return app_errors.NewAppError(http.StatusBadRequest, AlreadyFollowing, err)
 		}
 		return app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error following user: %w", err))
+	}
+
+	err = sendNewFollowerNotification(followerId, followingId, token)
+	if err != nil {
+		slog.Warn("Error sending notification to ", followingId.String(), slog.String("error: ", err.Error()))
 	}
 
 	slog.Info("user followed succesfully", slog.String("followerId", followerId.String()), slog.String("followingId", userRecord.Id.String()))

@@ -301,7 +301,7 @@ func (u *User) FollowUser(c *gin.Context) {
 		return
 	}
 
-	err = u.service.FollowUser(userSessionId, userToFollowId)
+	err = u.service.FollowUser(userSessionId, userToFollowId, c.GetString("token"))
 	if err != nil {
 		_ = c.Error(err)
 		return
