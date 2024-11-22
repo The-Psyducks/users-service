@@ -36,7 +36,7 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
         first_name VARCHAR(%d) DEFAULT '',
         last_name VARCHAR(%d) DEFAULT '',
-        username VARCHAR(%d) UNIQUE DEFAULT '',
+        username VARCHAR(%d) DEFAULT '',
         password TEXT DEFAULT '',
         location VARCHAR(255) DEFAULT '',
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
