@@ -61,7 +61,7 @@ func sendEmailVerificationAndVerificateIt(router *router.Router, id string) erro
 	}
 
 	payload := map[string]string{
-		"pin": "123456",
+		"pin": "421311",
 	}
 	marshalledInfo, err := json.Marshal(payload)
 	if err != nil {

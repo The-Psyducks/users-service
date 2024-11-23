@@ -3,11 +3,15 @@ package service
 import (
 	"fmt"
 	"os"
+	"testing"
 
 	"gopkg.in/gomail.v2"
 )
 
 func SendVerificationEmail(email string, verificationCode string) error {
+	if testing.Testing() {
+		return nil
+	}
 	m := gomail.NewMessage()
 	m.SetHeader("From", os.Getenv("APP_EMAIL_DIR"))
 	m.SetHeader("To", email)
