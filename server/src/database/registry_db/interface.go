@@ -39,7 +39,4 @@ type RegistryDatabase interface {
 
 	// DeleteRegistryEntry deletes the registry entry with the given id
 	DeleteRegistryEntry(id uuid.UUID) error
-
-	// GetRegistrySummaryMetrics returns the summary metrics of the registry
-	GetRegistrySummaryMetrics() (*model.RegistrationSummaryMetrics, error)
 }

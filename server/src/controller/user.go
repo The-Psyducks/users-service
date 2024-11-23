@@ -489,50 +489,6 @@ func (u *User) GetUserInformation(c *gin.Context) {
 	c.JSON(http.StatusOK, user)
 }
 
-func (u *User) GetRegistrationMetrics(c *gin.Context) {
-	userSessionIsAdmin := c.GetBool("session_user_admin")
-	metrics, err := u.service.GetRegistrationMetrics(userSessionIsAdmin)
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, metrics)
-}
-
-func (u *User) GetLoginMetrics(c *gin.Context) {
-	userSessionIsAdmin := c.GetBool("session_user_admin")
-	metrics, err := u.service.GetLoginMetrics(userSessionIsAdmin)
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, metrics)
-}
-
-func (u *User) GetLocationMetrics(c *gin.Context) {
-	userSessionIsAdmin := c.GetBool("session_user_admin")
-	metrics, err := u.service.GetLocationMetrics(userSessionIsAdmin)
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, metrics)
-}
-
-func (u *User) GetUsersBlockedMetrics(c *gin.Context) {
-	userSessionIsAdmin := c.GetBool("session_user_admin")
-	metrics, err := u.service.GetUsersBlockedMetrics(userSessionIsAdmin)
-	if err != nil {
-		_ = c.Error(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, metrics)
-}
-
 func (u *User) BlockUser(c *gin.Context) {
 	userSessionIsAdmin := c.GetBool("session_user_admin")
 	id, err := uuid.Parse(c.Param("id"))
