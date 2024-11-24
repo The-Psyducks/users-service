@@ -155,3 +155,84 @@ func TestUnblockNotBlockedUserDoesNotFail(t *testing.T) {
 	assert.Equal(t, err, nil)
 }
 
+func TestGetUserInformation(t *testing.T) {
+	testRouter, user1, _, _, _ := setUpBlockTests()
+
+	adminToken, err := utils.LoginAdmin()
+	assert.Equal(t, err, nil)
+
+	userInfo, err := utils.GetValidUserInformation(testRouter, user1.Id.String(), adminToken)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, userInfo.IsBlocked, false)
+	assert.Equal(t, userInfo.Profile.Id, user1.Id)
+}
+
+func TestGetUserInformationWithInvalidUserId(t *testing.T) {
+	testRouter, _, _, _, _ := setUpBlockTests()
+
+	adminToken, err := utils.LoginAdmin()
+	assert.Equal(t, err, nil)
+
+	code, _, err := utils.GetInvalidUserInformation(testRouter, "75d9953f-7dff-44b5-91f0-ebabfc9a49d2", adminToken)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusNotFound)
+}
+
+func TestGetUserInformationWithoutAdmin(t *testing.T) {
+	testRouter, user1, user1Password, _, _ := setUpBlockTests()
+
+	loginReq := models.LoginRequest{
+		Email: user1.Email,
+		Password: user1Password,
+	}
+
+	user, err := utils.LoginValidUser(testRouter, loginReq)
+	assert.Equal(t, err, nil)
+
+	code, _, err := utils.GetInvalidUserInformation(testRouter, user.Profile.Id.String(), user.AccessToken)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusForbidden)
+}
+
+// Tests: get all users
+// 1. Test that get all users returns all users
+// 2. Test that get all users returns paginated users
+// 3. Test that get all users returns 403 if user is not admin
+
+func TestGetAllUsersReturnsAllUsers(t *testing.T) {
+	testRouter, _, _, _, _ := setUpBlockTests()
+
+	adminToken, err := utils.LoginAdmin()
+	assert.Equal(t, err, nil)
+
+	users, err := utils.GetAllUsers(testRouter, adminToken, 2)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(users), 2)
+}
+
+func TestGetAllUsersReturnsPaginatedUsers(t *testing.T) {
+	testRouter, _, _, _, _ := setUpBlockTests()
+
+	adminToken, err := utils.LoginAdmin()
+	assert.Equal(t, err, nil)
+
+	users, err := utils.GetAllUsers(testRouter, adminToken, 1)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(users), 2)
+}
+
+func TestGetAllUsersReturns403IfUserIsNotAdmin(t *testing.T) {
+	testRouter, user1, user1Password, _, _ := setUpBlockTests()
+
+	loginReq := models.LoginRequest{
+		Email: user1.Email,
+		Password: user1Password,
+	}
+
+	user, err := utils.LoginValidUser(testRouter, loginReq)
+	assert.Equal(t, err, nil)
+
+	code, _, err := utils.GetAllUsersInvalidToken(testRouter, user.AccessToken, 10)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, code, http.StatusForbidden)
+}

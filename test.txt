@@ -1,0 +1,63 @@
+#0 building with "default" instance using docker driver
+
+#1 [test internal] load build definition from Dockerfile
+#1 transferring dockerfile: 844B done
+#1 DONE 0.0s
+
+#2 [test internal] load metadata for docker.io/library/golang:1.23.0-alpine3.20
+#2 DONE 0.5s
+
+#3 [test internal] load .dockerignore
+#3 transferring context: 2B done
+#3 DONE 0.0s
+
+#4 [test builder 1/6] FROM docker.io/library/golang:1.23.0-alpine3.20@sha256:d0b31558e6b3e4cc59f6011d79905835108c919143ebecc58f35965bf79948f4
+#4 DONE 0.0s
+
+#5 [test internal] load build context
+#5 transferring context: 3.77kB done
+#5 DONE 0.0s
+
+#6 [test builder 2/6] WORKDIR /home/app
+#6 CACHED
+
+#7 [test builder 6/6] RUN go build -o twitsnap ./main.go
+#7 CACHED
+
+#8 [test builder 3/6] COPY /server/go.mod /server/go.sum ./
+#8 CACHED
+
+#9 [test builder 4/6] RUN go mod download
+#9 CACHED
+
+#10 [test builder 5/6] COPY /server ./
+#10 CACHED
+
+#11 [test twitsnap-test-stage 1/1] COPY /server/rsc/twitsnap.png ./tests/rsc/twitsnap.png
+#11 CACHED
+
+#12 [test] exporting to image
+#12 exporting layers done
+#12 writing image sha256:aa9ef3d7690a70080f1bb50e0a9c62efaf3af63e4bc9419a4093dbf41d5fa783 done
+#12 naming to docker.io/library/users-service-test done
+#12 DONE 0.0s
+
+#13 [test] resolving provenance for metadata file
+#13 DONE 0.0s
+Attaching to test-1
+test-1  | ?   	users-service/src/constants	[no test files]
+test-1  | ?   	users-service/src/database	[no test files]
+test-1  | 	users-service/src/app_errors		coverage: 0.0% of statements
+test-1  | 	users-service/src/config		coverage: 0.0% of statements
+test-1  | 	users-service/src/auth		coverage: 0.0% of statements
+test-1  | 	users-service		coverage: 0.0% of statements
+test-1  | 	users-service/src/controller		coverage: 0.0% of statements
+test-1  | 	users-service/src/database/registry_db		coverage: 0.0% of statements
+test-1  | 	users-service/src/model		coverage: 0.0% of statements
+test-1  | 	users-service/src/database/users_db		coverage: 0.0% of statements
+test-1  | 	users-service/src/router		coverage: 0.0% of statements
+test-1  | 	users-service/src/database/register_options		coverage: 0.0% of statements
+test-1  | 	users-service/src/middleware		coverage: 0.0% of statements
+test-1  | 	users-service/src/service		coverage: 0.0% of statements
+test-1  | ok  	users-service/tests	13.823s	coverage: [no statements]
+[Ktest-1 exited with code 0

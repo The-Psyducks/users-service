@@ -55,6 +55,11 @@ type UserPrivateProfile struct {
 	Following int       `json:"following" binding:"required"`
 }
 
+type UserInformationResponse struct {
+	IsBlocked    bool        		`json:"is_blocked"`
+	Profile    UserPrivateProfile	`json:"profile"`
+}
+
 type Location struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`

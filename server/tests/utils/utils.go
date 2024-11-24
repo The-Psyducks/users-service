@@ -355,6 +355,47 @@ func GetValidUser(router *router.Router, id string, token string) (models.UserPr
 	return result, nil
 }
 
+func GetValidUserInformation(router *router.Router, id string, adminToken string) (models.UserInformationResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+id+"/information", nil)
+	if err != nil {
+		return models.UserInformationResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+adminToken)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := models.UserInformationResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return models.UserInformationResponse{}, err
+	}
+
+	if recorder.Code != http.StatusOK {
+		return models.UserInformationResponse{}, fmt.Errorf("error, status code getting user was %d, expected: %d", recorder.Code, http.StatusOK)
+	}
+	return result, nil
+}
+
+func GetInvalidUserInformation(router *router.Router, id string, token string) (int, models.ErrorResponse, error) {
+	req, err := http.NewRequest("GET", "/users/"+id+"/information", nil)
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := models.ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
 func GetOwnProfile(router *router.Router, id string, token string) (models.UserPrivateProfile, error) {
 	result, err := GetValidUser(router, id, token)
 	if err != nil {
@@ -787,8 +828,74 @@ func GetAllUserRecommendations(router *router.Router, token string, limit int) (
 	return result, nil
 }
 
+func GetAllUsers(router *router.Router, token string, limit int) ([]models.UserPublicProfile, error) {
+	var result []models.UserPublicProfile
+	var currPagination models.Pagination
+	
+	fetchUsers := func(skip int) error {
+		timestamp := time.Unix(time.Now().Unix()+1, 0).UTC().Format(time.RFC3339Nano)
+		url := fmt.Sprintf("/users/all?time=%s&skip=%d&limit=%d", timestamp, skip, limit)
+		req, err := http.NewRequest("GET", url, nil)
+		if err != nil {
+			return err
+		}
+	
+		req.Header.Add("Authorization", "Bearer "+token)
+		recorder := httptest.NewRecorder()
+		router.Engine.ServeHTTP(recorder, req)
+	
+		if recorder.Code != http.StatusOK {
+			return fmt.Errorf("error, status code getting following was %d, expected: %d", recorder.Code, http.StatusOK)
+		}
+	
+		newResult := models.PaginationResponse[models.UserPublicProfile]{}
+		if err := json.Unmarshal(recorder.Body.Bytes(), &newResult); err != nil {
+			return err
+		}
+	
+		result = append(result, newResult.Data...)
+		currPagination = newResult.Pagination
+		return nil
+	}
+
+	if err := fetchUsers(0); err != nil {
+		return nil, err
+	}
+	
+	for currPagination.NextOffset != 0 {
+		if err := fetchUsers(currPagination.NextOffset); err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
+}
+
+func GetAllUsersInvalidToken(router *router.Router, token string, limit int) (int, models.ErrorResponse, error) {
+	timestamp := time.Unix(time.Now().Unix()+1, 0).UTC().Format(time.RFC3339Nano)
+	url := fmt.Sprintf("/users/all?time=%s&skip=%d&limit=%d", timestamp, 0, limit)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := models.ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+	if recorder.Code != http.StatusForbidden {
+		return 0, models.ErrorResponse{}, fmt.Errorf("error, status code getting all users was %d, expected: %d", recorder.Code, http.StatusOK)
+	}
+	return recorder.Code, result, nil
+}
+
 func LoginAdmin() (string, error) {
-	token, err := auth.GenerateToken("admin", true)
+	token, err := auth.GenerateToken("edf533b4-6ea5-414f-8442-320f60428b8e", true)
 	return token, err
 }
 
