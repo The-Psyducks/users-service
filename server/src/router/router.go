@@ -172,7 +172,8 @@ func CreateRouter() (*Router, error) {
 
 	amqp, err := CreateProducer()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create producer: %w", err)
+		slog.Error("failed to create producer", slog.String("error", err.Error()))
+		// return nil, fmt.Errorf("failed to create producer: %w", err)
 	}
 	userService := service.CreateUserService(userDb, registryDb, amqp)
 	userController := controller.CreateUserController(userService)
