@@ -33,6 +33,7 @@ const (
 
 const (
 	GoogleProvider = "GOOGLE"
+	InternalProvider = "INTERNAL"
 )
 
 const MaxPaginationLimit = 20

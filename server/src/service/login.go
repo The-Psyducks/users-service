@@ -1,14 +1,20 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"time"
 	"users-service/src/app_errors"
 	"users-service/src/auth"
+	"users-service/src/constants"
 	"users-service/src/database"
 	"users-service/src/model"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (string, model.UserPrivateProfile, error) {
@@ -28,6 +34,37 @@ func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (st
 	// 	return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error registering login attempt: %w",
 	// 		err))
 	// }
+	if u.amqpQueue == nil {
+		return authToken, privateProfile, nil
+	}
+	
+	if provider == nil {
+		fiero := constants.InternalProvider
+		provider = &fiero
+	}
+
+	loginAttempt, err := json.Marshal(model.LoginAttempt{
+										Succesfull: true,
+										UserId:     userRecord.Id.String(),
+										Provider:   *provider,
+										Timestamp:  time.Now().GoString(),
+									})
+	if err != nil {
+		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error marshalling login attempt: %w", err))
+	}
+
+	message := amqp.Publishing{
+		ContentType: "application/json",
+		Body:        loginAttempt,
+		DeliveryMode: amqp.Persistent,
+	}
+
+	err = u.amqpQueue.Publish("", os.Getenv("CLOUDAMQP_QUEUE"), false, false, message)
+
+	if err != nil {
+		slog.Error("error publishing login attempt", slog.String("error", err.Error()))
+	}
+
 	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
 	return authToken, privateProfile, nil	
 }
