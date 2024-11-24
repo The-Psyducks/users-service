@@ -8,11 +8,13 @@ import (
 	"testing"
 	"time"
 	"users-service/src/router"
+	"users-service/tests/models"
+	"users-service/tests/utils"
 
 	"github.com/go-playground/assert/v2"
 )
 
-func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivateProfile, user1Password string, user2 UserPrivateProfile, user2Password string, user3 UserPrivateProfile, user3Password string, user4 UserPrivateProfile, user4Password string){
+func setUpRecommendationTests() (testRouter *router.Router, user1 models.UserPrivateProfile, user1Password string, user2 models.UserPrivateProfile, user2Password string, user3 models.UserPrivateProfile, user3Password string, user4 models.UserPrivateProfile, user4Password string){
     var err error
     
     testRouter, err = router.CreateRouter()
@@ -24,14 +26,14 @@ func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivatePro
     locationId := 0
     interestsIds := []int{0, 1}
 	user1Password = "Edward$El1ric:)"
-    user := UserPersonalInfo{
+    user := models.UserPersonalInfo{
         FirstName: "Edward",
         LastName:  "Elric",
         UserName:  "EdwardoElric",
         Password:  user1Password,
         Location:  locationId,
     }
-    user1, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user1, err = utils.CreateValidUser(testRouter, email, user, interestsIds)
 
     if err != nil {
         panic("Failed to create user1: " + err.Error())
@@ -41,14 +43,14 @@ func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivatePro
     locationId = 1
     interestsIds = []int{0, 1}
 	user2Password = "Edward$El1ric:)"
-    user = UserPersonalInfo{
+    user = models.UserPersonalInfo{
         FirstName: "Monke",
         LastName:  "Unga",
         UserName:  "MonkeElrico",
         Password:  user2Password,
         Location:  locationId,
     }
-    user2, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user2, err = utils.CreateValidUser(testRouter, email, user, interestsIds)
     if err != nil {
         panic("Failed to create user2: " + err.Error())
     }
@@ -57,14 +59,14 @@ func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivatePro
     locationId = 2
     interestsIds = []int{2, 3}
 	user3Password = "Slickback1!"
-    user = UserPersonalInfo{
+    user = models.UserPersonalInfo{
         FirstName: "Joaquin",
         LastName:  "Pandolfi",
         UserName:  "Slickback",
         Password:  user3Password,
         Location:  locationId,
     }
-    user3, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user3, err = utils.CreateValidUser(testRouter, email, user, interestsIds)
     if err != nil {
         panic("Failed to create user3: " + err.Error())
     }
@@ -73,14 +75,14 @@ func setUpRecommendationTests() (testRouter *router.Router, user1 UserPrivatePro
     locationId = 0
     interestsIds = []int{0, 3}
 	user3Password = "JingleBell1!"
-    user = UserPersonalInfo{
+    user = models.UserPersonalInfo{
         FirstName: "Martina",
         LastName:  "Lozano",
         UserName:  "JingleBell",
         Password:  user3Password,
         Location:  locationId,
     }
-    user4, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user4, err = utils.CreateValidUser(testRouter, email, user, interestsIds)
     if err != nil {
         panic("Failed to create user4: " + err.Error())
     }
@@ -101,7 +103,7 @@ func TestGetRecommendationsWithInvalidUUIDReturnsUnauthorizedError(t *testing.T)
 	recorder := httptest.NewRecorder()
 	testRouter.Engine.ServeHTTP(recorder, req)
 	
-	newResult := ErrorResponse{}
+	newResult := models.ErrorResponse{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &newResult)
 	assert.Equal(t, err, nil)
 
@@ -112,15 +114,15 @@ func TestGetRecommendationsWithInvalidUUIDReturnsUnauthorizedError(t *testing.T)
 func TestGetRecommendationsForUserReturnsCorrectRecommendations(t *testing.T) {
 	testRouter, user1, user1Password, user2,_,_,_,user4,_ := setUpRecommendationTests()
 
-	LoginRequest := LoginRequest{
+	LoginRequest := models.LoginRequest{
 		Email: user1.Email,
 		Password: user1Password,
 	}
 
-	response, err := LoginValidUser(testRouter, LoginRequest)
+	response, err := utils.LoginValidUser(testRouter, LoginRequest)
 	assert.Equal(t, err, nil)
 
-	recommendations, err := getAllUserRecommendations(testRouter, response.AccessToken, 10)
+	recommendations, err := utils.GetAllUserRecommendations(testRouter, response.AccessToken, 10)
 	assert.Equal(t, err, nil)
 
     fmt.Println("ASD",recommendations)
@@ -135,15 +137,15 @@ func TestGetRecommendationsForUserReturnsCorrectRecommendations(t *testing.T) {
 func TestGetRecommendationsForUserReturnsPaginatedRecommendations(t *testing.T) {
 	testRouter, user1, user1Password, user2,_,_,_,user4,_ := setUpRecommendationTests()
 
-	LoginRequest := LoginRequest{
+	LoginRequest := models.LoginRequest{
 		Email: user1.Email,
 		Password: user1Password,
 	}
 
-	response, err := LoginValidUser(testRouter, LoginRequest)
+	response, err := utils.LoginValidUser(testRouter, LoginRequest)
 	assert.Equal(t, err, nil)
 
-	recommendations, err := getAllUserRecommendations(testRouter, response.AccessToken, 1)
+	recommendations, err := utils.GetAllUserRecommendations(testRouter, response.AccessToken, 1)
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, len(recommendations), 2)

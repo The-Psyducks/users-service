@@ -1,17 +1,20 @@
 package tests
 
 import (
+	"encoding/json"
 	"fmt"
-	"time"
-    "encoding/json"
-    "net/http"
-    "net/http/httptest"
+	"net/http"
+	"net/http/httptest"
 	"testing"
+	"time"
 	"users-service/src/router"
+	"users-service/tests/models"
+	"users-service/tests/utils"
+
 	"github.com/go-playground/assert/v2"
 )
 
-func setUpSearchTests() (testRouter *router.Router, user1 UserPrivateProfile, user1Password string, user2 UserPrivateProfile, user2Password string){
+func setUpSearchTests() (testRouter *router.Router, user1 models.UserPrivateProfile, user1Password string, user2 models.UserPrivateProfile, user2Password string){
     var err error
     
     testRouter, err = router.CreateRouter()
@@ -23,14 +26,14 @@ func setUpSearchTests() (testRouter *router.Router, user1 UserPrivateProfile, us
     locationId := 0
     interestsIds := []int{0, 1}
 	user1Password = "Edward$El1ric:)"
-    user := UserPersonalInfo{
+    user := models.UserPersonalInfo{
         FirstName: "Edward",
         LastName:  "Elric",
         UserName:  "EdwardoElric",
         Password:  user1Password,
         Location:  locationId,
     }
-    user1, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user1, err = utils.CreateValidUser(testRouter, email, user, interestsIds)
 
     if err != nil {
         panic("Failed to create user1: " + err.Error())
@@ -40,14 +43,14 @@ func setUpSearchTests() (testRouter *router.Router, user1 UserPrivateProfile, us
     locationId = 1
     interestsIds = []int{0, 1}
 	user2Password = "Edward$El1ric:)"
-    user = UserPersonalInfo{
+    user = models.UserPersonalInfo{
         FirstName: "Monke",
         LastName:  "Unga",
         UserName:  "MonkeElrico",
         Password:  user2Password,
         Location:  locationId,
     }
-    user2, err = CreateValidUser(testRouter, email, user, interestsIds)
+    user2, err = utils.CreateValidUser(testRouter, email, user, interestsIds)
     if err != nil {
         panic("Failed to create user2: " + err.Error())
     }
@@ -57,15 +60,15 @@ func setUpSearchTests() (testRouter *router.Router, user1 UserPrivateProfile, us
 func TestSearchForNotExistingUsersReturnsNothing(t *testing.T) {
 	testRouter, user1, user1Password, _, _ := setUpSearchTests()
 
-    LoginRequest := LoginRequest{
+    LoginRequest := models.LoginRequest{
         Email: user1.Email,
         Password: user1Password,
     }
 
-    response, err := LoginValidUser(testRouter, LoginRequest)
+    response, err := utils.LoginValidUser(testRouter, LoginRequest)
     assert.Equal(t, err, nil)
 
-    searchResult, err := searchUsers(testRouter, "^^", response.AccessToken, 2)
+    searchResult, err := utils.SearchUsers(testRouter, "^^", response.AccessToken, 2)
 	assert.Equal(t, err, nil)
 	assert.Equal(t, len(searchResult), 0)
 }
@@ -73,15 +76,15 @@ func TestSearchForNotExistingUsersReturnsNothing(t *testing.T) {
 func TestSearchForOneUserReturnsJustIt(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpSearchTests()
 
-    LoginRequest := LoginRequest{
+    LoginRequest := models.LoginRequest{
         Email: user1.Email,
         Password: user1Password,
     }
 
-    response, err := LoginValidUser(testRouter, LoginRequest)
+    response, err := utils.LoginValidUser(testRouter, LoginRequest)
     assert.Equal(t, err, nil)
 
-    searchResult, err := searchUsers(testRouter, "edward", response.AccessToken, 2)
+    searchResult, err := utils.SearchUsers(testRouter, "edward", response.AccessToken, 2)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(searchResult), 1)
     assert.Equal(t, searchResult[0].Profile.Id, user1.Id)
@@ -90,15 +93,15 @@ func TestSearchForOneUserReturnsJustIt(t *testing.T) {
 func TestSearchForUsersWithUsernameAndNameReturnsInOrder(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpSearchTests()
 
-    LoginRequest := LoginRequest{
+    LoginRequest := models.LoginRequest{
         Email: user1.Email,
         Password: user1Password,
     }
 
-    response, err := LoginValidUser(testRouter, LoginRequest)
+    response, err := utils.LoginValidUser(testRouter, LoginRequest)
     assert.Equal(t, err, nil)
 
-    searchResult, err := searchUsers(testRouter, "elr", response.AccessToken, 2)
+    searchResult, err := utils.SearchUsers(testRouter, "elr", response.AccessToken, 2)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(searchResult), 2)
     assert.Equal(t, searchResult[0].Profile.Id, user2.Id)
@@ -108,15 +111,15 @@ func TestSearchForUsersWithUsernameAndNameReturnsInOrder(t *testing.T) {
 func TestSearchForUsersWithLowPaginationLimitReturnAll(t *testing.T) {
     testRouter, user1, user1Password, user2, _ := setUpSearchTests()
 
-    LoginRequest := LoginRequest{
+    LoginRequest := models.LoginRequest{
         Email: user1.Email,
         Password: user1Password,
     }
 
-    response, err := LoginValidUser(testRouter, LoginRequest)
+    response, err := utils.LoginValidUser(testRouter, LoginRequest)
     assert.Equal(t, err, nil)
 
-    searchResult, err := searchUsers(testRouter, "elr", response.AccessToken, 1)
+    searchResult, err := utils.SearchUsers(testRouter, "elr", response.AccessToken, 1)
     assert.Equal(t, err, nil)
     assert.Equal(t, len(searchResult), 2)
     assert.Equal(t, searchResult[0].Profile.Id, user2.Id)
@@ -125,12 +128,12 @@ func TestSearchForUsersWithLowPaginationLimitReturnAll(t *testing.T) {
 func TestSearchForUsersWithWhitespacedTextReturnsError(t *testing.T) {
     testRouter, user1, user1Password, _, _ := setUpSearchTests()
 
-    LoginRequest := LoginRequest{
+    LoginRequest := models.LoginRequest{
         Email: user1.Email,
         Password: user1Password,
     }
 
-    loginResponse, err := LoginValidUser(testRouter, LoginRequest)
+    loginResponse, err := utils.LoginValidUser(testRouter, LoginRequest)
     assert.Equal(t, err, nil)
 
     timestamp := time.Unix(time.Now().Unix()+1, 0).UTC().Format(time.RFC3339Nano)
@@ -141,7 +144,7 @@ func TestSearchForUsersWithWhitespacedTextReturnsError(t *testing.T) {
     req.Header.Add("Authorization", "Bearer "+ loginResponse.AccessToken)
     recorder := httptest.NewRecorder()
     testRouter.Engine.ServeHTTP(recorder, req)
-    errorResponse := ErrorResponse{}
+    errorResponse := models.ErrorResponse{}
     err = json.Unmarshal(recorder.Body.Bytes(), &errorResponse)
     assert.Equal(t, err, nil)
 

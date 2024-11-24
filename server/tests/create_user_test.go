@@ -10,19 +10,22 @@ import (
 	"github.com/go-playground/assert/v2"
 
 	"users-service/src/router"
+	"users-service/tests/constants"
+	"users-service/tests/models"
+	"users-service/tests/utils"
 )
 
 func TestCreateUserCreatesAValidOne(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := utils.GetRegisterOptions(router)
 	assert.Equal(t, err, nil)
 
 	email := "edwardelric@yahoo.com"
 	locationId := 0
 	interestsIds := []int{0, 1}
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -30,12 +33,12 @@ func TestCreateUserCreatesAValidOne(t *testing.T) {
 		Location:  locationId,
 	}
 
-	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
-	userProfile, err := CreateValidUser(router, email, personalInfo, interestsIds)
+	location, interests := utils.GetLocationAndInterestsNames(registerOptions, locationId, interestsIds)
+	userProfile, err := utils.CreateValidUser(router, email, personalInfo, interestsIds)
 
 	assert.Equal(t, err, nil)
 
-	AssertUserPrivateProfileIsUser(t, email, personalInfo, location, interests, userProfile)
+	utils.AssertUserPrivateProfileIsUser(t, email, personalInfo, location, interests, userProfile)
 }
 
 func TestCreateUserWithInvalidPasswordReturnsProperValidationError(t *testing.T) {
@@ -43,7 +46,7 @@ func TestCreateUserWithInvalidPasswordReturnsProperValidationError(t *testing.T)
 	assert.Equal(t, err, nil)
 
 	email := "capo@gmail.com"
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -51,14 +54,14 @@ func TestCreateUserWithInvalidPasswordReturnsProperValidationError(t *testing.T)
 		Location:  0,
 	}
 
-	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
+	code, response, err := utils.CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 1)
 	assert.Equal(t, response.Errors[0].Field, "password")
-	assertRegisterInstancePattern(t, "personal-info", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
 func TestCreateUserWithFirstAndLastNameTooLongReturnsProperValidationError(t *testing.T) {
@@ -66,7 +69,7 @@ func TestCreateUserWithFirstAndLastNameTooLongReturnsProperValidationError(t *te
 	assert.Equal(t, err, nil)
 
 	email := "capo@gmail.com"
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "samdasdoasm,diop kiopsasdaskdopaskEdwardasdasdasdasdsdsadsasdasdasdasdasdasdasdasasdasdasasdasduashjudjashuasjdiasjdio",
 		LastName:  "Lorem ipsum no se como sigue esto no se hablar latin juju asndjasndjasndjasndjkasnjsnadjkasndjkanjkasdffddfaafdafaasasd",
 		UserName:  "EdwardoElric",
@@ -74,13 +77,13 @@ func TestCreateUserWithFirstAndLastNameTooLongReturnsProperValidationError(t *te
 		Location:  0,
 	}
 
-	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
+	code, response, err := utils.CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 2)
-	assertRegisterInstancePattern(t, "personal-info", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
 func TestCreateUserWithUsernameAndPasswordTooShortReturnsProperValidationErrors(t *testing.T) {
@@ -88,7 +91,7 @@ func TestCreateUserWithUsernameAndPasswordTooShortReturnsProperValidationErrors(
 	assert.Equal(t, err, nil)
 
 	email := "capo@gmail.com"
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "As",
@@ -96,25 +99,25 @@ func TestCreateUserWithUsernameAndPasswordTooShortReturnsProperValidationErrors(
 		Location:  0,
 	}
 
-	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
+	code, response, err := utils.CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 2)
-	assertRegisterInstancePattern(t, "personal-info", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
 func TestCreateUserWithInvalidLocationReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := utils.GetRegisterOptions(router)
 	assert.Equal(t, err, nil)
 
 	email := "capo@gmail.com"
 	locationIndex := len(registerOptions.Locations) //invalid
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -122,26 +125,26 @@ func TestCreateUserWithInvalidLocationReturnsProperValidationError(t *testing.T)
 		Location:  locationIndex,
 	}
 
-	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
+	code, response, err := utils.CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 1)
 	assert.Equal(t, response.Errors[0].Field, "location")
-	assertRegisterInstancePattern(t, "personal-info", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "personal-info", response.Instance)
 }
 
 func TestCreateUserWithNotExistingInterestsReturnsProperValidationError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := utils.GetRegisterOptions(router)
 	assert.Equal(t, err, nil)
 
 	email := "capo@gmail.com"
 	interstsIds := []int{len(registerOptions.Interests) - 1, len(registerOptions.Interests)}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -149,14 +152,14 @@ func TestCreateUserWithNotExistingInterestsReturnsProperValidationError(t *testi
 		Location:  0,
 	}
 
-	code, response, err := CreateUserWithInvalidInterests(router, email, user, interstsIds)
+	code, response, err := utils.CreateUserWithInvalidInterests(router, email, user, interstsIds)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 1)
 	assert.Equal(t, response.Errors[0].Field, "interests")
-	assertRegisterInstancePattern(t, "interests", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "interests", response.Instance)
 }
 
 func TestCreateUserWithRepeatedInterestsReturnsProperValidationError(t *testing.T) {
@@ -165,7 +168,7 @@ func TestCreateUserWithRepeatedInterestsReturnsProperValidationError(t *testing.
 
 	email := "capo@gmail.com"
 	interstsIds := []int{0, 0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -173,14 +176,14 @@ func TestCreateUserWithRepeatedInterestsReturnsProperValidationError(t *testing.
 		Location:  0,
 	}
 
-	code, response, err := CreateUserWithInvalidInterests(router, email, user, interstsIds)
+	code, response, err := utils.CreateUserWithInvalidInterests(router, email, user, interstsIds)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 1)
 	assert.Equal(t, response.Errors[0].Field, "interests")
-	assertRegisterInstancePattern(t, "interests", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "interests", response.Instance)
 }
 
 func TestCreateUserWithInvalidMailReturnsProperValidationError(t *testing.T) {
@@ -199,7 +202,7 @@ func TestCreateUserWithInvalidMailReturnsProperValidationError(t *testing.T) {
 	req.Header.Add("content-type", "application/json")
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	res := ValidationErrorResponse{}
+	res := models.ValidationErrorResponse{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
 	assert.Equal(t, err, nil)
 
@@ -216,7 +219,7 @@ func TestResolveUserWithMailThatExistsReturnsLogInStep(t *testing.T) {
 
 	email := "capo@gmail.com"
 	interestsIds := []int{0}
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardElric",
@@ -224,7 +227,7 @@ func TestResolveUserWithMailThatExistsReturnsLogInStep(t *testing.T) {
 		Location:  0,
 	}
 
-	_, err = CreateValidUser(router, email, personalInfo, interestsIds)
+	_, err = utils.CreateValidUser(router, email, personalInfo, interestsIds)
 	assert.Equal(t, err, nil)
 
 	payload := map[string]string{
@@ -239,12 +242,12 @@ func TestResolveUserWithMailThatExistsReturnsLogInStep(t *testing.T) {
 	req.Header.Add("content-type", "application/json")
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	res := ResolverResponse{}
+	res := models.ResolverResponse{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &res)
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, recorder.Code, http.StatusOK)
-	assert.Equal(t, res.NextAuthStep, LoginAuthStep)
+	assert.Equal(t, res.NextAuthStep, constants.LoginAuthStep)
 }
 
 func TestCreateUserWithUsernameThatExistsWithDifferentCaseReturnsProperValidationError(t *testing.T) {
@@ -253,7 +256,7 @@ func TestCreateUserWithUsernameThatExistsWithDifferentCaseReturnsProperValidatio
 
 	email := "capo@gmail.com"
 	interestsIds := []int{0}
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -261,11 +264,11 @@ func TestCreateUserWithUsernameThatExistsWithDifferentCaseReturnsProperValidatio
 		Location:  0,
 	}
 
-	_, err = CreateValidUser(router, email, personalInfo, interestsIds)
+	_, err = utils.CreateValidUser(router, email, personalInfo, interestsIds)
 	assert.Equal(t, err, nil)
 
 	email = "bestia@gmail.com"
-	personalInfo = UserPersonalInfo{
+	personalInfo = models.UserPersonalInfo{
 		FirstName: "asda",
 		LastName:  "Elrasdasdic",
 		UserName:  "edWardoElrIc",
@@ -273,12 +276,12 @@ func TestCreateUserWithUsernameThatExistsWithDifferentCaseReturnsProperValidatio
 		Location:  0,
 	}
 
-	code, response, err := CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
+	code, response, err := utils.CreateUserWithInvalidPersonalInfo(router, email, personalInfo)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusBadRequest)
 	assert.Equal(t, response.Title, "validation error")
 	assert.Equal(t, len(response.Errors), 1)
 	assert.Equal(t, response.Errors[0].Field, "username")
-	assertRegisterInstancePattern(t, "personal-info", response.Instance)
+	utils.AssertRegisterInstancePattern(t, "personal-info", response.Instance)
 }

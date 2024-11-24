@@ -7,6 +7,8 @@ import (
 	"github.com/go-playground/assert/v2"
 
 	"users-service/src/router"
+	"users-service/tests/models"
+	"users-service/tests/utils"
 )
 
 func TestLoginUserReturnsSession(t *testing.T) {
@@ -16,7 +18,7 @@ func TestLoginUserReturnsSession(t *testing.T) {
 
 	email := "edwardelric@yahoo.com"
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -24,16 +26,16 @@ func TestLoginUserReturnsSession(t *testing.T) {
 		Location:  0,
 	}
 
-	_, err = CreateValidUser(router, email, user, interestsIds)
+	_, err = utils.CreateValidUser(router, email, user, interestsIds)
 
 	assert.Equal(t, err, nil)
 
-	login := LoginRequest{
+	login := models.LoginRequest{
 		Email:    email,
 		Password: user.Password,
 	}
 
-	_, err = LoginValidUser(router, login)
+	_, err = utils.LoginValidUser(router, login)
 
 	assert.Equal(t, err, nil)
 }
@@ -42,12 +44,12 @@ func TestLoginNotExistingUserReturnsNotFoundError(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	login := LoginRequest{
+	login := models.LoginRequest{
 		Email:    "AtsumuMiya@GOAT.com",
 		Password: "InarizakiGOAT",
 	}
 
-	code, resp, err := LoginInvalidUser(router, login)
+	code, resp, err := utils.LoginInvalidUser(router, login)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusNotFound)
@@ -62,7 +64,7 @@ func TestLoginUserWithInvalidPasswordReturnsNotFoundError(t *testing.T) {
 
 	email := "edwardelric@yahoo.com"
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -70,16 +72,16 @@ func TestLoginUserWithInvalidPasswordReturnsNotFoundError(t *testing.T) {
 		Location:  0,
 	}
 
-	_, err = CreateValidUser(router, email, user, interestsIds)
+	_, err = utils.CreateValidUser(router, email, user, interestsIds)
 
 	assert.Equal(t, err, nil)
 
-	login := LoginRequest{
+	login := models.LoginRequest{
 		Email:    email,
 		Password: "Edward$Elri3c:",
 	}
 
-	code, _, err := LoginInvalidUser(router, login)
+	code, _, err := utils.LoginInvalidUser(router, login)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusNotFound)
@@ -92,7 +94,7 @@ func TestLoginUserStillInRegistryReturnsNotFoundError(t *testing.T) {
 
 	email := "hola@gmail.com"
 	interestsIds := []int{0, 1}
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -100,26 +102,26 @@ func TestLoginUserStillInRegistryReturnsNotFoundError(t *testing.T) {
 		Location:  0,
 	}
 
-	res, err := getUserRegistryForSignUp(router, email)
+	res, err := utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
 
 	id := res.Metadata.RegistrationId
 
-	err = sendEmailVerificationAndVerificateIt(router, id)
+	err = utils.SendEmailVerificationAndVerificateIt(router, id)
 	assert.Equal(t, err, nil)
 
-	err = putValidUserPersonalInfo(router, id, personalInfo)
+	err = utils.PutValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
 
-	err = putValidInterests(router, id, interestsIds)
+	err = utils.PutValidInterests(router, id, interestsIds)
 	assert.Equal(t, err, nil)
 
-	login := LoginRequest{
+	login := models.LoginRequest{
 		Email:    email,
 		Password: personalInfo.Password,
 	}
 
-	code, _, err := LoginInvalidUser(router, login)
+	code, _, err := utils.LoginInvalidUser(router, login)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusNotFound)
