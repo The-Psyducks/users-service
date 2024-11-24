@@ -641,7 +641,7 @@ func GetFollowers(router *router.Router, id string, token string) ([]models.Foll
 
 	fetchFollowers := func(skip int) error {
 		timestamp := time.Now().UTC().Format(time.RFC3339Nano)
-		url := fmt.Sprintf("/users/%s/followers?time=%s&skip=%d&limit=%d", id, timestamp, skip, 20)
+		url := fmt.Sprintf("/users/%s/followers?time=%s&skip=%d&limit=%d", id, timestamp, skip, 1)
 		req, err := http.NewRequest("GET", url, nil)
 		if err != nil {
 			return err
@@ -693,9 +693,7 @@ func GetFollowersForInvalidUser(router *router.Router, id string, token string) 
 	if err != nil {
 		return models.ErrorResponse{}, err
 	}
-	if recorder.Code != http.StatusForbidden {
-		return models.ErrorResponse{}, fmt.Errorf("error, status code getting followers was %d, expected: %d", recorder.Code, http.StatusOK)
-	}
+
 	return result, nil
 }
 
@@ -739,6 +737,26 @@ func GetFollowing(router *router.Router, id string, token string) ([]models.Foll
 		}
 	}
 
+	return result, nil
+}
+
+func GetFollowingForInvalidUser(router *router.Router, id string, token string) (models.ErrorResponse, error) {
+	timestamp := time.Now().UTC().Format(time.RFC3339Nano)
+	url := fmt.Sprintf("/users/%s/following?time=%s&skip=%d&limit=%d", id, timestamp, 0, 20)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return models.ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := models.ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+
+	if err != nil {
+		return models.ErrorResponse{}, err
+	}
 	return result, nil
 }
 

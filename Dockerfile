@@ -1,4 +1,3 @@
-# Build stage
 FROM golang:1.23.0-alpine3.20 AS builder
 
 WORKDIR /home/app
@@ -13,19 +12,12 @@ RUN go build -o twitsnap ./main.go
 # Test stage
 FROM builder AS twitsnap-test-stage
 
-# CMD ["go", "test", "-v", "./tests"]
-COPY /server/rsc/twitsnap.png ./tests/rsc/twitsnap.png
-CMD ["sh", "-c", "go test -cover -coverprofile=coverage/coverage.out $(go list ./... | grep -v 'tests/utils' | grep -v 'tests/models' | grep -v 'tests/constants')"]
+# Crear carpeta para el reporte de cobertura
+RUN mkdir -p /home/app/coverage
 
-# Run stage
-FROM alpine:3.20
+# Establecer permisos de escritura/lectura para la carpeta coverage
+RUN chmod -R 777 /home/app/coverage
 
-WORKDIR /home/app
-
-COPY --from=builder /home/app/twitsnap ./
-COPY /server/rsc/twitsnap.png ./rsc/twitsnap.png
-
-# Create a service account file if it doesn't exist
-RUN test -f /home/app/service-account.json || echo '{}' > /home/app/service-account.json
-
-ENTRYPOINT ["./twitsnap"]
+# Usar sh -c para ejecutar el comando completo de pruebas y generación del reporte HTML
+# CMD ["sh", "-c", "go test -cover -v -coverprofile=/home/app/coverage/coverage.out ./... && go tool cover -html=/home/app/coverage/coverage.out -o /home/app/coverage/coverage.html && chmod -R 777 /home/app/coverage"]
+CMD ["sh", "-c", "go test -cover -coverprofile=/home/app/coverage/coverage.out ./... && go tool cover -html=/home/app/coverage/coverage.out -o /home/app/coverage/coverage.html && chmod -R 777 /home/app/coverage"]

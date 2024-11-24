@@ -360,3 +360,39 @@ func TestGetFollowerForMutualFollowingUsersReturnsCorrectly(t *testing.T) {
         }
     }
 }
+
+// tests:
+// 1. Get Followers for invalid user
+// 2. Get following for invalid user
+
+func TestGetFollowersForNotExistingUserReturnsProperError(t *testing.T) {
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
+    
+    loginRequest := models.LoginRequest{
+        Email: user1.Email,
+        Password: user1Password,
+    }
+    resp, err := utils.LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    response, err := utils.GetFollowersForInvalidUser(testRouter, "4a28ea57-854b-4ee4-af34-61c998d8493e", resp.AccessToken)
+    
+    assert.Equal(t, err, nil)
+    assert.Equal(t, response.Status, http.StatusNotFound)
+}
+
+func TestGetFollowingForNotExistingUserReturnsProperError(t *testing.T) {
+    testRouter, user1, user1Password, _, _ := setUpFollowTests()
+    
+    loginRequest := models.LoginRequest{
+        Email: user1.Email,
+        Password: user1Password,
+    }
+    resp, err := utils.LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    response, err := utils.GetFollowingForInvalidUser(testRouter, "4a28ea57-854b-4ee4-af34-61c998d8493e", resp.AccessToken)
+    
+    assert.Equal(t, err, nil)
+    assert.Equal(t, response.Status, http.StatusNotFound)
+}

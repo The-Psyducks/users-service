@@ -53,7 +53,7 @@ func setUpBlockTests() (testRouter *router.Router, user1 models.UserPrivateProfi
 	return
 }
 
-func TestBlockUserWorksCorrectly(t *testing.T) {
+func TestUserBlockedCanNotLogIn(t *testing.T) {
 	testRouter, user1, user1Password, _, _ := setUpBlockTests()
 
 	adminToken, err := utils.LoginAdmin()
@@ -71,6 +71,20 @@ func TestBlockUserWorksCorrectly(t *testing.T) {
 	assert.Equal(t, err, nil)
 
 	assert.Equal(t, code, http.StatusForbidden)
+}
+
+func TestUserBlockedCanNotUseToken(t *testing.T) {
+	testRouter, user1, _, _, _ := setUpBlockTests()
+
+	adminToken, err := utils.LoginAdmin()
+	assert.Equal(t, err, nil)
+
+	err = utils.BlockUser(testRouter, user1.Id.String(), "You are blocked", adminToken)
+	assert.Equal(t, err, nil)
+
+	resp, err := utils.GetFollowersForInvalidUser(testRouter, user1.Id.String(), adminToken)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, resp.Status, http.StatusForbidden)
 }
 
 func TestBlockUserWithoutReasonReturns400(t *testing.T) {
@@ -193,11 +207,6 @@ func TestGetUserInformationWithoutAdmin(t *testing.T) {
 	assert.Equal(t, err, nil)
 	assert.Equal(t, code, http.StatusForbidden)
 }
-
-// Tests: get all users
-// 1. Test that get all users returns all users
-// 2. Test that get all users returns paginated users
-// 3. Test that get all users returns 403 if user is not admin
 
 func TestGetAllUsersReturnsAllUsers(t *testing.T) {
 	testRouter, _, _, _, _ := setUpBlockTests()

@@ -17,13 +17,7 @@ func UserBlockedMiddleware(service *service.User) gin.HandlerFunc {
 		}
 
 		sessionUserId := c.GetString("session_user_id")
-		userId, err := uuid.Parse(sessionUserId)
-		if err != nil {
-			err := app_errors.NewAppError(http.StatusBadRequest, "Invalid id in token", err)
-			_ = c.AbortWithError(err.Code,err)
-			c.Next()
-			return
-		}
+		userId, _ := uuid.Parse(sessionUserId)
 
 		isBlocked, err := service.CheckIfUserIsBlocked(userId)
 		if err != nil {

@@ -129,9 +129,6 @@ func (postDB *UsersPostgresDB) associateInterestsToUser(userId uuid.UUID, intere
 		var interestRecord string
 		err := postDB.db.QueryRow(query, userId, interest).Scan(&interestRecord)
 		if err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				continue
-			}
 			return nil, fmt.Errorf("error inserting interest record: %w", err)
 		}
 		insertedInterests = append(insertedInterests, interestRecord)
@@ -550,13 +547,6 @@ func (postDB *UsersPostgresDB) GetUsersWithOnlyNameContaining(text string, times
 
 	if len(users) == limit+1 {
 		return users[:limit], true, nil
-	}
-
-	for i := range users {
-		users[i].Interests, err = postDB.getInterestsForUserId(users[i].Id)
-		if err != nil {
-			return nil, false, fmt.Errorf("error getting interests for user: %w", err)
-		}
 	}
 
 	return users, false, nil

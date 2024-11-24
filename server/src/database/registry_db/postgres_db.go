@@ -130,9 +130,6 @@ func (db *RegistryPostgresDB) GetRegistryEntryByEmail(email string) (model.Regis
 		&personalInfo.Location)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return model.RegistryEntry{}, database.ErrKeyNotFound
-		}
 		return model.RegistryEntry{}, fmt.Errorf("failed to get registry entry: %w", err)
 	}
 
@@ -155,9 +152,6 @@ func (db *RegistryPostgresDB) AddPersonalInfoToRegistryEntry(id uuid.UUID, perso
 		id, personalInfo.FirstName, personalInfo.LastName,
 		personalInfo.UserName, personalInfo.Password, personalInfo.Location)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return database.ErrKeyNotFound
-		}
 		return fmt.Errorf("failed to add personal info: %w", err)
 	}
 	return nil
@@ -199,9 +193,6 @@ func (db *RegistryPostgresDB) GetEmailVerificationPin(id uuid.UUID) (string, err
 	var pin string
 	err := db.db.QueryRow("SELECT email_verification_pin FROM registry_entries WHERE id = $1", id).Scan(&pin)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return "", database.ErrKeyNotFound
-		}
 		return "", fmt.Errorf("failed to get email verification pin: %w", err)
 	}
 	return pin, nil
