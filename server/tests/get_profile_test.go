@@ -10,6 +10,8 @@ import (
 	"github.com/go-playground/assert/v2"
 
 	"users-service/src/router"
+	"users-service/tests/models"
+	"users-service/tests/utils"
 )
 
 func TestGetOwnUserProfileReturnsPrivateProfile(t *testing.T) {
@@ -17,13 +19,13 @@ func TestGetOwnUserProfileReturnsPrivateProfile(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 
-	registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := utils.GetRegisterOptions(router)
 	assert.Equal(t, err, nil)
 
 	email := "edwardo@elric.com"
 	locationId := 0
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -31,12 +33,12 @@ func TestGetOwnUserProfileReturnsPrivateProfile(t *testing.T) {
 		Location:  locationId,
 	}
 
-	response, err := createAndLoginUser(router, email, user, interestsIds)
+	response, err := utils.CreateAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
-	userProfile, err := getOwnProfile(router, response.Profile.Id.String(), response.AccessToken)
-	location, interests := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
-	AssertUserPrivateProfileIsUser(t, email, user, location, interests, userProfile)
+	userProfile, err := utils.GetOwnProfile(router, response.Profile.Id.String(), response.AccessToken)
+	location, interests := utils.GetLocationAndInterestsNames(registerOptions, locationId, interestsIds)
+	utils.AssertUserPrivateProfileIsUser(t, email, user, location, interests, userProfile)
 
 	assert.Equal(t, err, nil)
 }
@@ -46,26 +48,26 @@ func TestGetAnotherUserProfileReturnsPublicProfile(t *testing.T) {
 
 	assert.Equal(t, err, nil)
 
-	registerOptions, err := getRegisterOptions(router)
+	registerOptions, err := utils.GetRegisterOptions(router)
 	assert.Equal(t, err, nil)
 
 	email := "edwardo@elric.com"
 	locationId := 0
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
 		Password:  "Edward$El1ric:)",
 		Location:  locationId,
 	}
-	_, err = CreateValidUser(router, email, user, interestsIds)
+	_, err = utils.CreateValidUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
 	email = "MonkeCAapoo@elric.com"
 	locationId = 1
 	interestsIds = []int{0, 1}
-	user = UserPersonalInfo{
+	user = models.UserPersonalInfo{
 		FirstName: "Monke",
 		LastName:  "Unga",
 		UserName:  "UngaUnga",
@@ -73,12 +75,12 @@ func TestGetAnotherUserProfileReturnsPublicProfile(t *testing.T) {
 		Location:  locationId,
 	}
 
-	response2, err := createAndLoginUser(router, email, user, interestsIds)
+	response2, err := utils.CreateAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
-	userProfile, err := getAnotherUserProfile(router, response2.Profile.Id.String(), response2.AccessToken)
-	location, _ := getLocationAndInterestsNames(registerOptions, locationId, interestsIds)
-	AssertUserPublicProfileIsUser(t, user, location, userProfile)
+	userProfile, err := utils.GetAnotherUserProfile(router, response2.Profile.Id.String(), response2.AccessToken)
+	location, _ := utils.GetLocationAndInterestsNames(registerOptions, locationId, interestsIds)
+	utils.AssertUserPublicProfileIsUser(t, user, location, userProfile)
 
 	assert.Equal(t, err, nil)
 }
@@ -90,7 +92,7 @@ func TestGetUserProfileWithoutTokenReturnsAuthError(t *testing.T) {
 	email := "edwardo@elric.com"
 	locationId := 0
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -98,7 +100,7 @@ func TestGetUserProfileWithoutTokenReturnsAuthError(t *testing.T) {
 		Location:  locationId,
 	}
 
-	_, err = CreateValidUser(router, email, user, interestsIds)
+	_, err = utils.CreateValidUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
 	req, err := http.NewRequest("GET", "/users/"+user.UserName, &bytes.Reader{})
@@ -106,7 +108,7 @@ func TestGetUserProfileWithoutTokenReturnsAuthError(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	router.Engine.ServeHTTP(recorder, req)
-	result := ErrorResponse{}
+	result := models.ErrorResponse{}
 	err = json.Unmarshal(recorder.Body.Bytes(), &result)
 	assert.Equal(t, err, nil)
 
@@ -120,7 +122,7 @@ func TestGetNotExistingUserProfileReturnsProperError(t *testing.T) {
 
 	email := "edwardos@elric.com"
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edwarsd",
 		LastName:  "Elrsic",
 		UserName:  "EdwasrdoElric",
@@ -128,11 +130,11 @@ func TestGetNotExistingUserProfileReturnsProperError(t *testing.T) {
 		Location:  0,
 	}
 
-	response, err := createAndLoginUser(router, email, user, interestsIds)
+	response, err := utils.CreateAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
 	id := "4a28ea57-854b-4ee4-af34-61c998d8493e"
-	result, err := getNotExistingUser(router, id, response.AccessToken)
+	result, err := utils.GetNotExistingUser(router, id, response.AccessToken)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result.Title, "User not found")
@@ -144,7 +146,7 @@ func TestGetUserThatIsInRegistryReturnsNotFoundError(t *testing.T) {
 
 	email := "hola@gmail.com"
 	interestsIds := []int{0, 1}
-	user := UserPersonalInfo{
+	user := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -152,12 +154,12 @@ func TestGetUserThatIsInRegistryReturnsNotFoundError(t *testing.T) {
 		Location:  0,
 	}
 
-	response, err := createAndLoginUser(router, email, user, interestsIds)
+	response, err := utils.CreateAndLoginUser(router, email, user, interestsIds)
 	assert.Equal(t, err, nil)
 
 	email = "holasa@gmail.com"
 	interestsIds = []int{0, 1}
-	user = UserPersonalInfo{
+	user = models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoasElric",
@@ -165,21 +167,21 @@ func TestGetUserThatIsInRegistryReturnsNotFoundError(t *testing.T) {
 		Location:  0,
 	}
 
-	res, err := getUserRegistryForSignUp(router, email)
+	res, err := utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
 
 	id := res.Metadata.RegistrationId
 
-	err = sendEmailVerificationAndVerificateIt(router, id)
+	err = utils.SendEmailVerificationAndVerificateIt(router, id)
 	assert.Equal(t, err, nil)
 
-	err = putValidUserPersonalInfo(router, id, user)
+	err = utils.PutValidUserPersonalInfo(router, id, user)
 	assert.Equal(t, err, nil)
 
-	err = putValidInterests(router, id, interestsIds)
+	err = utils.PutValidInterests(router, id, interestsIds)
 	assert.Equal(t, err, nil)
 
-	result, err := getNotExistingUser(router, res.Metadata.RegistrationId, response.AccessToken)
+	result, err := utils.GetNotExistingUser(router, res.Metadata.RegistrationId, response.AccessToken)
 
 	assert.Equal(t, err, nil)
 	assert.Equal(t, result.Title, "User not found")

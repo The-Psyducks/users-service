@@ -1,4 +1,4 @@
-package tests
+package constants
 
 const (
 	LoginAuthStep = "LOGIN"

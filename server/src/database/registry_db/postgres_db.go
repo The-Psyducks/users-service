@@ -32,10 +32,11 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email VARCHAR(%d) NOT NULL UNIQUE,
 		identity_provider VARCHAR(255) DEFAULT NULL,
+		email_verification_pin VARCHAR(10),
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
         first_name VARCHAR(%d) DEFAULT '',
         last_name VARCHAR(%d) DEFAULT '',
-        username VARCHAR(%d) UNIQUE DEFAULT '',
+        username VARCHAR(%d) DEFAULT '',
         password TEXT DEFAULT '',
         location VARCHAR(255) DEFAULT '',
 		created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -129,9 +130,6 @@ func (db *RegistryPostgresDB) GetRegistryEntryByEmail(email string) (model.Regis
 		&personalInfo.Location)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return model.RegistryEntry{}, database.ErrKeyNotFound
-		}
 		return model.RegistryEntry{}, fmt.Errorf("failed to get registry entry: %w", err)
 	}
 
@@ -154,9 +152,6 @@ func (db *RegistryPostgresDB) AddPersonalInfoToRegistryEntry(id uuid.UUID, perso
 		id, personalInfo.FirstName, personalInfo.LastName,
 		personalInfo.UserName, personalInfo.Password, personalInfo.Location)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return database.ErrKeyNotFound
-		}
 		return fmt.Errorf("failed to add personal info: %w", err)
 	}
 	return nil
@@ -182,6 +177,27 @@ func (db *RegistryPostgresDB) AddInterestsToRegistryEntry(id uuid.UUID, interest
 
     return nil
 }
+
+func (db *RegistryPostgresDB) SetEmailVerificationPin(id uuid.UUID, code string) error {
+	res, err := db.db.Exec("UPDATE registry_entries SET email_verification_pin = $2 WHERE id = $1", id, code)
+	if err != nil {
+		return fmt.Errorf("failed to set email verification pin: %w", err)
+	}
+	if affected, err := res.RowsAffected(); err != nil || affected == 0 {
+		return database.ErrKeyNotFound
+	}
+	return nil
+}
+
+func (db *RegistryPostgresDB) GetEmailVerificationPin(id uuid.UUID) (string, error) {
+	var pin string
+	err := db.db.QueryRow("SELECT email_verification_pin FROM registry_entries WHERE id = $1", id).Scan(&pin)
+	if err != nil {
+		return "", fmt.Errorf("failed to get email verification pin: %w", err)
+	}
+	return pin, nil
+}
+
 
 func (db *RegistryPostgresDB) VerifyEmail(id uuid.UUID) error {
 	_, err := db.db.Exec("UPDATE registry_entries SET email_verified = true WHERE id = $1", id)
@@ -216,51 +232,4 @@ func (db *RegistryPostgresDB) getInterests(id uuid.UUID) ([]string, error) {
 	}
 
 	return interests, nil
-}
-
-func (db *RegistryPostgresDB) GetRegistrySummaryMetrics() (*model.RegistrationSummaryMetrics, error) {
-	var metrics model.RegistrationSummaryMetrics
-
-	query := `SELECT COUNT(*) as total_registrations,
-				COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END), 0) as succesfull_registrations,
-				COALESCE(SUM(CASE WHEN deleted_at IS NOT NULL THEN 0 ELSE 1 END), 0) as failed_registrations,
-				COALESCE(AVG(EXTRACT(EPOCH FROM (deleted_at - created_at))), 0) as average_registration_time
-			FROM registry_entries
-	`
-	err := db.db.Get(&metrics, query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get registration summary metrics: %w", err)
-	}
-
-	query = `SELECT 
-				COALESCE(SUM(CASE WHEN identity_provider IS NULL THEN 1 ELSE 0 END), 0) AS email,
-				COALESCE(SUM(CASE WHEN identity_provider IS NOT NULL THEN 1 ELSE 0 END), 0) AS federated
-			FROM registry_entries
-	`
-	err = db.db.Get(&metrics.MethodDistribution, query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get registration method distribution: %w", err)
-	}
-
-	var federatedProviders []struct {
-		Provider string `db:"identity_provider"`
-		Amount   int    `db:"amount"`
-	}
-	query = `
-		SELECT identity_provider, COUNT(*) AS amount
-		FROM registry_entries
-		WHERE identity_provider IS NOT NULL
-		GROUP BY identity_provider
-	`
-	if err := db.db.Select(&federatedProviders, query); err != nil {
-		return nil, fmt.Errorf("error getting federated providers: %w", err)
-	}
-
-	// Inicializa el mapa de federated providers en caso de que esté vacío
-	metrics.FederatedProviders = make(map[string]int)
-	for _, provider := range federatedProviders {
-		metrics.FederatedProviders[provider.Provider] = provider.Amount
-	}
-
-	return &metrics, nil
 }

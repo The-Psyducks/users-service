@@ -84,16 +84,4 @@ type UserDatabase interface {
 
 	// CheckIfUserIsBlocked checks if a user is blocked
 	CheckIfUserIsBlocked(userId uuid.UUID) (bool, error)
-
-	// RegisterLoginAttempt registers a login attempt in the database
-	RegisterLoginAttempt(userID uuid.UUID, provider *string, successful bool) error
-
-	// GetLoginSummaryMetrics retrieves the login metrics
-	GetLoginSummaryMetrics() (*model.LoginSummaryMetrics, error)
-
-	// GetLocationMetrics retrieves the location metrics
-	GetLocationMetrics() (*model.LocationMetrics, error)
-
-	// GetUserBlockedMetrics retrieves the user blocked metrics
-	GetUsersBlockedMetrics() (*model.UsersBlockedMetrics, error)
 }

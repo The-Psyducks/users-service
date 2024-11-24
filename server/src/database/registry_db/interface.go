@@ -22,6 +22,12 @@ type RegistryDatabase interface {
 	// AddInterestsToRegistryEntry adds interests to the registry entry with the given id
 	AddInterestsToRegistryEntry(id uuid.UUID, interests []string) error
 
+	// SetEmailVerificationPin sets the email verification pin of the registry entry with the given id
+	SetEmailVerificationPin(id uuid.UUID, code string) error
+
+	// GetEmailVerificationPin returns the email verification pin of the registry entry with the given id
+	GetEmailVerificationPin(id uuid.UUID) (string, error)
+
 	// VerificateEmail notifies that the email of the registry entry with the given id has been verified
 	VerifyEmail(id uuid.UUID) error
 
@@ -33,7 +39,4 @@ type RegistryDatabase interface {
 
 	// DeleteRegistryEntry deletes the registry entry with the given id
 	DeleteRegistryEntry(id uuid.UUID) error
-
-	// GetRegistrySummaryMetrics returns the summary metrics of the registry
-	GetRegistrySummaryMetrics() (*model.RegistrationSummaryMetrics, error)
 }

@@ -6,6 +6,9 @@ import (
 	"github.com/go-playground/assert/v2"
 
 	"users-service/src/router"
+	"users-service/tests/constants"
+	"users-service/tests/models"
+	"users-service/tests/utils"
 )
 
 func TestUserAuthStepStartsWithEmailVerification(t *testing.T) {
@@ -14,10 +17,10 @@ func TestUserAuthStepStartsWithEmailVerification(t *testing.T) {
 
 	email := "monke@gmail.com"
 
-	res, err := getUserRegistryForSignUp(router, email)
+	res, err := utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, res.NextAuthStep, SignUpAuthStep)
-	assert.Equal(t, res.Metadata.OnboardingStep, EmailVerificationStep)
+	assert.Equal(t, res.NextAuthStep, constants.SignUpAuthStep)
+	assert.Equal(t, res.Metadata.OnboardingStep, constants.EmailVerificationStep)
 }
 
 func TestGetUserAuthStepWhenItsPersonalInfo(t *testing.T) {
@@ -26,18 +29,18 @@ func TestGetUserAuthStepWhenItsPersonalInfo(t *testing.T) {
 
 	email := "monke1@gmail.com"
 
-	res, err := getUserRegistryForSignUp(router, email)
+	res, err := utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
 
 	id := res.Metadata.RegistrationId
 
-	err = sendEmailVerificationAndVerificateIt(router, id)
+	err = utils.SendEmailVerificationAndVerificateIt(router, id)
 	assert.Equal(t, err, nil)
 
-	res, err = getUserRegistryForSignUp(router, email)
+	res, err = utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, res.NextAuthStep, SignUpAuthStep)
-	assert.Equal(t, res.Metadata.OnboardingStep, PersonalInfoStep)
+	assert.Equal(t, res.NextAuthStep, constants.SignUpAuthStep)
+	assert.Equal(t, res.Metadata.OnboardingStep, constants.PersonalInfoStep)
 }
 
 func TestGetUserAuthStepWhenItsInterests(t *testing.T) {
@@ -46,15 +49,15 @@ func TestGetUserAuthStepWhenItsInterests(t *testing.T) {
 
 	email := "monke2@gmail.com"
 
-	res, err := getUserRegistryForSignUp(router, email)
+	res, err := utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
 
 	id := res.Metadata.RegistrationId
 
-	err = sendEmailVerificationAndVerificateIt(router, id)
+	err = utils.SendEmailVerificationAndVerificateIt(router, id)
 	assert.Equal(t, err, nil)
 
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -62,13 +65,13 @@ func TestGetUserAuthStepWhenItsInterests(t *testing.T) {
 		Location:  0,
 	}
 
-	err = putValidUserPersonalInfo(router, id, personalInfo)
+	err = utils.PutValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
 
-	res, err = getUserRegistryForSignUp(router, email)
+	res, err = utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, res.NextAuthStep, SignUpAuthStep)
-	assert.Equal(t, res.Metadata.OnboardingStep, InterestsStep)
+	assert.Equal(t, res.NextAuthStep, constants.SignUpAuthStep)
+	assert.Equal(t, res.Metadata.OnboardingStep, constants.InterestsStep)
 }
 
 func TestGetUserAuthStepWhenItsComplete(t *testing.T) {
@@ -77,15 +80,15 @@ func TestGetUserAuthStepWhenItsComplete(t *testing.T) {
 
 	email := "monke3@gmail.com"
 
-	res, err := getUserRegistryForSignUp(router, email)
+	res, err := utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
 
 	id := res.Metadata.RegistrationId
 
-	err = sendEmailVerificationAndVerificateIt(router, id)
+	err = utils.SendEmailVerificationAndVerificateIt(router, id)
 	assert.Equal(t, err, nil)
 
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -93,24 +96,24 @@ func TestGetUserAuthStepWhenItsComplete(t *testing.T) {
 		Location:  0,
 	}
 
-	err = putValidUserPersonalInfo(router, id, personalInfo)
+	err = utils.PutValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
 
 	intetestsIds := []int{0}
-	err = putValidInterests(router, id, intetestsIds)
+	err = utils.PutValidInterests(router, id, intetestsIds)
 	assert.Equal(t, err, nil)
 
-	res, err = getUserRegistryForSignUp(router, email)
+	res, err = utils.GetUserRegistryForSignUp(router, email)
 	assert.Equal(t, err, nil)
-	assert.Equal(t, res.NextAuthStep, SignUpAuthStep)
-	assert.Equal(t, res.Metadata.OnboardingStep, CompleteStep)
+	assert.Equal(t, res.NextAuthStep, constants.SignUpAuthStep)
+	assert.Equal(t, res.Metadata.OnboardingStep, constants.CompleteStep)
 }
 
 func AddPersonalInfoToNotExistingRegistry(t *testing.T) {
 	router, err := router.CreateRouter()
 	assert.Equal(t, err, nil)
 
-	personalInfo := UserPersonalInfo{
+	personalInfo := models.UserPersonalInfo{
 		FirstName: "Edward",
 		LastName:  "Elric",
 		UserName:  "EdwardoElric",
@@ -119,7 +122,7 @@ func AddPersonalInfoToNotExistingRegistry(t *testing.T) {
 	}
 
 	id := "0f246321-2921-41ad-8168-2b905b77a93c"
-	err = putValidUserPersonalInfo(router, id, personalInfo)
+	err = utils.PutValidUserPersonalInfo(router, id, personalInfo)
 	assert.Equal(t, err, nil)
 }
 
@@ -130,6 +133,6 @@ func AddInterestsInfoToNotExistingRegistry(t *testing.T) {
 	intetestsIds := []int{0}
 
 	id := "0f246321-2921-41ad-8168-2b905b77a93c"
-	err = putValidInterests(router, id, intetestsIds)
+	err = utils.PutValidInterests(router, id, intetestsIds)
 	assert.Equal(t, err, nil)
 }

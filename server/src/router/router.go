@@ -209,12 +209,6 @@ func CreateRouter() (*Router, error) {
 		private.GET("/users/recommendations", userController.RecommendUsers)
 
 		private.GET("/users/all", userController.GetAllUsers)
-
-		private.GET("/users/metrics/registry", userController.GetRegistrationMetrics)
-		private.GET("/users/metrics/login", userController.GetLoginMetrics)
-		private.GET("/users/metrics/location", userController.GetLocationMetrics)
-		private.GET("/users/metrics/blocked", userController.GetUsersBlockedMetrics)
-		
 	}
 
 	r.Engine.NoRoute(userController.HandleNoRoute)

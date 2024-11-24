@@ -1,4 +1,4 @@
-package tests
+package models
 
 import (
 	"github.com/google/uuid"
@@ -53,6 +53,11 @@ type UserPrivateProfile struct {
 	Interests []string  `json:"interests" binding:"required"`
 	Followers int       `json:"followers" binding:"required"`
 	Following int       `json:"following" binding:"required"`
+}
+
+type UserInformationResponse struct {
+	IsBlocked    bool        		`json:"is_blocked"`
+	Profile    UserPrivateProfile	`json:"profile"`
 }
 
 type Location struct {
