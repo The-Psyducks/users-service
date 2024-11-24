@@ -37,7 +37,7 @@ func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (st
 	if u.amqpQueue == nil {
 		return authToken, privateProfile, nil
 	}
-	
+
 	if provider == nil {
 		fiero := constants.InternalProvider
 		provider = &fiero
@@ -59,6 +59,7 @@ func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (st
 		DeliveryMode: amqp.Persistent,
 	}
 
+	fmt.Println("Sending login attempt to queue: ", message)
 	err = u.amqpQueue.Publish("", os.Getenv("CLOUDAMQP_QUEUE"), false, false, message)
 
 	if err != nil {
