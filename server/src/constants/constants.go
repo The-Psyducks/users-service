@@ -36,4 +36,12 @@ const (
 	InternalProvider = "INTERNAL"
 )
 
+// Queue messages constants
+const (
+	LoginAttempt			= "LOGIN_ATTEMPT"
+	UserBlocked 			= "USER_BLOCKED"
+	NewRegistry 			= "NEW_REGISTRY"
+	NewUser 				= "NEW_USER"
+)
+
 const MaxPaginationLimit = 20

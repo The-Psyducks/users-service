@@ -43,12 +43,17 @@ func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (st
 		provider = &fiero
 	}
 
-	loginAttempt, err := json.Marshal(model.LoginAttempt{
-										Succesfull: true,
-										UserId:     userRecord.Id.String(),
-										Provider:   *provider,
-										Timestamp:  time.Now().GoString(),
-									})
+	queueMsg := model.QueueMessage{
+		MessageType: constants.LoginAttempt,
+		Message: model.LoginAttempt{
+			Succesfull: true,
+			UserId:     userRecord.Id.String(),
+			Provider:   *provider,
+			Timestamp:  time.Now().GoString(),
+		},
+	}
+
+	loginAttempt, err := json.Marshal(queueMsg)
 	if err != nil {
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error marshalling login attempt: %w", err))
 	}
