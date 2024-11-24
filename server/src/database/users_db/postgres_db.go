@@ -166,8 +166,6 @@ func (postDB *UsersPostgresDB) CreateUser(data model.UserRecord) (model.UserReco
 		if err := rows.StructScan(&user); err != nil {
 			return model.UserRecord{}, fmt.Errorf("error scanning user data: %w", err)
 		}
-	} else {
-		return model.UserRecord{}, fmt.Errorf("error: no user created")
 	}
 
 	user.Interests, err = postDB.associateInterestsToUser(user.Id, data.Interests)
