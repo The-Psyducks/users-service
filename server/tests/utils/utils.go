@@ -9,6 +9,7 @@ import (
 	"regexp"
 	"testing"
 	"time"
+	"users-service/src/auth"
 	"users-service/src/router"
 	"users-service/tests/constants"
 	"users-service/tests/models"
@@ -784,6 +785,107 @@ func GetAllUserRecommendations(router *router.Router, token string, limit int) (
 	}
 	
 	return result, nil
+}
+
+func LoginAdmin() (string, error) {
+	token, err := auth.GenerateToken("admin", true)
+	return token, err
+}
+
+func BlockUser(router *router.Router, id string, reason string, token string) error {
+	payload := map[string]string{
+		"reason": reason,
+	}
+	marshalledInfo, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "/users/"+id+"/block", bytes.NewReader(marshalledInfo))
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusNoContent {
+		return fmt.Errorf("error, status code blocking user was %d, expected: %d", recorder.Code, http.StatusNoContent)
+	}
+	return nil
+}
+
+func BlockInvalidUser(router *router.Router, id string, reason string, token string) (int, models.ErrorResponse, error) {
+	var req *http.Request
+	var err error
+
+	if reason != "" {
+		payload := map[string]string{
+			"reason": reason,
+		}
+		marshalledInfo, err := json.Marshal(payload)
+		if err != nil {
+			return 0, models.ErrorResponse{}, err
+		}
+
+		req, err = http.NewRequest("POST", "/users/"+id+"/block", bytes.NewReader(marshalledInfo))
+		if err != nil {
+			return 0, models.ErrorResponse{}, err
+		}
+	} else {
+		req, err = http.NewRequest("POST", "/users/"+id+"/block", nil)
+		if err != nil {
+			return 0, models.ErrorResponse{}, err
+		}
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	req.Header.Add("content-type", "application/json")
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := models.ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
+}
+
+func UnblockUser(router *router.Router, id string, token string) error {
+	req, err := http.NewRequest("POST", "/users/"+id+"/unblock", nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+
+	if recorder.Code != http.StatusNoContent {
+		return fmt.Errorf("error, status code unblocking user was %d, expected: %d", recorder.Code, http.StatusNoContent)
+	}
+	return nil
+}
+
+func UnblockInvalidUser(router *router.Router, id string, token string) (int, models.ErrorResponse, error) {
+	req, err := http.NewRequest("POST", "/users/"+id+"/unblock", nil)
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+	result := models.ErrorResponse{}
+	err = json.Unmarshal(recorder.Body.Bytes(), &result)
+	if err != nil {
+		return 0, models.ErrorResponse{}, err
+	}
+
+	return recorder.Code, result, nil
 }
 
 func AssertUserPrivateProfileIsUser(t *testing.T, email string, user models.UserPersonalInfo, location string, interests []string, profile models.UserPrivateProfile) {
