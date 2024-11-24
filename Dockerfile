@@ -15,7 +15,7 @@ FROM builder AS twitsnap-test-stage
 
 # CMD ["go", "test", "-v", "./tests"]
 COPY /server/rsc/twitsnap.png ./tests/rsc/twitsnap.png
-CMD ["sh", "-c", "go test -cover -coverprofile=coverage/coverage.out $(go list ./... | grep -v 'src/auth')"]
+CMD ["sh", "-c", "go test -cover -coverprofile=coverage/coverage.out $(go list ./... | grep -v 'src/auth' | grep -v 'tests/utils')"]
 
 # Run stage
 FROM alpine:3.20
