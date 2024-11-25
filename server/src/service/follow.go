@@ -40,7 +40,7 @@ func sendNewFollowerNotification(followerId uuid.UUID, followingId uuid.UUID, to
 		return errors.New("error sending request, " + err.Error())
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	if resp.StatusCode != http.StatusNoContent {
 		return errors.New("error sending request, status code: "  + strconv.Itoa(resp.StatusCode))
 	}
 
@@ -72,7 +72,11 @@ func (u *User) FollowUser(followerId uuid.UUID, followingId uuid.UUID, token str
 
 	err = sendNewFollowerNotification(followerId, followingId, token)
 	if err != nil {
-		slog.Warn("Error sending notification to ", followingId.String(), slog.String("error: ", err.Error()))
+		slog.Warn(
+			"Error sending notification",
+			"following_id", followingId.String(),
+			"error", err.Error(),
+		)
 	}
 
 	slog.Info("user followed succesfully", slog.String("followerId", followerId.String()), slog.String("followingId", userRecord.Id.String()))
