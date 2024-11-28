@@ -44,4 +44,11 @@ const (
 	NewUser 				= "NEW_USER"
 )
 
+// enum of block actions
+type BlockAction string
+const (
+	BlockActionBlock 	= "BLOCK"
+	BlockActionUnblock 	= "UNBLOCK"
+)
+
 const MaxPaginationLimit = 20
