@@ -1,20 +1,14 @@
 package service
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
-	"time"
 	"users-service/src/app_errors"
 	"users-service/src/auth"
-	"users-service/src/constants"
 	"users-service/src/database"
 	"users-service/src/model"
-
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (string, model.UserPrivateProfile, error) {
@@ -30,45 +24,10 @@ func (u *User) loginValidUser(userRecord model.UserRecord, provider *string) (st
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error generating private profile: %w", err))
 	}
 
-	// if err := u.userDb.RegisterLoginAttempt(userRecord.Id, provider, true); err != nil {
-	// 	return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error registering login attempt: %w",
-	// 		err))
-	// }
-	if u.amqpQueue == nil {
-		return authToken, privateProfile, nil
-	}
-
-	if provider == nil {
-		fiero := constants.InternalProvider
-		provider = &fiero
-	}
-
-	queueMsg := model.QueueMessage{
-		MessageType: constants.LoginAttempt,
-		Message: model.LoginAttempt{
-			Succesfull: true,
-			UserId:     userRecord.Id.String(),
-			Provider:   *provider,
-			Timestamp:  time.Now().GoString(),
-		},
-	}
-
-	loginAttempt, err := json.Marshal(queueMsg)
-	if err != nil {
-		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error marshalling login attempt: %w", err))
-	}
-
-	message := amqp.Publishing{
-		ContentType: "application/json",
-		Body:        loginAttempt,
-		DeliveryMode: amqp.Persistent,
-	}
-
-	fmt.Println("Sending login attempt to queue: ", message)
-	err = u.amqpQueue.Publish("", os.Getenv("CLOUDAMQP_QUEUE"), false, false, message)
-
-	if err != nil {
-		slog.Error("error publishing login attempt", slog.String("error", err.Error()))
+	if u.amqpQueue != nil {
+		if err := u.sendLogInAttemptMessage(userRecord.Id.String(), true, provider); err != nil {
+			slog.Warn("error publishing login attempt", slog.String("error", err.Error()))
+		}
 	}
 
 	slog.Info("login information checked successfully", slog.String("username", userRecord.UserName))
@@ -88,9 +47,9 @@ func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivate
 	}
 
 	if !checkPasswordHash(data.Password, userRecord.Password) {
-		// if err := u.userDb.RegisterLoginAttempt(userRecord.Id, nil, false); err != nil {
-		// 	return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error registering login attempt: %w", err))
-		// }
+		if err := u.sendLogInAttemptMessage(userRecord.Id.String(), false, nil); err != nil {
+			slog.Warn("error publishing login attempt", slog.String("error", err.Error()))
+		}
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}
 
