@@ -28,6 +28,12 @@ type UserBlocked struct {
 	Timestamp 	string	`json:"timestamp"`
 }
 
+// UserUnblocked is a struct that represents a user that has been unblocked
+type UserUnblocked struct {
+	UserId 		string	`json:"user_id"`
+	Timestamp 	string	`json:"timestamp"`
+}
+
 // NewUser is a struct that represents a new user in the system
 type NewUser struct {
 	UserId 					string	`json:"user_id"`

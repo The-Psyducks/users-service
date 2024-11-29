@@ -95,11 +95,9 @@ func (u *User) sendUserBlockedMessage(id string, reason string) error {
 
 func (u *User) sendUserUnblockedMessage(id string) error {
 	queueMsg := model.QueueMessage{
-		MessageType: constants.UserBlocked,
-		Message: model.UserBlocked{
+		MessageType: constants.UserUnblocked,
+		Message: model.UserUnblocked{
 			UserId:     id,
-			Reason:     "",
-			Action:     constants.BlockActionUnblock,
 			Timestamp:  time.Now().GoString(),
 		},
 	}
