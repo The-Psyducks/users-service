@@ -47,8 +47,10 @@ func (u *User) LoginUser(data model.UserLoginRequest) (string, model.UserPrivate
 	}
 
 	if !checkPasswordHash(data.Password, userRecord.Password) {
-		if err := u.sendLogInAttemptMessage(userRecord.Id.String(), false, nil); err != nil {
-			slog.Warn("error publishing login attempt", slog.String("error", err.Error()))
+		if u.amqpQueue != nil {
+			if err := u.sendLogInAttemptMessage(userRecord.Id.String(), false, nil); err != nil {
+				slog.Warn("error publishing login attempt", slog.String("error", err.Error()))
+			}
 		}
 		return "", model.UserPrivateProfile{}, app_errors.NewAppError(http.StatusNotFound, IncorrectUsernameOrPassword, errors.New("invalid password"))
 	}

@@ -31,7 +31,7 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
     CREATE TABLE IF NOT EXISTS registry_entries (
         id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
         email VARCHAR(%d) NOT NULL UNIQUE,
-		identity_provider VARCHAR(255) DEFAULT NULL,
+		identity_provider VARCHAR(255) DEFAULT '',
 		email_verification_pin VARCHAR(10),
         email_verified BOOLEAN NOT NULL DEFAULT FALSE,
         first_name VARCHAR(%d) DEFAULT '',
@@ -59,6 +59,10 @@ func CreateRegistryPostgresDB(db *sqlx.DB, test bool) (*RegistryPostgresDB, erro
 
 func (db *RegistryPostgresDB) CreateRegistryEntry(email string, identityProvider *string) (uuid.UUID, error) {
 	var id uuid.UUID
+    if identityProvider == nil {
+        defaultProvider := ""
+        identityProvider = &defaultProvider
+    }
 	err := db.db.QueryRow("INSERT INTO registry_entries (email, identity_provider) VALUES ($1, $2) RETURNING id", email, identityProvider).Scan(&id)
 	if err != nil {
 		return uuid.Nil, fmt.Errorf("failed to create registry entry: %w", err)
@@ -89,13 +93,13 @@ func (db *RegistryPostgresDB) GetRegistryEntry(id uuid.UUID) (model.RegistryEntr
 	var personalInfo model.UserPersonalInfoRecord
 
 	err := db.db.QueryRow(`
-        SELECT id, email, email_verified, first_name, last_name, username, password, location 
+        SELECT id, email, email_verified, first_name, last_name, username, password, location, identity_provider
         FROM registry_entries 
         WHERE id = $1`, id).Scan(
 		&entry.Id, &entry.Email, &entry.EmailVerified,
 		&personalInfo.FirstName, &personalInfo.LastName,
 		&personalInfo.UserName, &personalInfo.Password,
-		&personalInfo.Location)
+		&personalInfo.Location, &entry.IdentityProvider)
 
 	if err != nil {
 		if err == sql.ErrNoRows {

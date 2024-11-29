@@ -28,6 +28,12 @@ func (u *User) createNewRegistry(email string, identityProvider *string) (model.
 		return model.ResolveResponse{}, app_errors.NewAppError(http.StatusInternalServerError, InternalServerError, fmt.Errorf("error creating registry entry: %w", err))
 	}
 
+	if u.amqpQueue != nil {
+		if err := u.sendNewRegistryMessage(registryId.String(), identityProvider); err != nil {
+			slog.Warn("error publishing new registry entry", slog.String("error", err.Error()))
+		}
+	}
+	
 	return model.ResolveResponse{
 		NextAuthStep: constants.SignUpStep,
 		Metadata: map[string]interface{}{

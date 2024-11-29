@@ -74,13 +74,32 @@ func (u *User) sendNewRegistryMessage(id string, provider *string) error {
 	return sendMessage(u.amqpQueue, newRegistry)
 }
 
-func (u *User) sendUserBlockedMessage(id string, action constants.BlockAction, reason string) error {
+func (u *User) sendUserBlockedMessage(id string, reason string) error {
 	queueMsg := model.QueueMessage{
 		MessageType: constants.UserBlocked,
 		Message: model.UserBlocked{
 			UserId:     id,
 			Reason:     reason,
-			Action:     string(action),
+			Action:     constants.BlockActionBlock,
+			Timestamp:  time.Now().GoString(),
+		},
+	}
+
+	userBlocked, err := json.Marshal(queueMsg)
+	if err != nil {
+		return fmt.Errorf("error marshalling login attempt message for rabbit: %w", err)
+	}
+
+	return sendMessage(u.amqpQueue, userBlocked)
+}
+
+func (u *User) sendUserUnblockedMessage(id string) error {
+	queueMsg := model.QueueMessage{
+		MessageType: constants.UserBlocked,
+		Message: model.UserBlocked{
+			UserId:     id,
+			Reason:     "",
+			Action:     constants.BlockActionUnblock,
 			Timestamp:  time.Now().GoString(),
 		},
 	}
