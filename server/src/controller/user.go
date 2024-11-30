@@ -532,7 +532,7 @@ func (u *User) UnblockUser(c *gin.Context) {
 }
 
 func getTimeRangeQueryParams(c *gin.Context) (time.Time, time.Time, error) {
-	startTimeStr := c.Query("start_time")
+	startTimeStr := c.Query("time")
 	endTimeStr := c.Query("end_time")
 	if startTimeStr == "" || endTimeStr == "" {
 		err := app_errors.NewAppError(http.StatusBadRequest, "Invalid 'start_time' or 'end_time' value in request. Must not be empty.", fmt.Errorf("invalid time gap"))
