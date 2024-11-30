@@ -39,4 +39,5 @@ type NewUser struct {
 	UserId 					string	`json:"user_id"`
 	Location	 			string	`json:"location"`
 	OldRegistrationId 		string	`json:"old_registration_id"`
+	Timestamp 	string	`json:"timestamp"`
 }

@@ -117,6 +117,7 @@ func (u *User) sendNewUserMessage(userId string, location string, oldRegistratio
 			UserId:             userId,
 			Location:           location,
 			OldRegistrationId:  oldRegistrationId,
+			Timestamp: 			time.Now().GoString(),
 		},
 	}
 
