@@ -39,7 +39,7 @@ func (u *User) sendLogInAttemptMessage(id string, succesful bool, provider *stri
 			Succesfull: succesful,
 			UserId:     id,
 			Provider:   *provider,
-			Timestamp:  time.Now().GoString(),
+			Timestamp:  time.Now().Format(time.RFC3339),
 		},
 	}
 
@@ -62,7 +62,7 @@ func (u *User) sendNewRegistryMessage(id string, provider *string) error {
 		Message: model.NewRegistry{
 			RegistrationId:     id,
 			Provider:   *provider,
-			Timestamp:  time.Now().GoString(),
+			Timestamp:  time.Now().Format(time.RFC3339),
 		},
 	}
 
@@ -80,7 +80,7 @@ func (u *User) sendUserBlockedMessage(id string, reason string) error {
 		Message: model.UserBlocked{
 			UserId:     id,
 			Reason:     reason,
-			Timestamp:  time.Now().GoString(),
+			Timestamp:  time.Now().Format(time.RFC3339),
 		},
 	}
 
@@ -97,7 +97,7 @@ func (u *User) sendUserUnblockedMessage(id string) error {
 		MessageType: constants.UserUnblocked,
 		Message: model.UserUnblocked{
 			UserId:     id,
-			Timestamp:  time.Now().GoString(),
+			Timestamp:  time.Now().Format(time.RFC3339),
 		},
 	}
 
@@ -116,7 +116,7 @@ func (u *User) sendNewUserMessage(userId string, location string, oldRegistratio
 			UserId:             userId,
 			Location:           location,
 			OldRegistrationId:  oldRegistrationId,
-			Timestamp: 			time.Now().GoString(),
+			Timestamp: 			time.Now().Format(time.RFC3339),
 		},
 	}
 
