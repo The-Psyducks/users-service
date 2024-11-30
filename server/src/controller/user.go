@@ -531,7 +531,7 @@ func (u *User) UnblockUser(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func getTimeGapQueryParams(c *gin.Context) (time.Time, time.Time, error) {
+func getTimeRangeQueryParams(c *gin.Context) (time.Time, time.Time, error) {
 	startTimeStr := c.Query("start_time")
 	endTimeStr := c.Query("end_time")
 	if startTimeStr == "" || endTimeStr == "" {
@@ -559,13 +559,18 @@ func (u *User) GetAmountOfFollowers(c *gin.Context) {
 		_ = c.Error(err)
 		return
 	}
-	id, _, err := getUrlIdAndSessionUserId(c)
+	id, err := uuid.Parse(c.Param("id"))
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
+		_ = c.Error(err)
+		return
+	}
+	startTime, endTime, err := getTimeRangeQueryParams(c)
 	if err != nil {
 		_ = c.Error(err)
 		return
 	}
 
-	startTime, endTime, err := getTimeGapQueryParams(c)
 	amount, err := u.service.GetAmountOfFollowersInTimeRange(id, startTime, endTime)
 	if err != nil {
 		_ = c.Error(err)
