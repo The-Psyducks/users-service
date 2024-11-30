@@ -80,7 +80,6 @@ func (u *User) sendUserBlockedMessage(id string, reason string) error {
 		Message: model.UserBlocked{
 			UserId:     id,
 			Reason:     reason,
-			Action:     constants.BlockActionBlock,
 			Timestamp:  time.Now().GoString(),
 		},
 	}

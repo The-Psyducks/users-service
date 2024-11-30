@@ -24,7 +24,6 @@ type NewRegistry struct {
 type UserBlocked struct {
 	UserId 		string	`json:"user_id"`
 	Reason	 	string	`json:"reason"`
-	Action	 	string	`json:"action"`
 	Timestamp 	string	`json:"timestamp"`
 }
 
@@ -39,5 +38,5 @@ type NewUser struct {
 	UserId 					string	`json:"user_id"`
 	Location	 			string	`json:"location"`
 	OldRegistrationId 		string	`json:"old_registration_id"`
-	Timestamp 	string	`json:"timestamp"`
+	Timestamp 				string	`json:"timestamp"`
 }
