@@ -530,3 +530,47 @@ func (u *User) UnblockUser(c *gin.Context) {
 
 	c.JSON(http.StatusNoContent, gin.H{})
 }
+
+func getTimeGapQueryParams(c *gin.Context) (time.Time, time.Time, error) {
+	startTimeStr := c.Query("start_time")
+	endTimeStr := c.Query("end_time")
+	if startTimeStr == "" || endTimeStr == "" {
+		err := app_errors.NewAppError(http.StatusBadRequest, "Invalid 'start_time' or 'end_time' value in request. Must not be empty.", fmt.Errorf("invalid time gap"))
+		return time.Time{}, time.Time{}, err
+	}
+	startTime, err := time.Parse(time.RFC3339, startTimeStr)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'start_time' value in request. Must be in RFC3339 format.", err)
+		return time.Time{}, time.Time{}, err
+	}
+	endTime, err := time.Parse(time.RFC3339, endTimeStr)
+	if err != nil {
+		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid 'end_time' value in request. Must be in RFC3339 format.", err)
+		return time.Time{}, time.Time{}, err
+	}
+	return startTime, endTime, nil
+}
+
+
+func (u *User) GetAmountOfFollowers(c *gin.Context) {
+	userSessionIsAdmin := c.GetBool("session_user_admin")
+	if !userSessionIsAdmin {
+		err := app_errors.NewAppError(http.StatusForbidden, "Forbidden", fmt.Errorf("user is not an admin"))
+		_ = c.Error(err)
+		return
+	}
+	id, _, err := getUrlIdAndSessionUserId(c)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	startTime, endTime, err := getTimeGapQueryParams(c)
+	amount, err := u.service.GetAmountOfFollowersInTimeRange(id, startTime, endTime)
+	if err != nil {
+		_ = c.Error(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"new_followers": amount})
+}

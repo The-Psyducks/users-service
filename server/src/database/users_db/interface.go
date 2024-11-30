@@ -1,6 +1,7 @@
 package users_db
 
 import (
+	"time"
 	"users-service/src/model"
 
 	"github.com/google/uuid"
@@ -48,6 +49,9 @@ type UserDatabase interface {
 	// GetFollowers returns the followers for a given user ID and if there are more followers to retrieve
 	// it also receives a timestamp, skip and limit to paginate the results
 	GetFollowers(userId uuid.UUID, timestamp string, skip int, limit int) ([]model.UserRecord, bool, error)
+
+	// GetAmountOfFollowersInTimeRange retrieves the amount of followers for a given user ID in a time range
+	GetAmountOfFollowersInTimeRange(userId uuid.UUID, startTime, endTime time.Time) (int, error)
 
 	// GetAllUsers retrieves all the users in the database
 	// it also receives a timestamp, skip and limit to paginate the results

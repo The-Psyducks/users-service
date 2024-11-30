@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -450,6 +451,17 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 	}
 
 	return following, false, nil
+}
+
+func (postDB *UsersPostgresDB) GetAmountOfFollowersInTimeRange(userId uuid.UUID, startTime, endTime time.Time) (int, error) {
+	var followers int
+	query := `SELECT COUNT(*) FROM followers WHERE following_id = $1 AND created_at >= $2 AND created_at <= $3`
+	err := postDB.db.Get(&followers, query, userId, startTime, endTime)
+
+	if err != nil {
+		return 0, fmt.Errorf("error getting amount of followers in time range: %w", err)
+	}
+	return followers, nil
 }
 
 func (postDB *UsersPostgresDB) GetAllUsers(timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {

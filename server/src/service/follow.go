@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 	"users-service/src/app_errors"
 	"users-service/src/database"
 	"users-service/src/model"
@@ -170,4 +171,8 @@ func (u *User) GetFollowing(id uuid.UUID, userSessionId uuid.UUID, timestamp str
 	}
 
 	return profiles, hasMore, nil
+}
+
+func (u *User) GetAmountOfFollowersInTimeRange(userId uuid.UUID, startTime, endTime time.Time) (int, error) {
+	return u.userDb.GetAmountOfFollowersInTimeRange(userId, startTime, endTime)
 }
