@@ -147,7 +147,6 @@ func addCorsConfiguration(r *Router) {
 	r.Engine.Use(cors.New(config))
 }
 
-
 // Creates a new router with the configuration provided in the env file
 func CreateRouter() (*Router, error) {
 	cfg, err := config.LoadConfig()
@@ -171,7 +170,11 @@ func CreateRouter() (*Router, error) {
 
 	addCorsConfiguration(r)
 
-	userService := service.CreateUserService(userDb, registryDb)
+	amqp, err := CreateProducer()
+	if err != nil {
+		slog.Error("failed to create producer", slog.String("error", err.Error()))
+	}
+	userService := service.CreateUserService(userDb, registryDb, amqp)
 	userController := controller.CreateUserController(userService)
 
 	public := r.Engine.Group("/")
@@ -209,6 +212,8 @@ func CreateRouter() (*Router, error) {
 		private.GET("/users/recommendations", userController.RecommendUsers)
 
 		private.GET("/users/all", userController.GetAllUsers)
+
+		private.GET("/users/metrics/:id/followers", userController.GetAmountOfFollowers)
 	}
 
 	r.Engine.NoRoute(userController.HandleNoRoute)

@@ -588,6 +588,39 @@ func GetFollowingForInvalidUser(router *router.Router, id string, token string) 
 	return result, nil
 }
 
+
+func GetAmountOfFollowersInTimeRange(router *router.Router, id, token, startTime, endTime string) (int, error) {
+	url := fmt.Sprintf("/users/metrics/%s/followers?time=%s&end_time=%s", id, startTime, endTime)
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+
+	var result struct {
+		Amount int `json:"new_followers"`
+	}
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		return 0, err
+	}
+	return result.Amount, nil
+}
+
+func GetAmountOfFollowersInTimeRangeInvalid(router *router.Router, id, token, startTime, endTime string) (int, error) {
+	url := fmt.Sprintf("/users/metrics/%s/followers?time=%s&end_time=%s", id, startTime, endTime)
+	req, _ := http.NewRequest("GET", url, nil)
+
+	req.Header.Add("Authorization", "Bearer "+token)
+	recorder := httptest.NewRecorder()
+	router.Engine.ServeHTTP(recorder, req)
+
+	var result models.ErrorResponse
+	if err := json.Unmarshal(recorder.Body.Bytes(), &result); err != nil {
+		return 0, err
+	}
+	return result.Status, nil
+}
+
 func SearchUsers(router *router.Router, text string, token string, limit int) ([]models.FollowUserProfile, error) {
 	var result []models.FollowUserProfile
 	var currPagination models.Pagination

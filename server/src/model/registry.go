@@ -47,9 +47,10 @@ type UserPersonalInfoRecord struct {
 }
 
 type RegistryEntry struct {
-	Id            uuid.UUID              `json:"id" db:"id" validate:"required"`
-	Email         string                 `json:"email" db:"email" validate:"required"`
-	EmailVerified bool                   `json:"email_verified" db:"email_verified" validate:"required"`
-	PersonalInfo  UserPersonalInfoRecord `json:"personal_info" db:"personal_info" validate:"required"`
-	Interests     []string               `json:"interests" db:"interests" validate:"required"`
+	Id            		uuid.UUID              `json:"id" db:"id" validate:"required"`
+	Email         		string                 `json:"email" db:"email" validate:"required"`
+	EmailVerified 		bool                   `json:"email_verified" db:"email_verified" validate:"required"`
+	PersonalInfo  		UserPersonalInfoRecord `json:"personal_info" db:"personal_info" validate:"required"`
+	Interests     		[]string               `json:"interests" db:"interests" validate:"required"`
+	IdentityProvider     string        			`json:"identity_provider" db:"identity_provider" validate:"required"`
 }

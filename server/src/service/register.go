@@ -222,6 +222,12 @@ func (u *User) CompleteRegistry(id uuid.UUID) (model.UserPrivateProfile, error) 
 		return model.UserPrivateProfile{}, err
 	}
 
+	if u.amqpQueue != nil {
+		if err := u.sendNewUserMessage(userResponse.Id.String(), userResponse.Location, registry.Id.String()); err != nil {
+			slog.Warn("error sending new user message", slog.String("error", err.Error()))
+		}
+	}
+
 	slog.Info("registry completed successfully", slog.String("registration id", id.String()))
 	return userResponse, nil
 }

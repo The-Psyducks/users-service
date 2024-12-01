@@ -33,6 +33,16 @@ const (
 
 const (
 	GoogleProvider = "GOOGLE"
+	InternalProvider = "INTERNAL"
+)
+
+// Queue messages constants
+const (
+	LoginAttempt			= "LOGIN_ATTEMPT"
+	UserBlocked 			= "USER_BLOCKED"
+	UserUnblocked 			= "USER_UNBLOCKED"
+	NewRegistry 			= "NEW_REGISTRY"
+	NewUser 				= "NEW_USER"
 )
 
 const MaxPaginationLimit = 20

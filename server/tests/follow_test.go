@@ -3,6 +3,7 @@ package tests
 import (
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/go-playground/assert/v2"
 
@@ -395,4 +396,68 @@ func TestGetFollowingForNotExistingUserReturnsProperError(t *testing.T) {
     
     assert.Equal(t, err, nil)
     assert.Equal(t, response.Status, http.StatusNotFound)
+}
+
+func TestGetAmountOfFollowersInTimeRangeReturnsCorrecly(t *testing.T) {
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
+    loginRequest := models.LoginRequest{
+        Email: user1.Email,
+        Password: user1Password, 
+    }
+    resp, err := utils.LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    err = utils.FollowValidUser(testRouter, user2.Id.String(), resp.AccessToken)
+    assert.Equal(t, err, nil)
+
+    adminToken, err := utils.LoginAdmin()
+    assert.Equal(t, err, nil)
+    
+    startTime := time.Now().Add(-time.Second).UTC().Format(time.RFC3339Nano)
+    endTime := time.Now().UTC().Format(time.RFC3339Nano)
+    amount, err := utils.GetAmountOfFollowersInTimeRange(testRouter, user2.Id.String(), adminToken, startTime, endTime)
+    assert.Equal(t, err, nil)
+    assert.Equal(t, amount, 1)
+}
+
+func TestGetAmountOfFollowersInTimeRangeReturnsNoneIfThereAreNoNewFollowers(t *testing.T) {
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
+    loginRequest := models.LoginRequest{
+        Email: user1.Email,
+        Password: user1Password, 
+    }
+    resp, err := utils.LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    err = utils.FollowValidUser(testRouter, user2.Id.String(), resp.AccessToken)
+    assert.Equal(t, err, nil)
+
+    adminToken, err := utils.LoginAdmin()
+    assert.Equal(t, err, nil)
+    
+    startTime := time.Now().UTC().Format(time.RFC3339Nano)
+    endTime := time.Now().Add(time.Second).UTC().Format(time.RFC3339Nano)
+    amount, err := utils.GetAmountOfFollowersInTimeRange(testRouter, user2.Id.String(), adminToken, startTime, endTime)
+    assert.Equal(t, err, nil)
+    assert.Equal(t, amount, 0)
+}
+
+func TestGetAmountOfFollowersInTimeRangeReturnsErrorIfUserIsNotAdmin(t *testing.T) {
+    testRouter, user1, user1Password, user2, _ := setUpFollowTests()
+    loginRequest := models.LoginRequest{
+        Email: user1.Email,
+        Password: user1Password, 
+    }
+    resp, err := utils.LoginValidUser(testRouter, loginRequest)
+    assert.Equal(t, err, nil)
+    
+    err = utils.FollowValidUser(testRouter, user2.Id.String(), resp.AccessToken)
+    assert.Equal(t, err, nil)
+    
+    startTime := time.Now().UTC().Format(time.RFC3339Nano)
+    endTime := time.Now().Add(time.Second).UTC().Format(time.RFC3339Nano)
+    code, err := utils.GetAmountOfFollowersInTimeRangeInvalid(testRouter, user2.Id.String(), resp.AccessToken, startTime, endTime)
+
+    assert.Equal(t, err, nil)
+    assert.Equal(t, code, http.StatusForbidden)
 }

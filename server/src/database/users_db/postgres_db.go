@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
@@ -62,6 +63,7 @@ func createTables(db *sqlx.DB, test bool) error {
 			email VARCHAR(%d) NOT NULL UNIQUE,
 			password TEXT NOT NULL,
 			location VARCHAR(255) NOT NULL,
+			blocked BOOLEAN DEFAULT FALSE,
 			created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 		);
 		
@@ -89,18 +91,6 @@ func createTables(db *sqlx.DB, test bool) error {
 			);
 		`, followersTable)
 
-	schemaUsersBlocked := fmt.Sprintf(`
-		CREATE TABLE IF NOT EXISTS %s (
-			id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-			user_id UUID NOT NULL,
-			reason TEXT DEFAULT NULL,
-			blocked_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-			unblocked_at TIMESTAMPTZ DEFAULT NULL,
-			CONSTRAINT users_blocks_unique_block UNIQUE (user_id, blocked_at),
-			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-			);
-		`, "users_blocks")
-
 	if _, err := db.Exec(schemaUsers); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
@@ -108,9 +98,6 @@ func createTables(db *sqlx.DB, test bool) error {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 	if _, err := db.Exec(schemaFollowers); err != nil {
-		return fmt.Errorf("failed to create table: %w", err)
-	}
-	if _, err := db.Exec(schemaUsersBlocked); err != nil {
 		return fmt.Errorf("failed to create table: %w", err)
 	}
 
@@ -452,6 +439,17 @@ func (postDB *UsersPostgresDB) GetFollowing(userId uuid.UUID, timestamp string, 
 	return following, false, nil
 }
 
+func (postDB *UsersPostgresDB) GetAmountOfFollowersInTimeRange(userId uuid.UUID, startTime, endTime time.Time) (int, error) {
+	var followers int
+	query := `SELECT COUNT(*) FROM followers WHERE following_id = $1 AND created_at >= $2 AND created_at <= $3`
+	err := postDB.db.Get(&followers, query, userId, startTime, endTime)
+
+	if err != nil {
+		return 0, fmt.Errorf("error getting amount of followers in time range: %w", err)
+	}
+	return followers, nil
+}
+
 func (postDB *UsersPostgresDB) GetAllUsers(timestamp string, skip int, limit int) ([]model.UserRecord, bool, error) {
 	var users []model.UserRecord
 	query := `
@@ -645,32 +643,31 @@ func (postDB *UsersPostgresDB) GetRecommendations(userId uuid.UUID, timestamp st
 }
 
 func (postDB *UsersPostgresDB) BlockUser(userId uuid.UUID, reason string) error {
-    query := `INSERT INTO users_blocks (user_id, blocked_at, reason) VALUES ($1, NOW(), $2)`
-    _, err := postDB.db.Exec(query, userId, reason)
-    if err != nil {
-        return fmt.Errorf("error blocking user: %w", err)
-    }
-    return nil
+    query := `UPDATE users SET blocked = TRUE WHERE id = $1`
+	_, err := postDB.db.Exec(query, userId)
+	if err != nil {
+		return fmt.Errorf("error blocking user: %w", err)
+	}
+	return nil
 }
 
 func (postDB *UsersPostgresDB) UnblockUser(userId uuid.UUID) error {
-    query := `UPDATE users_blocks SET unblocked_at = NOW() 
-              WHERE user_id = $1 AND unblocked_at IS NULL`
-    _, err := postDB.db.Exec(query, userId)
-    if err != nil {
-        return fmt.Errorf("error unblocking user: %w", err)
-    }
-    return nil
+    query := `UPDATE users SET blocked = FALSE WHERE id = $1`
+	_, err := postDB.db.Exec(query, userId)
+	if err != nil {
+		return fmt.Errorf("error unblocking user: %w", err)
+	}
+	return nil
 }
 
 func (postDB *UsersPostgresDB) CheckIfUserIsBlocked(userId uuid.UUID) (bool, error) {
     var count int
-    query := `SELECT COUNT(*) FROM users_blocks WHERE user_id = $1 AND unblocked_at IS NULL`
-    err := postDB.db.Get(&count, query, userId)
-    if err != nil {
-        return false, fmt.Errorf("error checking if user is blocked: %w", err)
-    }
-    return count > 0, nil
+    query := `SELECT COUNT(*) FROM users WHERE id = $1 AND blocked = TRUE`
+	err := postDB.db.Get(&count, query, userId)
+	if err != nil {
+		return false, fmt.Errorf("error checking if user is blocked: %w", err)
+	}
+	return count > 0, nil
 }
 
 // For testing purposes
