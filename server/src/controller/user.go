@@ -553,13 +553,7 @@ func getTimeRangeQueryParams(c *gin.Context) (time.Time, time.Time, error) {
 
 
 func (u *User) GetAmountOfFollowers(c *gin.Context) {
-	userSessionIsAdmin := c.GetBool("session_user_admin")
-	if !userSessionIsAdmin {
-		err := app_errors.NewAppError(http.StatusForbidden, "Forbidden", fmt.Errorf("user is not an admin"))
-		_ = c.Error(err)
-		return
-	}
-	id, err := uuid.Parse(c.Param("id"))
+	id, err := getSessionUserId(c)
 	if err != nil {
 		err = app_errors.NewAppError(http.StatusBadRequest, "Invalid data in request", err)
 		_ = c.Error(err)

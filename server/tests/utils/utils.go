@@ -589,8 +589,8 @@ func GetFollowingForInvalidUser(router *router.Router, id string, token string) 
 }
 
 
-func GetAmountOfFollowersInTimeRange(router *router.Router, id, token, startTime, endTime string) (int, error) {
-	url := fmt.Sprintf("/users/metrics/%s/followers?time=%s&end_time=%s", id, startTime, endTime)
+func GetAmountOfFollowersInTimeRange(router *router.Router, token, startTime, endTime string) (int, error) {
+	url := fmt.Sprintf("/users/metrics/followers?time=%s&end_time=%s", startTime, endTime)
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Authorization", "Bearer "+token)
@@ -606,8 +606,8 @@ func GetAmountOfFollowersInTimeRange(router *router.Router, id, token, startTime
 	return result.Amount, nil
 }
 
-func GetAmountOfFollowersInTimeRangeInvalid(router *router.Router, id, token, startTime, endTime string) (int, error) {
-	url := fmt.Sprintf("/users/metrics/%s/followers?time=%s&end_time=%s", id, startTime, endTime)
+func GetAmountOfFollowersInTimeRangeInvalid(router *router.Router, token, startTime, endTime string) (int, error) {
+	url := fmt.Sprintf("/users/metrics/followers?time=%s&end_time=%s", startTime, endTime)
 	req, _ := http.NewRequest("GET", url, nil)
 
 	req.Header.Add("Authorization", "Bearer "+token)
